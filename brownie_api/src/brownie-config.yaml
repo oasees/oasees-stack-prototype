@@ -1,0 +1,16 @@
+dependencies:
+  - OpenZeppelin/openzeppelin-contracts-upgradeable@4.7.3
+  - OpenZeppelin/openzeppelin-contracts@4.7.3
+compiler:
+  solc:
+    remappings:
+      - '@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@4.7.3/contracts'
+      - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.7.3'
+# networks:
+#   # default: hardhat
+
+#   hardhat:
+#     host: http://10.150.0.151:8545
+#     chainid: 1337
+#     from: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+#     gas_price: auto

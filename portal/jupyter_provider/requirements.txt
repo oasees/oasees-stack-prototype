@@ -1,0 +1,5 @@
+flask
+requests
+Flask-Cors
+docker
+ipfshttpclient==0.8.0a2

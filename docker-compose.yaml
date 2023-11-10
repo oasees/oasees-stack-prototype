@@ -1,0 +1,57 @@
+version: '3'
+services:
+
+  oasees_portal:
+    build:
+      context: ./portal
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - .env
+
+    command: >
+          /bin/sh -c '
+          echo "REACT_APP_INFRA_HOST=$INFRA_HOST:6001" > /oasees_portal/.env
+          && echo "REACT_APP_IPFS_API_HOST=$INFRA_HOST:6002" >> /oasees_portal/.env
+          && npm start
+          '
+
+    container_name: oasees_portal
+
+  flask_notebooks_api:
+    build:
+      context: ./jupyter_provider
+    ports:
+      - "6001:6001"  
+    env_file:
+      - .env
+
+    container_name: flask_notebooks_api 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+
+  flask_brownie_api:
+    build:
+      context: ./brownie_api
+    ports:
+      - "6002:6002"  
+    env_file:
+      - .env
+
+    container_name: flask_brownie_api  
+
+  oasees_blockchain:
+    image: ethereumoptimism/hardhat
+    container_name: hardhat
+    ports:
+      - "8545:8545"
+
+  oasees_ipfs:
+    image: ipfs/kubo:latest
+    container_name: ipfs
+    ports:
+      - "4001:4001"
+      - "4001:4001/udp"
+      - "8080:8080"
+      - "5001:5001"

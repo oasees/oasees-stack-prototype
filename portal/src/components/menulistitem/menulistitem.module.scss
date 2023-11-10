@@ -1,0 +1,17 @@
+.root {
+  border: 1px solid #cb1a1a;
+  width: 180px;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-items: stretch;
+  justify-content: start;
+  gap: 20px;
+}
+.menuitemimg {
+  width: 3vh;
+  height: 3vh;
+  margin-right: 5px;
+  margin-left: 5px;
+}

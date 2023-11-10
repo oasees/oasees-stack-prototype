@@ -1,0 +1,6 @@
+flask
+requests
+Flask-Cors
+ipfshttpclient==0.8.0a2
+eth-brownie
+web3
