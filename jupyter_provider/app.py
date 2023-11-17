@@ -60,6 +60,7 @@ def user_login():
                 "JUPYTER_ALLOW_ORIGIN": "*"
             },
             tty=True,
+            remove=True,
             command="/bin/bash" 
         )
 
@@ -167,6 +168,7 @@ def sigterm_handler(signal, frame):
             print(dc.name)
             dc.remove(force=True)
 
+    exit(0)
 
 
 signal.signal(signal.SIGTERM, sigterm_handler)
