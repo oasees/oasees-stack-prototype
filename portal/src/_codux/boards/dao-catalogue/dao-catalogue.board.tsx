@@ -3,5 +3,5 @@ import { DaoCatalogue } from '../../../components/dao-catalogue/dao-catalogue';
 
 export default createBoard({
     name: 'DaoCatalogue',
-    Board: () => <DaoCatalogue  account={undefined} signer={undefined} daoStorageHash='' />
+    Board: () => <DaoCatalogue  account={undefined} signer={undefined} daoIndexerContract={undefined} daoStorageContract={undefined}/>
 });

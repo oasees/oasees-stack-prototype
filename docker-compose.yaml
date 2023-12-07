@@ -19,28 +19,6 @@ services:
 
     container_name: oasees_portal
 
-  flask_notebooks_api:
-    build:
-      context: ./jupyter_provider
-    ports:
-      - "6001:6001"  
-    env_file:
-      - .env
-
-    container_name: flask_notebooks_api 
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock 
-
-  flask_brownie_api:
-    build:
-      context: ./brownie_api
-    ports:
-      - "6002:6002"  
-    env_file:
-      - .env
-
-    container_name: flask_brownie_api  
-
   oasees_blockchain:
     image: ethereumoptimism/hardhat
     container_name: hardhat
@@ -55,3 +33,24 @@ services:
       - "4001:4001/udp"
       - "8080:8080"
       - "5001:5001"
+
+
+
+  flask_notebooks_api:
+    build:
+      context: ./jupyter_provider
+    depends_on:
+      oasees_blockchain:
+        condition: service_started
+      oassees_ipfs:
+        condition: service_started
+    ports:
+      - "6001:6001"  
+    env_file:
+      - .env
+
+    container_name: flask_notebooks_api 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+
+

@@ -3,5 +3,5 @@ import { DaoCreate } from '../../../components/dao-create/dao-create';
 
 export default createBoard({
     name: 'DaoGovernance',
-    Board: () => <DaoCreate account={undefined} daoStorageHash='' />
+    Board: () => <DaoCreate account={undefined} daoIndexerContract={undefined} />
 });

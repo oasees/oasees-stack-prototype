@@ -18,7 +18,7 @@ export interface PublishProps {
 export const Publish = ({ className,marketplace,nft,account}: PublishProps) => {
 
 
-    const [file, setFile] = useState<File|string>('');
+    const [file, setFile] = useState<File>();
     const [title, setTitle] = useState<string>('');
     const [description, setDescription] = useState<string>('');
     const [price, setPrice] = useState<string>('');
@@ -71,7 +71,7 @@ export const Publish = ({ className,marketplace,nft,account}: PublishProps) => {
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = event.target.files?.[0];
-        setFile(selectedFile || '');
+        setFile(selectedFile);
       };
     
       const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,18 +102,20 @@ export const Publish = ({ className,marketplace,nft,account}: PublishProps) => {
           
             ifs_data.append("asset", file);
             ifs_data.append("meta",JSON.stringify({price, title, description}));
+          
+            
+
   
-  
-            const meta_hash = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
+            const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
               headers: {
                 'Content-Type': 'multipart/form-data'
               }
             })
 
+            console.log(nft_hashes.data.file_hash,nft_hashes.data.meta_hash);
 
-            console.log(meta_hash.data.meta_hash)
 
-            mintThenList(meta_hash.data.meta_hash)
+            mintThenList(nft_hashes.data.file_hash,nft_hashes.data.meta_hash)
 
 
 
@@ -125,84 +127,34 @@ export const Publish = ({ className,marketplace,nft,account}: PublishProps) => {
       };
 
 
-      const mintThenList = async (nft_meta:string) => {
+      const mintThenList = async (file_hash:string,meta_hash:string) => {
+
+
 
         try{
-          await(await nft.mint(nft_meta)).wait()
+ 
 
-          const id = await nft.tokenCount()
+          console.log(file_hash);
+          console.log(meta_hash);
 
-          await(await nft.setApprovalForAll(MarketplaceAddress.address, true)).wait()
-          const listingPrice = ethers.parseEther(price.toString())
-          await(await marketplace.makeItem(NFTaddress.address, id, listingPrice,50)).wait()
+          const mint_transaction = await nft.mint(file_hash);
+          const mint_receipt = await mint_transaction.wait();
+          const id = parseInt(mint_receipt.logs[2].data, 16);
+          const _price = ethers.parseEther(price.toString())
+          console.log(_price);
+          const market_fee = await marketplace.LISTING_FEE();
+
+
+          const makeItem_transaction = await marketplace.makeItem(NFTaddress.address, id, _price,meta_hash,{value:market_fee});
+          const makeItem_receipt = await makeItem_transaction.wait();
+
+
+
         }catch(error){
           console.log("Metamask error",error)
         }
       }
       
-
-      const styles_modal = StyleSheet.create({
-        centeredView: {
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginTop: 22,
-        },
-        modalView: {
-          margin: 20,
-          backgroundColor: 'white',
-          borderRadius: 20,
-          padding: 35,
-          alignItems: 'center',
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-          shadowOpacity: 0.25,
-          shadowRadius: 4,
-          elevation: 5,
-        },
-        button: {
-          borderRadius: 20,
-          padding: 10,
-          elevation: 2,
-        },
-        buttonOpen: {
-          backgroundColor: '#F194FF',
-        },
-        buttonClose: {
-          backgroundColor: '#2196F3',
-        },
-        textStyle: {
-          color: 'white',
-          fontWeight: 'bold',
-          textAlign: 'center',
-        },
-        modalText: {
-          marginBottom: 15,
-          textAlign: 'center',
-        },
-      });
-
-
-      const cardImageStyle = {
-        borderRadius: '8px',
-        overflow: 'hidden',
-        paddingBottom: '65%',
-        // backgroundImage: `url(${localImage})`, // Use the imported local image
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: '150%',
-        backgroundPosition: '0 5%',
-        position: 'relative',
-        maxWidth: '25vw',
-        display: 'block',
-      };
-
-
-
-      
-
     return (
         <div className={classNames(styles.root, className)}>
             <div className={styles.form_container}>

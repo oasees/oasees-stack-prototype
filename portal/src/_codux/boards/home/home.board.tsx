@@ -3,5 +3,5 @@ import { Home } from '../../../components/home/home';
 
 export default createBoard({
     name: 'Home',
-    Board: () => <Home marketplace={undefined} nft={undefined} account={undefined} showall={undefined}/>
+    Board: () => <Home marketplace={undefined} nft={undefined} account={undefined} signer={undefined} showall={undefined} daoStorageContract={undefined}/>
 });

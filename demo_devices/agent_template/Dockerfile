@@ -1,6 +1,5 @@
 FROM python:3.9-slim
 
-
 RUN apt-get update && \
     apt-get install -y \
     curl \
@@ -13,13 +12,12 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY compiled_contracts/ compiled_contracts
-COPY contract_functions.py contract_functions.py 
+#COPY compiled_contracts/ compiled_contracts 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py app.py
+COPY agent.py agent.py
 COPY sqlite_utils.py sqlite_utils.py
 
-CMD ["python", "app.py"]
+CMD ["python", "agent.py"]
 

@@ -11,7 +11,8 @@ export default createBoard({
         title: '',
         desc: '',
         price: '',
-        btn_act: ''
+        btn_act: '',
+        nft_address: ''
     }}  marketplace={undefined} nft={undefined} account={undefined} showall={undefined} />
 
 });

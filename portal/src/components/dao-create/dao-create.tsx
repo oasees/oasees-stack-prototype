@@ -6,11 +6,11 @@ import axios from 'axios';
 export interface DaoCreateProps {
     className?: string;
     account: any;
-    daoStorageHash:string;
+    daoIndexerContract:any;
 }
 
 
-export const DaoCreate = ({ className ,account,daoStorageHash}: DaoCreateProps)=> {
+export const DaoCreate = ({ className ,account,daoIndexerContract}: DaoCreateProps)=> {
 
 
     const [title, setTitle] = useState<string>('');
@@ -39,23 +39,23 @@ export const DaoCreate = ({ className ,account,daoStorageHash}: DaoCreateProps)=
 
         setFormError(false);
 
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
+        // const config = {
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'Accept': 'application/json',
 
-            },
-            data: {},
-            params: {
-                "dao_storage_hash": daoStorageHash,
-                "governor_account": account,
-                "dao_name":title,
-                "dao_desc": description
-            }
-        }
+        //     },
+        //     data: {},
+        //     params: {
+        //         "dao_storage_hash": daoStorageHash,
+        //         "governor_account": account,
+        //         "dao_name":title,
+        //         "dao_desc": description
+        //     }
+        // }
 
-        const resp = await axios.get(`http://${process.env.REACT_APP_IPFS_API_HOST}/create_dao`, config);
-        console.log(resp)
+        // const resp = await axios.get(`http://${process.env.REACT_APP_IPFS_API_HOST}/create_dao`, config);
+        // console.log(resp)
 
 
 

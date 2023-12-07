@@ -11,6 +11,7 @@ export interface CardProps {
         desc: string;
         price: string;
         btn_act: string;
+        nft_address: string;
     };
 
     marketplace: any;
@@ -23,11 +24,16 @@ export interface CardProps {
 export const Card = ({ className, nftjson,marketplace,nft,account,showall }: CardProps) => {
 
 
-    const buyMarketItem = async (itemid:any,price:any) => {
+    const buyMarketItem = async (itemid:any,price:any,nft_address:string) => {
         try{
-            await (await marketplace.purchaseItem(itemid, { value: ethers.parseEther(price.toString()) })).wait()
+            const buyItem_transaction = await marketplace.buyNft(nft_address,itemid, { value: ethers.parseEther(price.toString()) });
+            const buyItem_receipt = await buyItem_transaction.wait();
+
         }
-        catch{} 
+        catch(error){
+            console.log("Metamask error",error);
+
+        } 
       
     }
 
@@ -46,7 +52,7 @@ export const Card = ({ className, nftjson,marketplace,nft,account,showall }: Car
                         <div className={styles.contentBx}>
                             <h2>{nftjson.title}</h2>
                             <h4>{nftjson.price}</h4>
-                            <button onClick={() => buyMarketItem(nftjson.id,nftjson.price)}>{nftjson.btn_act}</button>
+                            <button onClick={() => buyMarketItem(nftjson.id,nftjson.price,nftjson.nft_address)}>{nftjson.btn_act}</button>
                         </div>
                     </div>
                 </div>

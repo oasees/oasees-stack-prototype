@@ -25,105 +25,89 @@ export const CardContainer = ({ className,marketplace,nft,account,showall}: Card
       img_url: string; 
       price: string; 
       title: string;
-      btn_act: string
+      btn_act: string;
+      nft_address: string;
       }>
     >([]);
+
+
+    async function IpfsGet(_ipfs_hash:string){
+
+      const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+
+        },
+        data: {},
+        params: {
+          "ipfs_hash": _ipfs_hash
+        }
+      }
+
+
+      const response = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch`,config);
+
+      
+
+      return response.data.content;
+
+    }
+
+
+
+
 
     useEffect(() => {
         const loadContracts = async () => {
           try {
-            const itemCount = await marketplace.itemCount();
-            const newItems: Array<{ desc: string; id: string; img_url: string; price: string; title: string,btn_act: string }> = [];
+            const nft_items: Array<{ desc: string; id: string; img_url: string; price: string; title: string,btn_act: string, nft_address: string }> = [];
+            const purchaced_items: Array<{ desc: string; id: string; img_url: string; price: string; title: string,btn_act: string, nft_address: string }> = [];
 
-    
+
             if(showall){
 
-
-              for (let i = 1; i <= itemCount; i++) {
-                  const item = await marketplace.items(i)   
-                  const uri = await nft.tokenURI(item.tokenId)
-
-
-                  const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-
-                    },
-                    data: {},
-                    params: {
-                      "meta_hash": uri
-                    }
-                  }
+              const available_nfts = await marketplace.getListedNfts();
+          
+              for (const item of available_nfts) {
 
 
-                  const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch`, config);
+                console.log(item[5])
 
-                  const metadata = JSON.parse(resp.data.meta_info);
-
-                  console.log(metadata)
+                const content = JSON.parse(await IpfsGet(item[5]));
 
 
-                  const Price = await marketplace.getTotalPrice(item.itemId)
-                  const price = ethers.formatEther(Price)
-                  newItems.push({
-                    desc: metadata.description,
-                    id: item.itemId,
-                    img_url: metadata.name,
-                    price: price,
-                    title: metadata.title,
-                    btn_act: "Purchase"
+                 nft_items.push({
+                    desc: content.description,
+                    id: item[1],
+                    img_url: "",
+                    price: ethers.formatEther(item[4]),
+                    title: content.title,
+                    btn_act: "Purchase",
+                    nft_address: item[0]
                   })
-                  
-                }
-                setItems(newItems);
+              }
+              setItems(nft_items);
 
-
+            
             }else{
 
-             
-              const filter =  marketplace.filters.Bought(null,null,null,null,null,account)
-              const results = await marketplace.queryFilter(filter)
-              
-              
-              const purchases = await Promise.all(results.map(async (i: any) => {
-               
-                  i = i.args
+              const user_nfts = await marketplace.getMyNfts();
+              for (const item of user_nfts) {
+                const content = JSON.parse(await IpfsGet(item[5]));   
+         
+                purchaced_items.push({
+                  desc: content.description,
+                  id: item[1],
+                  img_url: "",
+                  price:"",
+                  title: content.title,
+                  btn_act: "Open",
+                  nft_address: item[0]
+                })
+                setItems(purchaced_items);
 
-                  const uri = await nft.tokenURI(i.tokenId)
-
-                  const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-
-                    },
-                    data: {},
-                    params: {
-                      "meta_hash": uri
-                    }
-                  }
-
-                  const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch`, config);
-                  const metadata = JSON.parse(resp.data.meta_info);
-
-                  
-
-                  let purchasedItem = {
-                    desc: metadata.description,
-                    id: i.itemId,
-                    img_url: metadata.name,
-                    price: "",
-                    title: metadata.title,
-                    btn_act: "Open"
-                  }
-
-
-                return purchasedItem
-              }))
-
-              setItems(purchases);
-
+              }
 
             } 
 
@@ -149,7 +133,8 @@ export const CardContainer = ({ className,marketplace,nft,account,showall}: Card
                             img_url: item.img_url,
                             price: item.price,
                             title: item.title,
-                            btn_act: item.btn_act
+                            btn_act: item.btn_act,
+                            nft_address: item.nft_address
                         }} marketplace={marketplace} nft={nft} account={account} showall={showall}
                     />
                 ))}

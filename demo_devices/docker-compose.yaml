@@ -1,0 +1,33 @@
+version: '3'
+services:
+  device1:
+    build:
+      context: ./agent_template
+    ports:
+      - "8001:5000"  
+    env_file:
+      - .env
+
+  device2:
+    build:
+      context: ./agent_template
+    ports:
+      - "8002:5000"  
+    env_file:
+      - .env
+
+  device3:
+    build:
+      context: ./agent_template
+    ports:
+      - "8003:5000"  
+    env_file:
+      - .env
+
+  device4:
+    build:
+      context: ./agent_template
+    ports:
+      - "8004:5000"  
+    env_file:
+      - .env
