@@ -42,7 +42,7 @@ services:
     depends_on:
       oasees_blockchain:
         condition: service_started
-      oassees_ipfs:
+      oasees_ipfs:
         condition: service_started
     ports:
       - "6001:6001"  
