@@ -4,19 +4,24 @@ import sys
 import ipfshttpclient
 import requests
 from deploy_dao_template import deploy_dao
+from dotenv import load_dotenv
+import os
 
-IPFS_HOST = "10.150.0.151"
-BLOCK_CHAIN_IP = "10.150.0.151"
-INFRA_HOST = "10.150.0.151"
+env_file_path = '../.env'  # Replace this with the actual path to your .env file
+load_dotenv(dotenv_path=env_file_path)
 
+IPFS_HOST = os.getenv("IPFS_HOST")
+BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
+INFRA_HOST = os.getenv("INFRA_HOST")
+DEVICES_IP= os.getenv("DEVICES_IP")
 
-DEVICES_IP= "10.150.0.151"
 
 deployer_account='0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
 deployer_account = web3.Web3.toChecksumAddress(deployer_account)
 deployer_key = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 
-
+env_file_path = '../.devices_env'
+load_dotenv(dotenv_path=env_file_path)
 
 Daos_to_create = [
 
@@ -24,14 +29,14 @@ Daos_to_create = [
 		"DAO_NAME": "DRONES DAO",
 		"DAO_DESC": "A dao for drones",
 		"MIN_DELAY": 0,
-		"QUORUM_PERCENTAGE": 4,
-		"VOTING_PERIOD": 9,
+		"QUORUM_PERCENTAGE": 50,
+		"VOTING_PERIOD": 5,
 		"VOTING_DELAY": 0,
 		"DEVICES":[
-			{'device_name':"device1","account":"0x2546BcD3c84621e976D8185a91A922aE77ECEc30","endpoint":"http://{}:8001".format(DEVICES_IP)},
-			{'device_name':"device2","account":"0xdD2FD4581271e230360230F9337D5c0430Bf44C0","endpoint":"http://{}:8002".format(DEVICES_IP)},
-			{'device_name':"device3","account":"0xbDA5747bFD65F08deb54cb465eB87D40e51B197E","endpoint":"http://{}:8003".format(DEVICES_IP)},
-			{'device_name':"device4","account":"0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199","endpoint":"http://{}:8004".format(DEVICES_IP)}
+			{'device_name':"device1","account":os.getenv("device1_addr"),"endpoint":"http://{}:8001".format(DEVICES_IP)},
+			{'device_name':"device2","account":os.getenv("device2_addr"),"endpoint":"http://{}:8002".format(DEVICES_IP)},
+			{'device_name':"device3","account":os.getenv("device3_addr"),"endpoint":"http://{}:8003".format(DEVICES_IP)},
+			{'device_name':"device4","account":os.getenv("device4_addr"),"endpoint":"http://{}:8004".format(DEVICES_IP)}
 		]
 	},
 

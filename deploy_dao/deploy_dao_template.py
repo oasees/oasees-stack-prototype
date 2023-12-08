@@ -3,11 +3,16 @@ import json
 import sys
 import ipfshttpclient
 import requests
+from dotenv import load_dotenv
+import os
 
+env_file_path = '../.env'  # Replace this with the actual path to your .env file
+load_dotenv(dotenv_path=env_file_path)
 
-IPFS_HOST = "10.150.0.151"
-BLOCK_CHAIN_IP = "10.150.0.151"
-INFRA_HOST = "10.150.0.151"
+IPFS_HOST = os.getenv("IPFS_HOST")
+BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
+INFRA_HOST = os.getenv("INFRA_HOST")
+DEVICES_IP= os.getenv("DEVICES_IP")
 
 
 
@@ -56,7 +61,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	token_contract = w3.eth.contract(bytecode=token_bytecode, abi=token_abi)
 
-	transaction = token_contract.constructor("DAO_TOKEN","DT",1000000000000000000000000).buildTransaction({
+	transaction = token_contract.constructor("DAO_TOKEN","DT",100).buildTransaction({
 		"gasPrice": w3.eth.gas_price,
 		"chainId": 31337,
 		"from": deployer_account,
@@ -101,7 +106,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 
 	for device in dao_args['DEVICES']:
-		tx = token_contract.functions.transfer(web3.Web3.toChecksumAddress(device['account']),100000).buildTransaction({
+		tx = token_contract.functions.transfer(web3.Web3.toChecksumAddress(device['account']),20).buildTransaction({
 		    'chainId': 31337, 
 		    'gas': 2000000,  
 		    'gasPrice': w3.eth.gas_price,  

@@ -9,11 +9,7 @@ from web3.middleware import geth_poa_middleware
 import os
 from sqlite_utils import *
 
-# IPFS_HOST = os.getenv('IPFS_HOST')
-# BLOCK_CHAIN_IP = os.getenv('BLOCK_CHAIN_IP')
 
-IPFS_HOST = "10.150.0.151"
-BLOCK_CHAIN_IP = "10.150.0.151"
 
 
 create_agentDB()
@@ -22,9 +18,11 @@ app = Flask(__name__)
 CORS(app)
 
 
-w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
+# w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
 from web3.middleware import geth_poa_middleware
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+# w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+w3 = ''
 
 proposal_states = {
 	0:"Pending",
@@ -59,17 +57,23 @@ def deploy_algorithm():
 
 @app.route('/agent_config',methods=["POST"])
 def user_exists():
-   
-    data = request.json
-    account = data["account"]
-    secret_key = data["secret_key"]
-    device_name = data["device_name"]
 
-    insert_account_secret_key(account, secret_key, device_name,"")
+	data = request.json
+	account = data["account"]
+	secret_key = data["secret_key"]
+	device_name = data["device_name"]
+	IPFS_HOST = data["IPFS_HOST"]
+	BLOCK_CHAIN_IP = data["BLOCK_CHAIN_IP"]
 
-    _,_,device_name,_=retrieve_first_account()
- 
-    return {"device_name":device_name,"configuration_status":"ok"}
+	global w3
+	w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
+	w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+	insert_account_secret_key(account, secret_key, device_name,"", IPFS_HOST, BLOCK_CHAIN_IP)
+
+	_,_,device_name,_,_,_=retrieve_first_account()
+
+	return {"device_name":device_name,"configuration_status":"ok"}
 
 
 
@@ -80,7 +84,7 @@ def create_proposal():
 	proposal_description = data["proposal_description"]
 	proposed_value = data["proposed_value"]
 
-	account,_key,device_name,dao_ipfs_hash = retrieve_first_account()
+	account,_key,device_name,dao_ipfs_hash, IPFS_HOST,_= retrieve_first_account()
 
 
 	print(dao_ipfs_hash)
@@ -122,7 +126,7 @@ def create_proposal():
 	signed_tx = w3.eth.account.sign_transaction(transaction, private_key=_key)
 	tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
-
+	w3.eth.send_transaction({'to': account, 'value': 0})
 	return {"device_name":device_name,"created_proposal":proposal_description}
 
 
@@ -134,7 +138,7 @@ def dao_subscription():
 	data = request.json
 	dao_ipfs_hash = data["dao_hash"]
 
-	account,_key,device_name,_=retrieve_first_account()
+	account,_key,device_name,_,IPFS_HOST,_=retrieve_first_account()
 	account = web3.Web3.toChecksumAddress(account)
 
 
@@ -178,7 +182,7 @@ def vote():
 	_vote = data["vote"]
 	reason = data["reason"]
 
-	account,_key,device_name,dao_ipfs_hash = retrieve_first_account()
+	account,_key,device_name,dao_ipfs_hash, IPFS_HOST,_= retrieve_first_account()
 
 
 	print(dao_ipfs_hash)

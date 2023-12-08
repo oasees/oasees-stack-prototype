@@ -123,7 +123,7 @@ def transer_dao_tokens(w3,account,token_address,token_abi):
 	account = web3.Web3.toChecksumAddress(account)
 	token_contract = w3.eth.contract(address=token_address, abi=token_abi)
 
-	tx = token_contract.functions.transfer(account,100000).buildTransaction({
+	tx = token_contract.functions.transfer(account,20).buildTransaction({
 		'chainId': 31337, 
 		'gas': 2000000,  
 		'gasPrice': w3.eth.gas_price,  

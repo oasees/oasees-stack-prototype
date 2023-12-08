@@ -1,15 +1,26 @@
 import requests
+from dotenv import load_dotenv
+import os
 
+env_file_path = '../.env'  # Replace this with the actual path to your .env file
+load_dotenv(dotenv_path=env_file_path)
 
-DEVICES_IP="10.150.0.151"
+DEVICES_IP = os.getenv("DEVICES_IP")
 
-device_endpoint="http://{}:{}".format(DEVICES_IP,8001)
+devices = {
+    "device1" : "http://{}:{}".format(DEVICES_IP,8001),
+    "device2" : "http://{}:{}".format(DEVICES_IP,8002),
+    "device3" : "http://{}:{}".format(DEVICES_IP,8003),
+    "device4" : "http://{}:{}".format(DEVICES_IP,8004),
+}
+
+dev = devices['device1']
 
 
 data = {
-	"proposal_description":"This is a proposal",
+	"proposal_description":"This is a proposal3",
 	"proposed_value":67
 }
-response = requests.post("{}/create_proposal".format(device_endpoint), json=data)
+response = requests.post("{}/create_proposal".format(dev), json=data)
 
 print(response.json())

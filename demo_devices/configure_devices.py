@@ -1,41 +1,57 @@
 import requests
+from dotenv import load_dotenv
+import os
 
+env_file_path = '../.env'  # Replace this with the actual path to your .env file
+load_dotenv(dotenv_path=env_file_path)
 
-DEVICES_IP="10.150.0.151"
-DAO_HASH="QmTKoyRTHpFi52YGt2cRNK5KY2NCtpeACbH3pV7tZrQLSt"
+DEVICES_IP = os.getenv("DEVICES_IP")
+IPFS_HOST = os.getenv("IPFS_HOST")
+BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
+DAO_HASH="QmcySe6yQrqXv2S8AkEuzv18RQNzVpw7kX8tZTMexikWfG"
 
+env_file_path = '../.devices_env'
+load_dotenv(dotenv_path=env_file_path)
 
 devices = [
 	{
 		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8001),
 		"config_data":{
-	    	"account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
-	    	"secret_key": "0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0",
-	    	"device_name": "device1"
+	    	"account": os.getenv("device1_addr"),
+	    	"secret_key": os.getenv("device1_key"),
+	    	"device_name": "device1",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
 	},
 	{
 		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8002),
 		"config_data":{
-	    	"account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
-	    	"secret_key": "0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0",
-	    	"device_name": "device2"
+	    	"account": os.getenv("device2_addr"),
+	    	"secret_key": os.getenv("device2_key"),
+	    	"device_name": "device2",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
 	},
 	{
 		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8003),
 		"config_data":{
-	    	"account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
-	    	"secret_key": "0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0",
-	    	"device_name": "device3"
+	    	"account": os.getenv("device3_addr"),
+	    	"secret_key": os.getenv("device3_key"),
+	    	"device_name": "device3",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
 	},
 	{
 		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8004),
 		"config_data":{
-	    	"account": "0x2546BcD3c84621e976D8185a91A922aE77ECEc30",
-	    	"secret_key": "0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0",
-	    	"device_name": "device4"
+	    	"account": os.getenv("device4_addr"),
+	    	"secret_key": os.getenv("device4_key"),
+	    	"device_name": "device4",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
 	},
 

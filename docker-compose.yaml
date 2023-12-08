@@ -17,6 +17,8 @@ services:
           && npm start
           '
 
+    stop_grace_period: 3s
+
     container_name: oasees_portal
 
   oasees_blockchain:
