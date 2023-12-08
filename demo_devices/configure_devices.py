@@ -2,16 +2,21 @@ import requests
 from dotenv import load_dotenv
 import os
 
-env_file_path = '../.env'  # Replace this with the actual path to your .env file
+env_file_path = '../.env'
 load_dotenv(dotenv_path=env_file_path)
 
-DEVICES_IP = os.getenv("DEVICES_IP")
+
 IPFS_HOST = os.getenv("IPFS_HOST")
 BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
-DAO_HASH="QmcySe6yQrqXv2S8AkEuzv18RQNzVpw7kX8tZTMexikWfG"
+DAO_HASH="QmaGFBHKkaf5bpYPFd8eASqDB4kFzGSqEPrEkNwKqpkJpu"
 
 env_file_path = '../.devices_env'
 load_dotenv(dotenv_path=env_file_path)
+DEVICES_IP = os.getenv("DEVICES_IP")
+
+
+print(DEVICES_IP)
+
 
 devices = [
 	{

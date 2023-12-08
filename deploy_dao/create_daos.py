@@ -13,7 +13,7 @@ load_dotenv(dotenv_path=env_file_path)
 IPFS_HOST = os.getenv("IPFS_HOST")
 BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
 INFRA_HOST = os.getenv("INFRA_HOST")
-DEVICES_IP= os.getenv("DEVICES_IP")
+
 
 
 deployer_account='0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
@@ -22,6 +22,8 @@ deployer_key = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff
 
 env_file_path = '../.devices_env'
 load_dotenv(dotenv_path=env_file_path)
+DEVICES_IP= os.getenv("DEVICES_IP")
+
 
 Daos_to_create = [
 

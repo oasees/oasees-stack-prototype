@@ -10,17 +10,15 @@ import os
 from sqlite_utils import *
 
 
-
-
 create_agentDB()
 
 app = Flask(__name__)
 CORS(app)
 
 
-# w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
-from web3.middleware import geth_poa_middleware
-# w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+
+
 
 w3 = ''
 
@@ -33,6 +31,13 @@ proposal_states = {
 	5:"Queued",
 	6:"Expired",
 	7:"Executed"
+}
+
+
+vote_states={
+	0:"Against",
+	1:"For",
+	2:"Abstain"
 }
 
 
@@ -85,10 +90,6 @@ def create_proposal():
 	proposed_value = data["proposed_value"]
 
 	account,_key,device_name,dao_ipfs_hash, IPFS_HOST,_= retrieve_first_account()
-
-
-	print(dao_ipfs_hash)
-
 
 	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 	ipfs_json = client.cat(dao_ipfs_hash)
@@ -184,10 +185,6 @@ def vote():
 
 	account,_key,device_name,dao_ipfs_hash, IPFS_HOST,_= retrieve_first_account()
 
-
-	print(dao_ipfs_hash)
-
-
 	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 	ipfs_json = client.cat(dao_ipfs_hash)
 	ipfs_json = ipfs_json.decode("UTF-8")
@@ -242,6 +239,64 @@ def vote():
 
 
 	return {"device_name":device_name,"voted_for_proposal":desc}
+
+
+@app.route('/monitor_proposals',methods=["POST"])
+def monitor_prososals():
+	data = request.json
+	_state = data["state"]
+
+	account,_key,device_name,dao_ipfs_hash, IPFS_HOST,_= retrieve_first_account()
+
+	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
+	ipfs_json = client.cat(dao_ipfs_hash)
+	ipfs_json = ipfs_json.decode("UTF-8")
+	ipfs_json = json.loads(ipfs_json)
+
+
+	dao_address = ipfs_json['governance_address']
+	dao_abi = ipfs_json['governance_abi']
+	dao_contract = w3.eth.contract(address=dao_address, abi=dao_abi)
+
+	_filter = dao_contract.events.ProposalCreated.createFilter(fromBlock="0x0", argument_filters={})
+	results = _filter.get_new_entries()
+
+
+	proposals=[]
+	proposal=None
+
+	for r in results:
+		_id = r['args']['proposalId']
+		state = proposal_states[dao_contract.functions.state(_id).call()]
+		desc = r['args']['description']
+		vote_history=[]
+
+		if(state==_state):
+			res_votes = dao_contract.functions.proposalVotes(_id).call()
+			_filter = dao_contract.events.VoteCast.createFilter(fromBlock="0x0", argument_filters={'proposalId':_id})
+			res_cast_votes = _filter.get_new_entries()
+
+			for r in res_cast_votes:
+
+				vote_history.append({
+					"support":vote_states[r["args"]["support"]],
+					"reason":r["args"]["reason"]
+					})
+
+
+			proposal={
+				"proposal_desc":desc,
+				"votes_distribution":res_votes,
+				"vote_details":vote_history
+
+			}
+
+		if(proposal):
+			proposals.append(proposal)
+
+
+	return {"resp":proposals}
+
 
 
 if __name__ == '__main__':
