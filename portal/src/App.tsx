@@ -30,6 +30,7 @@ function App() {
     const [notebook_url, setNoteBookURL] = useState("")
     const [daoIndexerContract, setDaoIndexerContract] = useState({})
     const [daoStorageContract, setDaoStorageContract] = useState({})
+    const [isFirstConnection, setIsFirstConnection] = useState(false)
 
 
     const new_user = async (portal_contracts_info:any,signer:any,account:any) =>{
@@ -137,6 +138,7 @@ function App() {
             const account = accounts[0]
 
             const provider = new ethers.BrowserProvider(window.ethereum);
+            
 
             
             setPRovider(provider);
@@ -159,8 +161,11 @@ function App() {
             var account_token_address=""
 
 
+
             if(!user_exists.data.exists){
+                setIsFirstConnection(true);
                 account_token_address = await new_user(market_contracts_info,signer,account);
+                setIsFirstConnection(false);
             }else{
                 account_token_address = user_exists.data.ipfs_hash;
             } 
@@ -287,7 +292,6 @@ function App() {
 
 
 
-
     return (
         <div className={styles.App}>
             <div className={styles.sidecontainer}>
@@ -300,14 +304,14 @@ function App() {
                     <div className={styles.search_box}>
                         <button className={styles.btn_search}><i className={styles.icon_search}></i></button>
                         <input type="text" className={styles.input_search} placeholder="Search..."/>
+
                     </div>
-
-                    <button className={`${styles.btn_connect} ${isConnected ? styles.btn_disconnect : ''}`} onClick={connectToMetaMask} >
-                        {isConnected ? 'Disconnect' : 'Connect'}
-                    </button>
-
-
-                </div>
+                    {!isFirstConnection &&
+                        <button className={`${styles.btn_connect} ${isConnected ? styles.btn_disconnect : ''}`} onClick={connectToMetaMask} >
+                            {isConnected ? 'Disconnect' : 'Connect'}
+                        </button>
+                    }
+                    </div>
                 <div className={styles.tabpanel}>{renderTabComponent()}</div>
 
                 <div className={styles.area} >
