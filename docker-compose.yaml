@@ -12,8 +12,7 @@ services:
 
     command: >
           /bin/sh -c '
-          echo "REACT_APP_INFRA_HOST=$INFRA_HOST:6001" > /oasees_portal/.env
-          && echo "REACT_APP_IPFS_API_HOST=$INFRA_HOST:6002" >> /oasees_portal/.env
+          echo "REACT_APP_INFRA_HOST=$INFRA_HOST:6001" > /oasees_portal/.env >> /oasees_portal/.env
           && npm start
           '
 
@@ -22,7 +21,7 @@ services:
     container_name: oasees_portal
 
   oasees_blockchain:
-    image: ethereumoptimism/hardhat
+    build: ./hardhat_node
     container_name: hardhat
     ports:
       - "8545:8545"
