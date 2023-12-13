@@ -14,13 +14,10 @@
     "axios": "^1.4.0",
     "classnames": "^2.3.2",
     "ethers": "^6.6.4",
-    "ipfs-http-client": "^60.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-native": "^0.72.4",
     "react-native-web": "^0.19.8",
-    "thebe-core": "^0.3.1",
-    "thebe-react": "^0.3.1",
     "web-vitals": "^3.3.2"
   },
   "devDependencies": {
