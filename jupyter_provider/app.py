@@ -35,9 +35,20 @@ BLOCK_CHAIN_IP = os.getenv('BLOCK_CHAIN_IP')
 # PORTAL_PORT = 3000
 
 
+@retry(stop_max_attempt_number=3, wait_fixed=2000)
+def connect_to_blockchain():
+    try:
+        w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        return w3
+    except Exception as e:
+        # Log or handle the exception if needed
+        print("Connection failed:", e)
+        raise
+        
 
-w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+w3 = connect_to_blockchain()
 
 
 CONTAINER_PREFIX="oasees-notebook"
@@ -86,7 +97,11 @@ def new_user():
             "CHOWN_HOME": "yes",
             "NB_USER": "wasinw",
             "JUPYTER_ENABLE_LAB": "yes",
-            "JUPYTER_ALLOW_ORIGIN": "*"
+            "JUPYTER_ALLOW_ORIGIN": "*",
+            "ACCOUNT_ADDRESS": user,
+            "DAO_STORAGE_ADDRESS": dao_storage_address,
+            "IPFS_HOST": IPFS_HOST,
+            "BLOCK_CHAIN_IP": BLOCK_CHAIN_IP
         },
         tty=True,
         remove=True,
@@ -102,6 +117,7 @@ def new_user():
 
     settings_str=str(tornado_settings).replace("replace","\\'self\\'")
 
+    container.exec_run("/bin/bash -c \"pip install oasees-sdk\"")
     command_inside_container = "jupyter lab --NotebookApp.tornado_settings=\"{}\"".format(settings_str)
 
 

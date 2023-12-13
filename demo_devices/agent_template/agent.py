@@ -1,3 +1,4 @@
+import signal
 from flask import Flask, jsonify, request
 import requests
 import json
@@ -44,13 +45,14 @@ vote_states={
 
 @app.route('/deploy_algorithm',methods=["POST"])
 def deploy_algorithm():
-   
+	
+	_,_,device_name,_, IPFS_HOST,_= retrieve_first_account()
 	data = request.json
 	algorithm_ipfs_hash = data["algorithm_hash"]
 	algorithm_name = data["algorithm_name"]
 
 
-	f = open("{}.py".format(algorithm_name), "wb")
+	f = open("{}".format(algorithm_name), "wb")
 	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 	algorithm_file = client.cat(algorithm_ipfs_hash)
 	f.write(algorithm_file)
@@ -71,7 +73,7 @@ def user_exists():
 	BLOCK_CHAIN_IP = data["BLOCK_CHAIN_IP"]
 
 	global w3
-	w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
+	w3 = web3.Web3(web3.Web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
 	w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 	insert_account_secret_key(account, secret_key, device_name,"", IPFS_HOST, BLOCK_CHAIN_IP)
@@ -126,8 +128,9 @@ def create_proposal():
 
 	signed_tx = w3.eth.account.sign_transaction(transaction, private_key=_key)
 	tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+	w3.eth.waitForTransactionReceipt(tx_hash)
 
-	w3.eth.send_transaction({'to': account, 'value': 0})
+	# w3.eth.send_transaction({'to': account, 'value': 0})
 	return {"device_name":device_name,"created_proposal":proposal_description}
 
 
@@ -172,7 +175,7 @@ def dao_subscription():
 
 	signed_tx = w3.eth.account.sign_transaction(delegate_transaction, private_key=_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	w3.eth.waitForTransactionReceipt(tx_hash)
+	# w3.eth.waitForTransactionReceipt(tx_hash)
 
 	return {"device_name":device_name,"dao_subscription":"ok"}
 
@@ -229,9 +232,9 @@ def vote():
 
 				signed_tx = w3.eth.account.sign_transaction(transaction, private_key=_key)
 				tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-				w3.eth.waitForTransactionReceipt(tx_hash)
+				#w3.eth.waitForTransactionReceipt(tx_hash)
 
-				tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
+				#tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
 			except ValueError as e:
 				desc=str(e)
 
@@ -298,6 +301,11 @@ def monitor_prososals():
 	return {"resp":proposals}
 
 
+def sigterm_handler():
+	print("Received SIGTERM. Shutting down gracefully...")
+	exit(0)
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

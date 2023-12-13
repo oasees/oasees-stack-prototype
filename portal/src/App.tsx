@@ -30,6 +30,8 @@ function App() {
     const [notebook_url, setNoteBookURL] = useState("")
     const [daoIndexerContract, setDaoIndexerContract] = useState({})
     const [daoStorageContract, setDaoStorageContract] = useState({})
+    const [isConnecting,setIsConnecting] = useState(false)
+    
 
 
     const new_user = async (portal_contracts_info:any,signer:any,account:any) =>{
@@ -61,7 +63,6 @@ function App() {
             const daoStorage_contract = await daoStorage_contract_fact.deploy(signer);
         
             daoStorage_address = await daoStorage_contract.getAddress();
-            // console.log(daoStorage_address);
         
           } catch (error) {
             console.error('Error deploying contract:', error);
@@ -141,6 +142,7 @@ function App() {
             
             setPRovider(provider);
         
+
             const signer = await provider.getSigner();
             setSinger(signer);
 
@@ -160,7 +162,9 @@ function App() {
 
 
             if(!user_exists.data.exists){
+                setIsConnecting(true);
                 account_token_address = await new_user(market_contracts_info,signer,account);
+                setIsConnecting(false);
             }else{
                 account_token_address = user_exists.data.ipfs_hash;
             } 
@@ -301,10 +305,11 @@ function App() {
                         <button className={styles.btn_search}><i className={styles.icon_search}></i></button>
                         <input type="text" className={styles.input_search} placeholder="Search..."/>
                     </div>
-
+                    {!isConnecting &&
                     <button className={`${styles.btn_connect} ${isConnected ? styles.btn_disconnect : ''}`} onClick={connectToMetaMask} >
                         {isConnected ? 'Disconnect' : 'Connect'}
                     </button>
+                    }
 
 
                 </div>

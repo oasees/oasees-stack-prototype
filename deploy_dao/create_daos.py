@@ -32,7 +32,7 @@ Daos_to_create = [
 		"DAO_DESC": "A dao for drones",
 		"MIN_DELAY": 0,
 		"QUORUM_PERCENTAGE": 50,
-		"VOTING_PERIOD": 5,
+		"VOTING_PERIOD": 10,
 		"VOTING_DELAY": 0,
 		"DEVICES":[
 			{'device_name':"device1","account":os.getenv("device1_addr"),"endpoint":"http://{}:8001".format(DEVICES_IP)},

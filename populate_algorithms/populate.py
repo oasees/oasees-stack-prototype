@@ -5,10 +5,13 @@ import os
 from web3.middleware import geth_poa_middleware
 import sys
 import json
+from dotenv import load_dotenv
 
-JUPYTER_API_IP="10.150.0.151"
-IPFS_HOST="10.150.0.151"
-BLOCK_CHAIN_IP="10.150.0.151"
+env_file_path = '../.env'
+load_dotenv(dotenv_path=env_file_path)
+JUPYTER_API_IP=os.getenv("JUPYTER_API_IP")
+IPFS_HOST=os.getenv("IPFS_HOST")
+BLOCK_CHAIN_IP=os.getenv("BLOCK_CHAIN_IP")
 
 
 def read_samples(folder_path):
@@ -38,7 +41,7 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
 api_endpoint="http://{}:{}/ipfs_portal_contracts".format(JUPYTER_API_IP,6001)
-
+print(api_endpoint)
 
 response = requests.get(api_endpoint)
 
@@ -60,6 +63,7 @@ file_contents=read_samples('samples')
 market_fee = market_contract.functions.LISTING_FEE().call()
 
 price=1
+i=0
 for fc in file_contents.keys():
     algo_name = fc
     algo_content = file_contents[fc]
@@ -82,7 +86,7 @@ for fc in file_contents.keys():
         'chainId': 31337,
         'gas': 2000000,
         'gasPrice': w3.eth.gas_price,
-        'nonce': w3.eth.getTransactionCount(portal_account)
+        'nonce': w3.eth.getTransactionCount(portal_account) + i
     })
 
 
@@ -92,6 +96,7 @@ for fc in file_contents.keys():
     tx_json = json.loads(w3.toJSON(txn_receipt))
 
     token_id=int(tx_json['logs'][2]['data'],16)
+    print(token_id)
 
 
     transaction = market_contract.functions.makeItem(nft_address,token_id,w3.toWei(price, 'ether'),meta_hash).buildTransaction({
@@ -105,3 +110,4 @@ for fc in file_contents.keys():
 
     signed_transaction = w3.eth.account.signTransaction(transaction, private_key=portal_key)
     transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+    i = 1

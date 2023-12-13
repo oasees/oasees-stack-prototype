@@ -16,19 +16,6 @@ DEVICES_IP= os.getenv("DEVICES_IP")
 
 
 
-
-
-DAO_NAME = "A DAO"
-DAO_DESC = "This is a Dao"
-MIN_DELAY = 0
-QUORUM_PERCENTAGE = 4
-VOTING_PERIOD = 9
-VOTING_DELAY = 0
-
-
-
-
-
 w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
 from web3.middleware import geth_poa_middleware
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -101,23 +88,24 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	signed_tx = w3.eth.account.sign_transaction(delegate_transaction, private_key=deployer_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	w3.eth.waitForTransactionReceipt(tx_hash)
+	# w3.eth.waitForTransactionReceipt(tx_hash)
 
-
+	i = 1
 
 	for device in dao_args['DEVICES']:
 		tx = token_contract.functions.transfer(web3.Web3.toChecksumAddress(device['account']),20).buildTransaction({
 		    'chainId': 31337, 
 		    'gas': 2000000,  
 		    'gasPrice': w3.eth.gas_price,  
-		    'nonce': w3.eth.getTransactionCount(deployer_account)
+		    'nonce': w3.eth.getTransactionCount(deployer_account) +i
 			}
 		)
 		signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
 		tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-		tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+		# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 		s=token_contract.functions.balanceOf(device['account']).call()
 		print("voter {} has {} dao tokens".format(device['account'],s))
+		i += 1
 
 
 
@@ -148,7 +136,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 			"gasPrice": w3.eth.gas_price,
 			"chainId": 31337,
 			"from": deployer_account,
-			"nonce":w3.eth.getTransactionCount(deployer_account)
+			"nonce":w3.eth.getTransactionCount(deployer_account) + i
 			}
 	)
 
@@ -196,9 +184,9 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	timelock_contract = w3.eth.contract(address=timelock_address, abi=timelock_abi)
 
-	proposer_role = timelock_contract.functions.PROPOSER_ROLE().call();
-	executor_role = timelock_contract.functions.EXECUTOR_ROLE().call();
-	admin_role = timelock_contract.functions.TIMELOCK_ADMIN_ROLE().call();
+	proposer_role = timelock_contract.functions.PROPOSER_ROLE().call()
+	executor_role = timelock_contract.functions.EXECUTOR_ROLE().call()
+	admin_role = timelock_contract.functions.TIMELOCK_ADMIN_ROLE().call()
 
 
 
@@ -212,7 +200,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
 
@@ -221,24 +209,24 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 			'chainId': 31337, 
 			'gas': 2000000,  
 			'gasPrice': w3.eth.gas_price,  
-			'nonce': w3.eth.getTransactionCount(deployer_account)
+			'nonce': w3.eth.getTransactionCount(deployer_account) + 1
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
 	tx = timelock_contract.functions.grantRole(admin_role,deployer_account).buildTransaction({
 	    'chainId': 31337, 
 	    'gas': 2000000,  
 	    'gasPrice': w3.eth.gas_price,  
-	    'nonce': w3.eth.getTransactionCount(deployer_account)
+	    'nonce': w3.eth.getTransactionCount(deployer_account) + 2
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
 
@@ -255,7 +243,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		"gasPrice": w3.eth.gas_price,
 		"chainId": 31337,
 		"from": deployer_account,
-		"nonce":w3.eth.getTransactionCount(deployer_account)
+		"nonce":w3.eth.getTransactionCount(deployer_account) + 3
 		}
 	)
 
@@ -277,7 +265,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-	tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
 
@@ -319,7 +307,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	    'chainId': 31337, 
 	    'gas': 2000000,  
 	    'gasPrice': w3.eth.gas_price,  
-	    'nonce': w3.eth.getTransactionCount(deployer_account)
+	    'nonce': w3.eth.getTransactionCount(deployer_account) + 1
 	})
 
 
