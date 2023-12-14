@@ -269,10 +269,17 @@ def connect_to_ipfs():
         raise
 
 
-
+@retry()
 def oasees_genesis():
 
-    market_place_address, market_place_abi = deploy_marketplace_contract(w3)
+
+    try:
+        market_place_address, market_place_abi = deploy_marketplace_contract(w3)
+    except:
+        # print("Wait for hardhat")
+        raise
+
+
     nft_address, nft_abi = deploy_nft_contract(w3,market_place_address)
     dao_indexer_address, dao_indexer_abi = deploy_daoIndexer(w3) 
 
