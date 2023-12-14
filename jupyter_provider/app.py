@@ -35,7 +35,7 @@ BLOCK_CHAIN_IP = os.getenv('BLOCK_CHAIN_IP')
 # PORTAL_PORT = 3000
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=2000)
+@retry(stop_max_attempt_number=10, wait_fixed=2000)
 def connect_to_blockchain():
     try:
         w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
@@ -258,7 +258,7 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=2000)  # Retry 3 times with a 2-second interval
+@retry(stop_max_attempt_number=10, wait_fixed=2000)  # Retry 3 times with a 2-second interval
 def connect_to_ipfs():
     try:
         client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
