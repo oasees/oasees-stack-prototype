@@ -1,0 +1,4 @@
+python-dotenv==0.16.0
+web3==5.31.3
+ipfshttpclient==0.8.0a2
+

@@ -9,6 +9,7 @@ This current version of the Oasees stack requires the following:
 ```sh
 cd oasses-stack-prototype
 nano .env (change every ip to your host's ip)
+nano .env_devices (change ip to your host's ip)
 docker compose up -d --build
 ```
 The initial building procedure can take a while depending your hardware
@@ -42,7 +43,23 @@ for deploying contracts , etc:
 
 **Make sure that you use a different account to login to the portal!!**
 
+## Deploy Sample DAOs
+Some python modules are required to be installed locally
+```sh
+pip3 install -r requirements.txt
+cd deploy_dao
+python3 create_daos.py
+```
+After the execution an IPFS hash will be produced.
+
+## Create demo devices to be part of the created DAO
+The devices are docker containers that run a first verion of the oasees agent.
+```sh
+cd demo_devices
+edit configure_devices.py // Change variable DAO_HASH with the produced IPS hash 
+docker compose up --build -d
+python3 configure_devices.py
+
+```
 
 ## More detailed instructions and demos will follow
-
-
