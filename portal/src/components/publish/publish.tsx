@@ -3,7 +3,6 @@ import {Alert, Modal, StyleSheet, Text, Pressable, View} from 'react-native';
 import classNames from 'classnames';
 import { useState ,useEffect} from 'react'
 import { ethers } from 'ethers';
-import MarketplaceAddress from '../../contractsData/Marketplace-address.json';
 import NFTaddress from '../../contractsData/NFT-address.json'
 import axios from 'axios';
 import FormData from 'form-data';
@@ -23,8 +22,6 @@ export const Publish = ({ className,marketplace,nft,account}: PublishProps) => {
     const [description, setDescription] = useState<string>('');
     const [price, setPrice] = useState<string>('');
     const [formError, setFormError] = useState<boolean>(false);
-
-    const [modalVisible, setModalVisible] = useState(false);
 
 
     useEffect(() => {

@@ -13,7 +13,7 @@ const menu_items: Array<Array<string>> = [
     ['DAO Catalogue', './images/catalogue.png'],
     ['Publish', './images/upload.png'],
     ['Notebooks', './images/tweak.png'],
-    ['Create DAO', './images/chain.png']
+    // ['Create DAO', './images/chain.png']
   ];
 
 

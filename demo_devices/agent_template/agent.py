@@ -63,7 +63,7 @@ def deploy_algorithm():
 
 
 @app.route('/agent_config',methods=["POST"])
-def user_exists():
+def agent_config():
 
 	data = request.json
 	account = data["account"]

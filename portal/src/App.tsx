@@ -1,5 +1,5 @@
 import styles from './App.module.scss';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SideMenu } from './components/side-menu/side-menu';
 import { Home } from './components/home/home';
 import { ServiceCatalogue } from './components/service-catalogue/service-catalogue';
@@ -7,7 +7,7 @@ import { DaoCatalogue } from './components/dao-catalogue/dao-catalogue';
 import { Publish } from './components/publish/publish';
 import { Notebooks } from './components/notebooks/notebooks';
 import { DaoCreate } from './components/dao-create/dao-create';
-import { VoidSigner, ethers } from "ethers"
+import { ethers } from "ethers"
 import axios from 'axios';
 
 
@@ -21,6 +21,7 @@ declare global {
 function App() {
     const [activeTab, setActiveTab] = useState('Home');
     const [isConnected, setIsConnected] = useState(false);
+    const [isConnecting,setIsConnecting] = useState(false);
 
     const [account, setAccount] = useState({})
     const [signer, setSinger] = useState({})
@@ -130,8 +131,12 @@ function App() {
     const connectToMetaMask = async () => {
 
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        console.log("CLICKED")
+
+        // await delay(5000);
+
         if(!isConnected){
-            
+ 
             setAccount(accounts[0])
 
             const account = accounts[0]
@@ -166,8 +171,10 @@ function App() {
                 setIsFirstConnection(true);
                 account_token_address = await new_user(market_contracts_info,signer,account);
                 setIsFirstConnection(false);
+                
             }else{
                 account_token_address = user_exists.data.ipfs_hash;
+                console.log(account_token_address)
             } 
 
             const account_token_contract = new ethers.Contract(
@@ -205,6 +212,7 @@ function App() {
 
             setIsConnected(true);
             loadContracts(signer,market_contracts_info)
+
 
 
         }else{
@@ -252,26 +260,31 @@ function App() {
 
 
     const handleTabClick = (tabName: string) => {
-        setActiveTab(tabName);
+        if(isConnected)
+            setActiveTab(tabName);
     };
 
     const renderTabComponent = () => {
-        switch (activeTab) {
-            case 'Home':
-                return <Home marketplace={marketplace} nft={nft} account={account} signer={signer} showall={false} daoStorageContract={daoStorageContract}/>;
-            case 'Service Catalogue':
-                return <ServiceCatalogue marketplace={marketplace} nft={nft} account={account} showall={true}/>;
-            case 'DAO Catalogue':
-                return <DaoCatalogue account={account} signer={signer} daoIndexerContract={daoIndexerContract} daoStorageContract={daoStorageContract}/>;
-            case 'Publish':
-                return <Publish marketplace={marketplace} nft={nft} account={account}/>;
-            case 'Notebooks':
-                return <Notebooks notebook_url={notebook_url}/>;
-            case 'Create DAO':
-                return <DaoCreate account={account} daoIndexerContract={daoIndexerContract}/>;
-            default:
-                return null;
-        }
+       
+        if(isConnected){
+            switch (activeTab) {
+                
+                case 'Home':
+                    return <Home marketplace={marketplace} nft={nft} account={account} signer={signer} showall={false} daoStorageContract={daoStorageContract}/>;
+                case 'Service Catalogue':
+                    return <ServiceCatalogue marketplace={marketplace} nft={nft} account={account} showall={true}/>;
+                case 'DAO Catalogue':
+                    return <DaoCatalogue account={account} signer={signer} daoIndexerContract={daoIndexerContract} daoStorageContract={daoStorageContract}/>;
+                case 'Publish':
+                    return <Publish marketplace={marketplace} nft={nft} account={account}/>;
+                case 'Notebooks':
+                    return <Notebooks notebook_url={notebook_url}/>;
+                // case 'Create DAO':
+                //     return <DaoCreate account={account} daoIndexerContract={daoIndexerContract}/>;
+                default:
+                    return null;
+            }
+    }
     };
 
 
@@ -288,7 +301,10 @@ function App() {
         }
       }, [isConnected]);
 
-
+      const delay = (ms: number | undefined) => new Promise(
+        resolve => setTimeout(resolve, ms)
+      );
+      
 
 
 
@@ -306,14 +322,21 @@ function App() {
                         <input type="text" className={styles.input_search} placeholder="Search..."/>
 
                     </div>
-                    {!isFirstConnection &&
-                        <button className={`${styles.btn_connect} ${isConnected ? styles.btn_disconnect : ''}`} onClick={connectToMetaMask} >
-                            {isConnected ? 'Disconnect' : 'Connect'}
-                        </button>
-                    }
-                    </div>
-                <div className={styles.tabpanel}>{renderTabComponent()}</div>
+                    {/* {!isFirstConnection && */}
+                    <button disabled={isConnecting} className={`${styles.btn_connect} ${isConnected ? styles.btn_disconnect : ''}`} 
+                    onClick={()=>{
+                        setIsConnecting(true);
+                        connectToMetaMask().then(()=>setIsConnecting(false));
 
+
+                    }} >
+                        {isConnected ? 'Disconnect' : 'Connect'}
+                    </button>
+                    {/* } */}
+                    </div>
+  
+                    <div className={styles.tabpanel}>{renderTabComponent()}</div>
+  
                 <div className={styles.area} >
 
             </div >

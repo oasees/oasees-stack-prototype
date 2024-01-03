@@ -104,7 +104,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 		# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 		s=token_contract.functions.balanceOf(device['account']).call()
-		print("voter {} has {} dao tokens".format(device['account'],s))
+		# print("voter {} has {} dao tokens".format(device['account'],s))
 		i += 1
 
 
