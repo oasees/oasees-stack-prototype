@@ -16,6 +16,7 @@ WORKDIR /app
 COPY compiled_contracts/ compiled_contracts
 COPY contract_functions.py contract_functions.py 
 COPY requirements.txt .
+COPY notebook/ notebook
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py app.py

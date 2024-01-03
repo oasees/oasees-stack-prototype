@@ -53,6 +53,7 @@ w3 = connect_to_blockchain()
 
 CONTAINER_PREFIX="oasees-notebook"
 
+docker_client = docker.from_env()
 
 @app.route('/user_exists',methods=["POST"])
 def user_exists():
@@ -84,12 +85,11 @@ def new_user():
     account_token_address = data["account_token_address"]
     dao_storage_address = data["daoStorage_address"]
 
-    client = docker.from_env()
     c=count()
     _port=8888+c
 
-    container = client.containers.run(
-        "jupyter/base-notebook:latest",
+    container = docker_client.containers.run(
+        "oasees_notebook_image",
         detach=True,
         name=CONTAINER_PREFIX+"-"+user,  
         ports={"8888/tcp": _port}, 
@@ -117,7 +117,6 @@ def new_user():
 
     settings_str=str(tornado_settings).replace("replace","\\'self\\'")
 
-    container.exec_run("/bin/bash -c \"pip install oasees-sdk\"")
     command_inside_container = "jupyter lab --NotebookApp.tornado_settings=\"{}\"".format(settings_str)
 
 
@@ -310,6 +309,14 @@ def oasees_genesis():
 
     print(ipfs_hash)
     insert("portal",ipfs_hash)
+
+    docker_client.images.build(
+        path = './notebook',
+        dockerfile = './Dockerfile',
+        tag='oasees_notebook_image',
+    )
+
+
 
 
 
