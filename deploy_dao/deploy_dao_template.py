@@ -36,19 +36,27 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	#### DEPLOY VOTING TOKEN################
 
-	f = open("dao_compiled_contracts/Token.json")
+	f = open("dao_compiled_contracts/VoteTokenProvider.json")
+	data = json.load(f)
+	token_provider_abi=data['abi']
+	token_provider_bytecode=data['bytecode']
+	f.close()
+
+
+
+	f = open("dao_compiled_contracts/VoteToken.json")
 	data = json.load(f)
 	token_abi=data['abi']
-	token_bytecode=data['bytecode']
 	f.close()
+
 
 
 
 	nonce = w3.eth.getTransactionCount(deployer_account)
 
-	token_contract = w3.eth.contract(bytecode=token_bytecode, abi=token_abi)
+	token_provider_contract = w3.eth.contract(bytecode=token_provider_bytecode, abi=token_provider_abi)
 
-	transaction = token_contract.constructor("DAO_TOKEN","DT",100).buildTransaction({
+	transaction = token_provider_contract.constructor().buildTransaction({
 		"gasPrice": w3.eth.gas_price,
 		"chainId": 31337,
 		"from": deployer_account,
@@ -56,56 +64,63 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		}
 	)
 
-
-
-
-
-
 	signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
 	transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
-
 	txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
-	token_address = txn_receipt['contractAddress']
+
+	token_provider_contract_address = txn_receipt['contractAddress']
+
+	token_provider_contract = w3.eth.contract(address=token_provider_contract_address, abi=token_provider_abi)
+
+
+	token_address = token_provider_contract.functions.token().call()
+
+
+	# signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
+	# transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+
+	# txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
+	# token_address = txn_receipt['contractAddress']
 
 
 	print(token_address)
 
 
 
-	token_contract = w3.eth.contract(address=token_address, abi=token_abi)
+	# token_contract = w3.eth.contract(address=token_address, abi=token_abi)
 
 
-	delegate_function=token_contract.functions.delegate(deployer_account)
+	# delegate_function=token_contract.functions.delegate(deployer_account)
 
 
-	delegate_transaction = delegate_function.buildTransaction({
-		'chainId': 31337, 
-		'gas': 2000000,  
-		'gasPrice': w3.eth.gas_price, 
-		"from": deployer_account,
-		'nonce': w3.eth.getTransactionCount(deployer_account)
-	})
+	# delegate_transaction = delegate_function.buildTransaction({
+	# 	'chainId': 31337, 
+	# 	'gas': 2000000,  
+	# 	'gasPrice': w3.eth.gas_price, 
+	# 	"from": deployer_account,
+	# 	'nonce': w3.eth.getTransactionCount(deployer_account)
+	# })
 
-	signed_tx = w3.eth.account.sign_transaction(delegate_transaction, private_key=deployer_key)
-	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+	# signed_tx = w3.eth.account.sign_transaction(delegate_transaction, private_key=deployer_key)
+	# tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 	# w3.eth.waitForTransactionReceipt(tx_hash)
 
-	i = 1
+	# i = 1
 
-	for device in dao_args['DEVICES']:
-		tx = token_contract.functions.transfer(web3.Web3.toChecksumAddress(device['account']),20).buildTransaction({
-		    'chainId': 31337, 
-		    'gas': 2000000,  
-		    'gasPrice': w3.eth.gas_price,  
-		    'nonce': w3.eth.getTransactionCount(deployer_account) +i
-			}
-		)
-		signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
-		tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-		# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-		s=token_contract.functions.balanceOf(device['account']).call()
-		# print("voter {} has {} dao tokens".format(device['account'],s))
-		i += 1
+	# for device in dao_args['DEVICES']:
+	# 	tx = token_contract.functions.transfer(web3.Web3.toChecksumAddress(device['account']),20).buildTransaction({
+	# 	    'chainId': 31337, 
+	# 	    'gas': 2000000,  
+	# 	    'gasPrice': w3.eth.gas_price,  
+	# 	    'nonce': w3.eth.getTransactionCount(deployer_account) +i
+	# 		}
+	# 	)
+	# 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
+	# 	tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+	# 	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+	# 	s=token_contract.functions.balanceOf(device['account']).call()
+	# 	# print("voter {} has {} dao tokens".format(device['account'],s))
+	# 	i += 1
 
 
 
@@ -136,7 +151,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 			"gasPrice": w3.eth.gas_price,
 			"chainId": 31337,
 			"from": deployer_account,
-			"nonce":w3.eth.getTransactionCount(deployer_account) + i
+			"nonce":w3.eth.getTransactionCount(deployer_account)
 			}
 	)
 
@@ -209,7 +224,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 			'chainId': 31337, 
 			'gas': 2000000,  
 			'gasPrice': w3.eth.gas_price,  
-			'nonce': w3.eth.getTransactionCount(deployer_account) + 1
+			'nonce': w3.eth.getTransactionCount(deployer_account)
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
@@ -221,7 +236,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	    'chainId': 31337, 
 	    'gas': 2000000,  
 	    'gasPrice': w3.eth.gas_price,  
-	    'nonce': w3.eth.getTransactionCount(deployer_account) + 2
+	    'nonce': w3.eth.getTransactionCount(deployer_account)
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
@@ -243,7 +258,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		"gasPrice": w3.eth.gas_price,
 		"chainId": 31337,
 		"from": deployer_account,
-		"nonce":w3.eth.getTransactionCount(deployer_account) + 3
+		"nonce":w3.eth.getTransactionCount(deployer_account)
 		}
 	)
 
@@ -268,15 +283,17 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	# tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
-
 	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 
 
-	dao_info = {
+
+	dao_content = {
 		"dao_name": DAO_NAME,
 		"dao_desc": DAO_DESC,
 	    "governance_address": governance_address,
 	    "governance_abi": governance_abi,
+	    "token_provider_address": token_provider_contract_address,
+	    "token_provider_abi":token_provider_abi,
 	    "token_address": token_address,
 	    "token_abi": token_abi,
 	    "box_address": box_address,
@@ -285,8 +302,9 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	}
 
 
-	dao_ipfs_hash = client.add_json(dao_info)
+	dao_ipfs_hash = client.add_json(dao_content)
 	print("IPFS HASH ----> ",dao_ipfs_hash)
+	print("token provider addr",token_provider_contract_address)
 	client.close()
 
 
@@ -295,19 +313,59 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	response = response.json()
 	portal_contracts = response["portal_contracts"]
 
-	dao_indexer_address = portal_contracts["dao_indexer_address"]
-	dao_indexer_abi = portal_contracts["dao_indexer_abi"]
+	marketplace_address = portal_contracts["marketplace_address"]
+	marketplace_abi = portal_contracts["marketplace_abi"]
 
-	dao_indexer_contract = w3.eth.contract(address=dao_indexer_address, abi=dao_indexer_abi)
-
-
+	marketplace_contract = w3.eth.contract(address=marketplace_address, abi=marketplace_abi)
 
 
-	transaction = dao_indexer_contract.functions.addHash(dao_ipfs_hash).buildTransaction({
-	    'chainId': 31337, 
-	    'gas': 2000000,  
-	    'gasPrice': w3.eth.gas_price,  
-	    'nonce': w3.eth.getTransactionCount(deployer_account) + 1
+	nft_address = portal_contracts["nft_address"]
+	nft_abi = portal_contracts["nft_abi"]
+
+	nft_contract = w3.eth.contract(address=nft_address, abi=nft_abi)
+
+
+	transaction = nft_contract.functions.mint(dao_ipfs_hash).buildTransaction({
+		'chainId': 31337,
+		'gas': 2000000,
+		'gasPrice': w3.eth.gas_price,
+		'nonce': w3.eth.getTransactionCount(deployer_account)
+	})
+
+	signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
+	transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+	txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
+	tx_json = json.loads(w3.toJSON(txn_receipt))
+
+	token_id=int(tx_json['logs'][2]['data'],16)
+	print(token_id)
+
+
+
+	dao_info = {
+		"dao_name": DAO_NAME,
+		"dao_desc": DAO_DESC,
+		"token_address": token_address,
+	    "token_abi": token_abi,
+	    "dao_nft_address":nft_address,
+	    "dao_nft_abi":nft_abi,
+	    "dao_nft_id":token_id
+	}
+
+
+	dao_info_hash = client.add_json(dao_info)
+	client.close()
+
+
+
+
+
+	transaction = marketplace_contract.functions.makeDao(nft_address,token_id,dao_info_hash).buildTransaction({
+		'value':0,
+		'chainId': 31337, 
+		'gas': 2000000,  
+		'gasPrice': w3.eth.gas_price,  
+		'nonce': w3.eth.getTransactionCount(deployer_account)
 	})
 
 
@@ -315,4 +373,25 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
 
 
-	txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
+	
+
+
+
+
+
+
+
+
+	# transaction = marketplace_contract.functions.addHash(dao_ipfs_hash).buildTransaction({
+	#     'chainId': 31337, 
+	#     'gas': 2000000,  
+	#     'gasPrice': w3.eth.gas_price,  
+	#     'nonce': w3.eth.getTransactionCount(deployer_account)
+	# })
+
+
+	# signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
+	# transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+
+
+	# txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)

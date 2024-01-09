@@ -90,7 +90,6 @@ async function IpfsGet(_ipfs_hash:string){
                     </div>
                     <div className={styles.contentBx}>
                         <h2>{daojson.dao_name}</h2>
-                        <br></br>
 
                         <button onClick={() => openModal()}>Manage</button>
 
@@ -128,8 +127,10 @@ export const Home = ({ className,marketplace,nft,account,signer,showall,daoStora
 
         try{
 
-        const available_daos = await daoStorageContract.getStoredHashes();
-  
+
+        const joined_daos = await marketplace.getJoinedDaos();
+
+
         const dao_array : Array<{ 
           devices: any;
           dao_name: string;
@@ -144,12 +145,21 @@ export const Home = ({ className,marketplace,nft,account,signer,showall,daoStora
           icon_url: string;}> = [];
   
   
-        for (const dao_hash of available_daos) {
+        for (const dao_nft of joined_daos) {
   
         
-          const content = await IpfsGet(dao_hash);
+          const dao_desc_hash = dao_nft[2];
+          const dao_desc_content = await IpfsGet(dao_desc_hash);
+          console.log(dao_desc_content);
+  
+          const dao_content_hash = await nft.tokenURI(dao_desc_content.dao_nft_id);
+          console.log(dao_content_hash);
+          const content = await IpfsGet(dao_content_hash);
 
-            console.log(content.devices);
+
+  
+
+          console.log("---->",content);
 
 
   
@@ -163,7 +173,7 @@ export const Home = ({ className,marketplace,nft,account,signer,showall,daoStora
             governance_token_abi: content.token_abi,
             box_address: content.box_address,
             box_abi: content.box_abi,
-            dao_hash: dao_hash,
+            dao_hash: dao_content_hash,
             icon_url: "../images/dao_icon.png"
           })
   

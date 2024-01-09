@@ -65,12 +65,14 @@ def user_exists():
     if(_exists):
         return {
             "exists":1,
-            "ipfs_hash":get_hash_fromDb(user)
+            # "ipfs_hash":get_hash_fromDb(user)
+            "jupyter_url":get_hash_fromDb(user)
         }
     else:
         return {
             "exists":0,
-            "ipfs_hash":""
+            # "ipfs_hash":""
+            "jupyter_url":""
         }
 
 
@@ -82,8 +84,8 @@ def new_user():
 
     data = request.json
     user = data["user"]
-    account_token_address = data["account_token_address"]
-    dao_storage_address = data["daoStorage_address"]
+    # account_token_address = data["account_token_address"]
+    # dao_storage_address = data["daoStorage_address"]
 
     c=count()
     _port=8888+c
@@ -99,7 +101,7 @@ def new_user():
             "JUPYTER_ENABLE_LAB": "yes",
             "JUPYTER_ALLOW_ORIGIN": "*",
             "ACCOUNT_ADDRESS": user,
-            "DAO_STORAGE_ADDRESS": dao_storage_address,
+            "DAO_STORAGE_ADDRESS": "",
             "IPFS_HOST": IPFS_HOST,
             "BLOCK_CHAIN_IP": BLOCK_CHAIN_IP
         },
@@ -140,22 +142,24 @@ def new_user():
             break
 
     jupyter_url = "http://{}:{}/lab?token={}".format(INFRA_HOST,_port,_token)
+    insert(user,jupyter_url)
+
+    return {"jupyter_url":jupyter_url}
+
+    # print(account_token_address,user)
+
+    
+
+    # client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
+    # account_info = {
+    #     # "daoStorage_address" : dao_storage_address,
+    #     "jupyter_url" : jupyter_url
+    # }
 
 
-    print(account_token_address,user)
+    # account_hash = client.add_json(json.dumps(account_info))
 
-    insert(user,account_token_address)
-
-    client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
-    account_info = {
-        "daoStorage_address" : dao_storage_address,
-        "jupyter_url" : jupyter_url
-    }
-
-
-    account_hash = client.add_json(json.dumps(account_info))
-
-    return {"account_hash":account_hash}
+    # return {"account_hash":account_hash}
 
 
 

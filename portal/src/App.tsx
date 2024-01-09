@@ -34,71 +34,73 @@ function App() {
     const [isFirstConnection, setIsFirstConnection] = useState(false)
 
 
+
+
     const new_user = async (portal_contracts_info:any,signer:any,account:any) =>{
 
-        const accountToken_bytecode = portal_contracts_info.accountToken_bytecode;
-        const accountToken_abi = portal_contracts_info.accountToken_abi;
+        // const accountToken_bytecode = portal_contracts_info.accountToken_bytecode;
+        // const accountToken_abi = portal_contracts_info.accountToken_abi;
 
-        const accountToken_contract_fact = new ethers.ContractFactory(accountToken_abi,accountToken_bytecode,signer);
+        // const accountToken_contract_fact = new ethers.ContractFactory(accountToken_abi,accountToken_bytecode,signer);
 
-        var accountToken_address ='';
-        try {
-            const accountToken_contract = await accountToken_contract_fact.deploy(signer);
+        // var accountToken_address ='';
+        // try {
+        //     const accountToken_contract = await accountToken_contract_fact.deploy(signer);
         
-            accountToken_address = await accountToken_contract.getAddress();
+        //     accountToken_address = await accountToken_contract.getAddress();
         
-          } catch (error) {
-            console.error('Error deploying contract:', error);
-          }
+        //   } catch (error) {
+        //     console.error('Error deploying contract:', error);
+        //   }
 
           
-          const daoStorage_bytecode = portal_contracts_info.daoStorage_bytecode;
-          const daoStorage_abi = JSON.stringify(portal_contracts_info.daoStorage_abi);
+        //   const daoStorage_bytecode = portal_contracts_info.daoStorage_bytecode;
+        //   const daoStorage_abi = JSON.stringify(portal_contracts_info.daoStorage_abi);
   
-          const daoStorage_contract_fact = new ethers.ContractFactory(daoStorage_abi,daoStorage_bytecode,signer);
+        //   const daoStorage_contract_fact = new ethers.ContractFactory(daoStorage_abi,daoStorage_bytecode,signer);
 
-          var daoStorage_address='';
+        //   var daoStorage_address='';
 
-          try {
-            const daoStorage_contract = await daoStorage_contract_fact.deploy(signer);
+        //   try {
+        //     const daoStorage_contract = await daoStorage_contract_fact.deploy(signer);
         
-            daoStorage_address = await daoStorage_contract.getAddress();
+        //     daoStorage_address = await daoStorage_contract.getAddress();
         
-          } catch (error) {
-            console.error('Error deploying contract:', error);
-          }
+        //   } catch (error) {
+        //     console.error('Error deploying contract:', error);
+        //   }
 
 
             const new_user_payload = { 
                 user: account,
-                account_token_address: accountToken_address,
-                daoStorage_address:daoStorage_address 
+                // account_token_address: accountToken_address,
+                // daoStorage_address:daoStorage_address 
                 
             };
 
             const newUserResponse = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/new_user`, new_user_payload);
             
-            const account_hash = newUserResponse.data.account_hash;
-            // console.log(account_hash);
+            // const account_hash = newUserResponse.data.account_hash;
+            // // console.log(account_hash);
 
 
 
-            const account_token_contract = new ethers.Contract(
-                accountToken_address, 
-                accountToken_abi, 
-                signer)
+            // const account_token_contract = new ethers.Contract(
+            //     accountToken_address, 
+            //     accountToken_abi, 
+            //     signer)
     
-            const mint_transaction = await account_token_contract.mint(account_hash);
-            const mint_receipt = await mint_transaction.wait();
+            // const mint_transaction = await account_token_contract.mint(account_hash);
+            // const mint_receipt = await mint_transaction.wait();
     
     
     
-            const p = await account_token_contract.tokenURI(1);
+            // const p = await account_token_contract.tokenURI(1);
     
-            console.log(p);
+            // console.log(p);
 
-
-          return accountToken_address;
+            return newUserResponse.data.jupyter_url;
+        //   return accountToken_address;
 
 
     }
@@ -144,6 +146,8 @@ function App() {
             const provider = new ethers.BrowserProvider(window.ethereum);
             
 
+       
+
             
             setPRovider(provider);
         
@@ -161,44 +165,47 @@ function App() {
             const account_payload = { user: account };
             const user_exists = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/user_exists`, account_payload);
 
-            const notebookUrl = "";
+            // const notebookUrl = "";
 
-            var account_token_address=""
-
+            // var account_token_address=""
+            var jupyter_url = "";
 
 
             if(!user_exists.data.exists){
                 setIsFirstConnection(true);
-                account_token_address = await new_user(market_contracts_info,signer,account);
+                // account_token_address = await new_user(market_contracts_info,signer,account);
+                jupyter_url = await new_user(market_contracts_info,signer,account);
+
                 setIsFirstConnection(false);
                 
             }else{
-                account_token_address = user_exists.data.ipfs_hash;
-                console.log(account_token_address)
+                // account_token_address = user_exists.data.ipfs_hash;
+                jupyter_url = user_exists.data.jupyter_url;
+                // console.log(account_token_address)
             } 
 
-            const account_token_contract = new ethers.Contract(
-                account_token_address, 
-                market_contracts_info.accountToken_abi, 
-                signer)
+            // const account_token_contract = new ethers.Contract(
+            //     account_token_address, 
+            //     market_contracts_info.accountToken_abi, 
+            //     signer)
             
 
-            const account_hash = await account_token_contract.tokenURI(1);
-            const content = await IpfsGet(account_hash);
-            console.log(content.daoStorage_address);
-            console.log(content.jupyter_url);
+            // const account_hash = await account_token_contract.tokenURI(1);
+            // const content = await IpfsGet(account_hash);
+            // console.log(content.daoStorage_address);
+            // console.log(content.jupyter_url);
 
-            const daoStorage_contract = new ethers.Contract(
-                content.daoStorage_address, 
-                market_contracts_info.daoStorage_abi, 
-                signer)
+            // const daoStorage_contract = new ethers.Contract(
+            //     content.daoStorage_address, 
+            //     market_contracts_info.daoStorage_abi, 
+            //     signer)
 
 
-            setDaoStorageContract(daoStorage_contract);
+            // setDaoStorageContract(daoStorage_contract);
         
-            setNoteBookURL(content.jupyter_url);
+            // setNoteBookURL(content.jupyter_url);
 
-
+            setNoteBookURL(jupyter_url);
 
             window.ethereum.on('chainChanged', (chainId:string) => {
                 window.location.reload();
@@ -274,7 +281,7 @@ function App() {
                 case 'Service Catalogue':
                     return <ServiceCatalogue marketplace={marketplace} nft={nft} account={account} showall={true}/>;
                 case 'DAO Catalogue':
-                    return <DaoCatalogue account={account} signer={signer} daoIndexerContract={daoIndexerContract} daoStorageContract={daoStorageContract}/>;
+                    return <DaoCatalogue account={account} signer={signer} daoIndexerContract={marketplace} nft={nft} daoStorageContract={marketplace}/>;
                 case 'Publish':
                     return <Publish marketplace={marketplace} nft={nft} account={account}/>;
                 case 'Notebooks':

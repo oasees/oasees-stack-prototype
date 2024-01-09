@@ -13,6 +13,7 @@ export interface DaoCatalogueProps {
     daoStorageContract: any;
     account:any;
     signer:any;
+    nft:any;
 }
 
 
@@ -21,11 +22,15 @@ export interface CardProps {
     account: any;
     signer: any;
     daoStorageContract: any;
+    nft:any;
     daojson: {
       dao_name:string;
       dao_desc:string;
+      dao_nft_id: BigInt;
       governance_address:string; 
       governance_abi:any;
+      token_provider_address:string;
+      token_provider_abi:any;
       governance_token_address:string;
       governance_token_abi:any;
       box_address:string;
@@ -65,7 +70,7 @@ async function IpfsGet(_ipfs_hash:string){
 
 
 
-export const Card = ({ className, account,signer,daojson,daoStorageContract,openModal}: CardProps) => {
+export const Card = ({ className, account,signer,daojson,daoStorageContract,nft,openModal}: CardProps) => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -83,8 +88,8 @@ export const Card = ({ className, account,signer,daojson,daoStorageContract,open
     const joinDao = async (daojson:any,daoStorageContract:any) =>{
 
 
-      console.log(daojson.dao_hash);
-      await daoStorageContract.addHash(daojson.dao_hash);
+      console.log(daojson.token_provider_address);
+      // await daoStorageContract.addHash(daojson.dao_hash);
 
  
       const join_dao_payload = { 
@@ -94,16 +99,33 @@ export const Card = ({ className, account,signer,daojson,daoStorageContract,open
         
     };
 
-      const response = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/transfer_tokens`, join_dao_payload);
-      console.log(response.data);
+      // const response = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/transfer_tokens`, join_dao_payload);
+      // console.log(response.data);
 
-      const dao_token_contract = new ethers.Contract(
-        daojson.governance_token_address, 
-        daojson.governance_token_abi,
+      const dao_token_provider_contract = new ethers.Contract(
+        daojson.token_provider_address, 
+        daojson.token_provider_abi,
         signer)
 
-      const delegate_transaction = await dao_token_contract.delegate(signer);
-      const delegate_receipt = await delegate_transaction.wait();
+      const get_tokens_transaction = await dao_token_provider_contract.getTokens(
+        {
+          gasLimit: 2000000,
+          gasPrice:100
+        }
+
+
+      );
+      const get_token_receipt = await get_tokens_transaction.wait();
+
+      const join_transaction = await daoStorageContract.joinDao(daojson.dao_nft_id);
+      const get_join_receipt = await join_transaction.wait();
+
+
+
+
+
+      // const delegate_transaction = await dao_token_contract.delegate(signer);
+      // const delegate_receipt = await delegate_transaction.wait();
 
 
     }
@@ -130,14 +152,17 @@ export const Card = ({ className, account,signer,daojson,daoStorageContract,open
 
 };
 
-export const DaoCatalogue = ({ className ,daoIndexerContract,account,signer,daoStorageContract}: DaoCatalogueProps) => {
+export const DaoCatalogue = ({ className ,daoIndexerContract,account,signer,daoStorageContract,nft}: DaoCatalogueProps) => {
 
     const [newItems, setNewItems] = useState<
       {
         dao_name: string;
         dao_desc: string;
+        dao_nft_id: BigInt;
         governance_address: string;
         governance_abi: any;
+        token_provider_address:string;
+        token_provider_abi:any;
         governance_token_address: string;
         governance_token_abi: any;
         box_address: string;
@@ -149,13 +174,16 @@ export const DaoCatalogue = ({ className ,daoIndexerContract,account,signer,daoS
 
     const load_Daos = async () => {
 
-      const available_daos = await daoIndexerContract.getStoredHashes();
+      const available_daos = await daoIndexerContract.getlistedDaos();
 
       const dao_array : Array<{ 
         dao_name: string;
         dao_desc: string;
+        dao_nft_id: BigInt;
         governance_address: string;
         governance_abi: any;
+        token_provider_address:string;
+        token_provider_abi:any;
         governance_token_address: string;
         governance_token_abi: any;
         box_address: string;
@@ -164,26 +192,41 @@ export const DaoCatalogue = ({ className ,daoIndexerContract,account,signer,daoS
         icon_url: string;}> = [];
 
 
-      for (const dao_hash of available_daos) {
+        // const joined = await daoIndexerContract.getJoinedDaos();
+        // for (const dao_nft of joined)
+        //   console.log(dao_nft)
 
-        console.log("->>",dao_hash);
-        
-        const content = await IpfsGet(dao_hash);
 
-        console.log(content.dao_name);
-        console.log(content.dao_desc);
+      for (const dao_nft of available_daos) {
+
+
+        console.log("->>",dao_nft);
+        // console.log("->>",dao_nft[2]);
+        const dao_desc_hash = dao_nft[2];
+        const dao_desc_content = await IpfsGet(dao_desc_hash);
+        console.log(dao_desc_content);
+
+        const dao_content_hash = await nft.tokenURI(dao_desc_content.dao_nft_id);
+        console.log(dao_content_hash);
+        const content = await IpfsGet(dao_content_hash);
+
+        console.log(content.token_provider_address);
+        // console.log(content.dao_desc);
 
 
         dao_array.push({
           dao_name: content.dao_name,
           dao_desc: content.dao_desc,
+          dao_nft_id:dao_desc_content.dao_nft_id,
           governance_address: content.governance_address,
           governance_abi: content.governance_abi,
           governance_token_address: content.token_address,
+          token_provider_address:content.token_provider_address,
+          token_provider_abi:content.token_provider_abi,
           governance_token_abi: content.token_abi,
           box_address: content.box_address,
           box_abi: content.box_abi,
-          dao_hash: dao_hash,
+          dao_hash: dao_content_hash,
           icon_url: "../images/dao_icon.png"
         })
 
@@ -229,11 +272,15 @@ export const DaoCatalogue = ({ className ,daoIndexerContract,account,signer,daoS
               account={account}
               signer={signer}
               daoStorageContract={daoStorageContract}
+              nft={nft}
               daojson={{
                 dao_name: item.dao_name,
                 dao_desc: item.dao_desc,
+                dao_nft_id: item.dao_nft_id,
                 governance_address: item.governance_address, 
                 governance_abi: item.governance_abi,
+                token_provider_address:item.token_provider_address,
+                token_provider_abi:item.token_provider_abi,
                 governance_token_address: item.governance_token_address,
                 governance_token_abi: item.governance_token_abi,
                 box_address: item.box_address,

@@ -42,24 +42,24 @@ Daos_to_create = [
 		]
 	},
 
-	# {
-	# 	"DAO_NAME": "DAO 2",
-	# 	"DAO_DESC": "A second dao",
-	# 	"MIN_DELAY": 0,
-	# 	"QUORUM_PERCENTAGE": 4,
-	# 	"VOTING_PERIOD": 9,
-	# 	"VOTING_DELAY": 0,
-	# 	"DEVICES":[]
-	# },
-	# {
-	# 	"DAO_NAME": "DAO 3",
-	# 	"DAO_DESC": "A third dao",
-	# 	"MIN_DELAY": 0,
-	# 	"QUORUM_PERCENTAGE": 4,
-	# 	"VOTING_PERIOD": 9,
-	# 	"VOTING_DELAY": 0,
-	# 	"DEVICES":[]
-	# }
+	{
+		"DAO_NAME": "DAO 2",
+		"DAO_DESC": "A second dao",
+		"MIN_DELAY": 0,
+		"QUORUM_PERCENTAGE": 4,
+		"VOTING_PERIOD": 9,
+		"VOTING_DELAY": 0,
+		"DEVICES":[]
+	},
+	{
+		"DAO_NAME": "DAO 3",
+		"DAO_DESC": "A third dao",
+		"MIN_DELAY": 0,
+		"QUORUM_PERCENTAGE": 4,
+		"VOTING_PERIOD": 9,
+		"VOTING_DELAY": 0,
+		"DEVICES":[]
+	}
 
 ]
 	
