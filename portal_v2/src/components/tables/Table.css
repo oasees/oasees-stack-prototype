@@ -1,0 +1,19 @@
+.mantine-Table-table{
+    text-align: center;
+}
+
+.mantine-Table-tr{
+    height: 52px;
+}
+
+.mantine-Table-th{
+    text-align: center;
+}
+
+.mantine-Table-caption{
+    color: black;
+    font-weight: bold;
+    text-decoration-line: underline;
+    top: 0;
+    position: sticky;
+}
