@@ -1,16 +1,18 @@
-import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, CloseButton, ScrollArea, TextInput, useCombobox, Combobox, Select, Box, Textarea,} from "@mantine/core";
+import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, CloseButton, ScrollArea, TextInput, Select, Box, Textarea,} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
 import styles from './DAOModal.module.css'
+import { ethers } from "ethers";
 
 
 interface DAOModalProps{
-    currentDAO: string;
-    availableDevices: string[][];
-    joinedDevices: string[][];
-    addDeviceToDao(v:number):void;
+    currentDAO: any;
+    availableDevices: any[];
+    joinedDevices: any[];
     closeModal(): void;
+    updateDevices():void;
+    json:any;
 }
 
 enum ProposalStatus{
@@ -20,28 +22,144 @@ enum ProposalStatus{
     Succeeded
 }
 
-const testProposals = [
-    ['First Proposal', ProposalStatus.Defeated],
-    ['Second Proposal', ProposalStatus.Succeeded],
-    ['Best Proposal', ProposalStatus.Active],
-    ['New Proposal', ProposalStatus.Pending]
-]
+const stateToStatus = (state:number) => {
+    if(state==0) return ProposalStatus.Pending;
+    else if(state==1) return ProposalStatus.Active;
+    else if(state==3) return ProposalStatus.Defeated;
+    else if(state==4) return ProposalStatus.Succeeded
+}
 
-const testVotes = [
-    ['Me', 'Proposal 1', 'For', 'because'],
-    ['Drone1', 'Proposal 2', 'Against', 'tttttfdgfdgfdggdfgt'],
-    ['Drone2', 'Best Proposal', 'For', 'good'],
-    ['g', 'prpsofpa', 'For','hhfdhfh'],
-    ['shdfdh','dfhdfhdfh','dfhhfd','fdhdfhdjg']
-]
+const supportToVote = (support:number) => {
+    if(support==0) return 'Against';
+    else return 'For';
+}
+
+interface Proposal{
+    description: string;
+    state: number;
+    proposalId: number;
+}
+
+interface Vote{
+    proposal: string;
+    support: number;
+    reason: string;
+}
+
 
 const actions = ['First Action', 'Second Action', 'Third Action', 'Fourth Action'];
 
-
-
-const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, closeModal}:DAOModalProps) => {
+const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, updateDevices, json}:DAOModalProps) => {
     
+    const [daoContract,setDaoContract] = useState<ethers.Contract>();
+    const [tokenContract,setTokenContract] = useState<ethers.Contract>();
+    const [proposalFilter,setProposalFilter] = useState<ethers.DeferredTopicFilter>();
+    const [voteFilter,setVoteFilter] = useState<ethers.DeferredTopicFilter>();
+
+    const [proposals,setProposals] = useState<Proposal[]>([])
+    const [votes,setVotes] = useState<Vote[]>([]);
+
+    const [proposalDescriptions,setProposalDescriptions] = useState<{[key:string]:string}>();
+
+    const [refresh,{toggle}] = useDisclosure();
     const [opened, {close}] = useDisclosure(true);
+
+    useEffect(()=>{
+        const loadContracts = async ()=>{
+            try{
+                const signer = await json.provider.getSigner();
+                
+                const dao_contract = new ethers.Contract(
+                    currentDAO.governance_address,
+                    currentDAO.governance_abi,
+                    await signer)
+
+                const dao_token_contract = new ethers.Contract(
+                    currentDAO.token_address,
+                    currentDAO.token_abi,
+                    await signer)
+
+
+                const proposal_filter = dao_contract.filters.ProposalCreated(null);
+                const vote_filter = dao_contract.filters.VoteCast(null);
+
+                setDaoContract(dao_contract);
+                setTokenContract(dao_token_contract);
+                setProposalFilter(proposal_filter);
+                setVoteFilter(vote_filter);
+            } catch(error){
+                console.error("An error occured while initializing the contracts: ", error);
+            }
+        }
+
+        loadContracts();
+    },[])
+
+
+
+
+
+    useEffect(()=>{
+        const handleProposalEvent = async () =>{
+            try {
+                const results:any = await daoContract!.queryFilter(proposalFilter!);
+                const proposals:Proposal[] = [];
+                const proposal_descriptions: {[key:string]:string}= {}
+
+                for (const result of results){
+                    const args = result.args;
+                    const description = args.description;
+                    const proposalId = args.proposalId
+
+                    const state = await daoContract!.state(proposalId);
+
+                    proposals.push({description:description,state:state,proposalId:proposalId});
+                    proposal_descriptions[proposalId] = description;
+                }
+
+                setProposals(proposals);
+                setProposalDescriptions(proposal_descriptions);
+            } catch (error) {
+                console.error('Error fetching proposals:', error);
+            }
+        }
+
+        
+        if(daoContract){
+            handleProposalEvent();
+        }
+    },[daoContract]);
+
+    useEffect(()=> {
+        const handleVoteEvent = async () => {
+            try {
+                const results:any = await daoContract!.queryFilter(voteFilter!);
+                const votes:Vote[] = [];
+
+                for (const result of results){
+                    const args = result.args;
+                    if(args.weight>0){
+                        const proposal = proposalDescriptions![args.proposalId];
+                        const support = args.support;
+                        const reason = args.reason;
+
+
+                        votes.push({proposal:proposal, support:support, reason:reason})
+                    }
+                }
+
+                setVotes(votes);
+            } catch(error){
+                console.error('Error fetching votes: ', error);
+            }
+        }
+        if(proposals.length>0){
+            handleVoteEvent();
+        }
+    },[proposals])
+
+
+
     const form = useForm({
         initialValues: {
             title: '',
@@ -56,46 +174,48 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
         }
     });
 
-    const combobox = useCombobox ({
-        onDropdownClose: () => combobox.resetSelectedOption(),
-    });
-
-    const [comboboxValue,setComboboxValue] = useState<string|null>(null);
-
-    const options = actions.map((item)=>(
-        <Combobox.Option value={item} key={item}>
-            {item}
-        </Combobox.Option> 
-    ));
 
     const handleClose = () => {
         close();
         closeModal();
     };
 
-    const handleJoining = (event: React.MouseEvent<HTMLButtonElement>) =>{
+    const handleJoining = async (event: React.MouseEvent<HTMLButtonElement>) =>{
         event.preventDefault();
         const button: HTMLButtonElement = event.currentTarget;
+        const signer = await json.provider.getSigner();
+        const device_account = availableDevices[Number(button.value)].account;
 
-        addDeviceToDao(Number(button.value)-1);
+        try{
+            const transfer_tokens_to_device = await tokenContract!.transfer(device_account,20,{});
+            await transfer_tokens_to_device.wait();
+
+            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id);
+            await register_device_to_dao.wait();
+            updateDevices();
+        } catch(error){
+            console.error("Metamask error: ",error);
+        }
     };
+
 
     const manageDevices = availableDevices.map((device,index) => (
         <Table.Tr key={index}>
-            <Table.Td>{device[1]}</Table.Td>
-            <Table.Td>{device[2]}</Table.Td>
-            <Table.Td><Button color='orange' onClick={handleJoining} value={device[0]}>Join</Button></Table.Td>
+            <Table.Td>{device.name}</Table.Td>
+            <Table.Td>{device.ip_address}</Table.Td>
+            <Table.Td><Button color='orange' onClick={handleJoining} value={index}>Join</Button></Table.Td>
         </Table.Tr>
     ));
 
     const overviewDevices = joinedDevices.map((device,index) => (
         <Table.Tr key={index}>
-            <Table.Td>{device[1]}</Table.Td>
-            <Table.Td>{device[2]}</Table.Td>
+            <Table.Td>{device.name}</Table.Td>
+            <Table.Td>{device.ip_address}</Table.Td>
         </Table.Tr>
     ));
 
-    const styledStatus= (status:string|ProposalStatus) => {
+    const styledStatus= (state:number) => {
+        const status = stateToStatus(state);
         switch(status){
             case ProposalStatus.Defeated:
                 return (<Table.Td style={{color:'red'}}>Defeated</Table.Td>);
@@ -108,19 +228,18 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
         }
     }
 
-    const proposals = testProposals.map((proposal,index)=> (
+    const mapped_proposals = proposals.slice(0).reverse().map((proposal,index)=> (
         <Table.Tr key={index}>
-            <Table.Td>{proposal[0]}</Table.Td>
-            {styledStatus(proposal[1])}
+            <Table.Td>{proposal.description}</Table.Td>
+            {styledStatus(proposal.state)}
         </Table.Tr>
     ));
 
-    const votes = testVotes.map((vote,index)=> (
+    const mapped_votes = votes.map((vote,index)=> (
         <Table.Tr key={index}>
-            <Table.Td>{vote[0]}</Table.Td>
-            <Table.Td>{vote[1]}</Table.Td>
-            <Table.Td>{vote[2]}</Table.Td>
-            <Table.Td>{vote[3]}</Table.Td>
+            <Table.Td>{vote.proposal}</Table.Td>
+            <Table.Td>{supportToVote(vote.support)}</Table.Td>
+            <Table.Td>{vote.reason}</Table.Td>
         </Table.Tr>
     ));
 
@@ -134,7 +253,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
           </Flex>
             <Center>
                 <Image src='./images/dao_icon.png' w={100} h={100}></Image>
-                <h4>{currentDAO}</h4>
+                <h4>{currentDAO.dao_name}</h4>
             </Center>
             
             <Tabs defaultValue="overview">
@@ -149,7 +268,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
                 </Tabs.List>
 
 
-                <Tabs.Panel value="overview">
+                <Tabs.Panel value="overview" h={585}>
                     <Grid gutter='md' miw={500}>
 
                         <Grid.Col span={6}>
@@ -170,7 +289,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
                             <ScrollArea h={156}>
                         <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top" >
                                 <Table.Tbody>
-                                    {proposals}
+                                    {mapped_proposals}
                                 </Table.Tbody>
                             
                         </Table>
@@ -185,15 +304,14 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
                             
                                 <Table.Thead>
                                     <Table.Tr>
-                                        <Table.Th>Voter</Table.Th>
-                                        <Table.Th>Proposal Description</Table.Th>
+                                        <Table.Th>Proposal</Table.Th>
                                         <Table.Th>Vote</Table.Th>
                                         <Table.Th>Reason</Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
                                 
                                 <Table.Tbody>
-                                    {votes}
+                                    {mapped_votes}
                                 </Table.Tbody>
                         </Table>
                         </ScrollArea>
@@ -202,7 +320,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
                     </Grid>
                 </Tabs.Panel>
 
-                <Tabs.Panel value="manage">
+                <Tabs.Panel value="manage" h={585}>
                     <Grid miw={500}>
 
                         <Grid.Col span={6}>
@@ -235,6 +353,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, addDeviceToDao, 
                     
                     </Grid.Col>
                     </Grid>
+
                 </Tabs.Panel>
 
                 

@@ -143,7 +143,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
 
         populateDevices();
-    },[]);
+    },[refresh]);
 
 
 

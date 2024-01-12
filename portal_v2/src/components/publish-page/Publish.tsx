@@ -1,13 +1,22 @@
-import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image } from "@mantine/core";
+import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, Checkbox } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import './Publish.css'
 import {Dropzone, DropzoneFactory} from "@mantine/dropzone";
 
-interface FormValues {
+interface AlgorithmFormValues {
     title:string,
     description:string,
     price:number,
     file: File[]
+}
+
+interface DeviceFormValues {
+    name:string,
+    ip_address:string,
+    port:number,
+    description: string,
+    price: number,
+    listed: boolean
 }
 
 const varsResolver: PartialVarsResolver<DropzoneFactory> = (theme,props) =>{
@@ -18,7 +27,7 @@ const varsResolver: PartialVarsResolver<DropzoneFactory> = (theme,props) =>{
 
 const Publish = () => {
 
-    const form = useForm<FormValues>({
+    const algorithm_form = useForm<AlgorithmFormValues>({
         initialValues: {
             title: '',
             description:'',
@@ -34,8 +43,27 @@ const Publish = () => {
         }
     });
 
+    const device_form = useForm<DeviceFormValues>({
+        initialValues: {
+            name: '',
+            ip_address: '',
+            port:0,
+            description:'',
+            price: 0,
+            listed: false
+        },
+
+        validate: {
+            name: (value) => ((value)? null: "The device's name cannot be blank."),
+            ip_address: (value) => (/^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(value)? null: "Insert a valid IP address."),
+            port:(value)=> ((value>1023 && value<65536) ? null : "Insert a valid port number (1024-65535)."),
+            description: (value) => ((value)? null: 'Description field cannot be blank.'),
+            price: (value) => ((value)? null: 'Item price cannot be 0.'),
+        }
+    });
+
     const selectedFile = () => {
-        const file = form.values.file[0];
+        const file = algorithm_form.values.file[0];
         if(file){
             return(
             <Text key={file.name} pt={5}>
@@ -43,27 +71,40 @@ const Publish = () => {
                 <CloseButton
                     size="xs"
                     onClick={() =>
-                    form.setFieldValue('file', [])
+                    algorithm_form.setFieldValue('file', [])
                     }
                 />
             </Text>
             );
         }else{
             return(
-                <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}>{form.errors.file}</Flex>
+                <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}><Text>{algorithm_form.errors.file}</Text></Flex>
             );
         }
     }
 
 
+
     return (
-        <>
-        <Center style={{fontSize:20, fontWeight:"bold"}} pt={30} pb={30}>Upload an Asset</Center>
-        <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg'>
-            <form onSubmit={form.onSubmit((values)=>console.log(values))}>
-                <TextInput size="md" label="Name" withAsterisk {...form.getInputProps('title')} pb={10}/>
-                <Textarea size="md" minRows={3} maxRows={3} autosize label="Description" withAsterisk {...form.getInputProps('description')} pb={10}/>
-                <NumberInput size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...form.getInputProps('price')} pb={20} allowNegative={false}/>
+        <Tabs defaultValue="algorithms" pt={30}>
+            <Tabs.List grow>
+                <Tabs.Tab value="algorithms">
+                    Publish an Algorithm
+                </Tabs.Tab>
+
+                <Tabs.Tab value="devices">
+                    Upload a Device
+                </Tabs.Tab>
+            </Tabs.List>
+
+        <Tabs.Panel value="algorithms" pt={20}>
+        <Center>
+            <Stack align='center' pt={30} gap={50} w={1000}>
+        <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg' w="100%">
+            <form onSubmit={algorithm_form.onSubmit((values)=>console.log(values))}>
+                <TextInput size="md" label="Algorithm Title" withAsterisk {...algorithm_form.getInputProps('title')} pb={10}/>
+                <Textarea size="md" minRows={3} maxRows={3} autosize label="Description" withAsterisk {...algorithm_form.getInputProps('description')} pb={10}/>
+                <NumberInput size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...algorithm_form.getInputProps('price')} pb={20} allowNegative={false}/>
                 <Dropzone
                     vars = {varsResolver}
                     h={120}
@@ -71,8 +112,8 @@ const Publish = () => {
                     multiple={false}
                     accept={{'text/x-python':['.py']}}
                     onDrop={(file) => {
-                        form.setFieldValue('file', file)}}
-                    onReject={() => form.setFieldError('file', 'Please choose a valid file.')}
+                        algorithm_form.setFieldValue('file', file)}}
+                    onReject={() => algorithm_form.setFieldError('file', 'Please choose a valid file.')}
                 >
                     <Center h={120}>
                     <Dropzone.Idle>
@@ -86,10 +127,36 @@ const Publish = () => {
                     </Center>
                 </Dropzone>
                 {selectedFile()}
-                <Center pt={30}><Button type='submit' w={200}>Upload to Marketplace</Button></Center>
+                <Center pt={30}><Button type='submit' color='green' w={200}>Upload to Marketplace</Button></Center>
             </form>
         </Paper>
-        </>
+        </Stack>
+        </Center>
+        </Tabs.Panel>
+
+
+        <Tabs.Panel value="devices" pt={20}>
+            <Center>
+                <Stack align='center' pt={30} gap={50} w={1000}>
+                    <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg' w="100%">
+                        <form onSubmit={device_form.onSubmit((values)=>console.log(values))}>
+                            <TextInput size="md" label="Device Name" withAsterisk {...device_form.getInputProps('name')} pb={10}/>
+                            <Group pb={10}>
+                                <TextInput size="md" label="Device IP" withAsterisk {...device_form.getInputProps('ip_address')}/>
+                                <NumberInput size="md" label ="Device Port" withAsterisk hideControls {...device_form.getInputProps('port')}/>
+                            </Group>
+                            <Textarea size="md" minRows={2} maxRows={2} autosize label="Description" withAsterisk {...device_form.getInputProps('description')} pb={10}/>
+                            <NumberInput size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...device_form.getInputProps('price')} pb={30} allowNegative={false}/>
+                            <Checkbox size="md" color='orange' {...device_form.getInputProps('listed')} label="List this device on the Marketplace" pb={39}></Checkbox>
+                            <Center pt={30}><Button type='submit' color='green' w={200}>Upload to Marketplace</Button></Center>
+                        </form>
+                    </Paper>
+                </Stack>
+            </Center>
+        </Tabs.Panel>
+
+
+        </Tabs>
     );
 }
 

@@ -1,7 +1,7 @@
 import {Table} from "@mantine/core";
 
 interface DeviceTableProps{
-    elements: string[][];
+    elements: any[];
 }
 
 const headers = ['#', 'Name', 'IP', 'Used in'];
@@ -15,9 +15,9 @@ const DeviceTable = ({elements}:DeviceTableProps) => {
     const rows = elements.map((element,index)=>(
         <Table.Tr key={index}>
             <Table.Td>{index+1}</Table.Td>
-            <Table.Td>{element[1]}</Table.Td>
-            <Table.Td>{element[2]}</Table.Td>
-            <Table.Td>{element[3]}</Table.Td>
+            <Table.Td>{element.name}</Table.Td>
+            <Table.Td>{element.ip_address}</Table.Td>
+            <Table.Td>{element.dao}</Table.Td>
         </Table.Tr>
     ));
 

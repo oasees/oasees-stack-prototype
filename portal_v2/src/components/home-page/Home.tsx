@@ -6,10 +6,25 @@ import ItemTable from "../tables/item-table/ItemTable";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import axios from "axios";
+import { useDisclosure } from "@mantine/hooks";
 
 interface HomeProps{
     json:any
 }
+
+interface DAO{
+    dao_name:string,
+    members: string[],
+}
+
+interface Device{
+    id: number,
+    name: string,
+    ip_address: string,
+    account: string,
+    dao: string
+}
+
 
 async function IpfsGet(_ipfs_hash:string){
 
@@ -34,24 +49,22 @@ async function IpfsGet(_ipfs_hash:string){
 
 const Home = ({json}:HomeProps) => {
 
-    const [activeModal,setActiveModal] = useState('');
-
-    const [myDevices,setMyDevices] = useState([
-        ['1','Drone1','10.5.42.1','FirstDAO'],
-        ['2','Drone2','10.6.43.2','FirstDAO'],
-        ['3','Drone3','10.5.21.3','--'],
-        ['4','Drone4','168.24.1.2','QQQQQQQ']
-    ])
-
-    const itemTableElements = [
-    ['Alg1','0.002','--'],
-    ['Alg2','0.003','--'],
-    ['Alg3','0.0006','Drone3'],
-    ['Alg4','0.00001','Drone4']
-    ];
+    const [activeModal,setActiveModal] = useState(0);
 
     const [myAlgorithms,setMyAlgorithms] = useState<string[][]>([]);
-    const [myDaos, setMyDaos] = useState<string[]>([]);
+    const [myDaos, setMyDaos] = useState<DAO[]>([]);
+    // const [myDevices,setMyDevices] = useState([
+    //     ['1','Drone1','10.5.42.1','FirstDAO'],
+    //     ['2','Drone2','10.6.43.2','FirstDAO'],
+    //     ['3','Drone3','10.5.21.3','--'],
+    //     ['4','Drone4','168.24.1.2','QQQQQQQ']
+    // ])
+
+    const [myDevices,setMyDevices] = useState<Device[]>([]);
+
+    const [zeroDaos, setZeroDaos] = useState(false);
+
+    const [modalUpdate,{toggle}] = useDisclosure();
 
     useEffect(()=>{
         const populateAlgorithms = async () => {
@@ -81,8 +94,6 @@ const Home = ({json}:HomeProps) => {
         populateAlgorithms();
     },[])
 
-    const daoTableElements = ['FirstDAO','SecondDAO','Item', 'QQQQQQQ', 'f', 'g','h'];
-
     useEffect(()=>{
         const populateDaos = async() => {
             try{
@@ -90,85 +101,99 @@ const Home = ({json}:HomeProps) => {
                 const available_daos = await json.marketplace.getJoinedDaos();
 
                 for (const dao of available_daos){
-                    const meta_hash = dao[2];
-                    const content = await IpfsGet(meta_hash);
+                    const dao_content_hash = await json.nft.tokenURI(dao[1]);
+                    const content = await IpfsGet(dao_content_hash);
+                    let m = [];
 
-                    daos.push(content.dao_name)
+                    //TEST
+                    const members = await json.marketplace.getDaoMembers(dao[4])
+                    for (const member of members){
+                        m.push(member);
+                    }
+
+                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m})
                 }
-                setMyDaos(daos);
+                if (daos.length >0)
+                    setMyDaos(daos);
+                else
+                    setZeroDaos(true);
             } catch(error){
                 console.error('Error loading contracts: ', error);
             }
         }
 
         populateDaos();
-    },[])
+    },[modalUpdate])
+
 
     useEffect(()=>{
+        console.log('runs')
         const populateDevices = async () => {
             try{
-                const devices = [];
+                const devices:Device[] = [];
                 const available_devices = await json.marketplace.getMyDevices();
+
 
                 var i=1
                 for (const device of available_devices) {
                     const price = ethers.formatEther(device[4]);
                     const meta_hash = device[5];
-                    const content_hash = await json.nft.tokenURI(device[7])
+                    const content_hash = await json.nft.tokenURI(device[1])
                     
                     const content = await IpfsGet(content_hash);
                     const metadata = JSON.parse(await IpfsGet(meta_hash));
+                    let device_dao ='';
 
-                    console.log(content);
-                    console.log(metadata);
+                    for (const dao of myDaos){
+                        if(dao.members.includes(content.account)){
+                            device_dao = dao.dao_name;
+                            break;
+                        }
+                    }
 
-                    devices.push([
-                        i,
-                        metadata.title,
-                        content.device_endpoint,
-                        '--',
-                    ])
+                    devices.push({
+                        id: i,
+                        name: metadata.title,
+                        ip_address: content.device_endpoint.substring(7),
+                        account: content.account,
+                        dao: device_dao
+                    })
                     i++;
                 }
-
                 setMyDevices(devices);
             } catch(error){
                 console.error('Error loading contracts: ', error);
             }
         }
-        
-        populateDevices();
-    },[])
+
+        if(myDaos.length>0 || zeroDaos)
+            populateDevices();
+
+    },[myDaos, modalUpdate,zeroDaos])
 
 
 
 
     const closeModal = () =>{
-        setActiveModal('')
-    };
-
-    const addDeviceToDao = (v:number) => {
-        const updated = myDevices.map((device,index)=>{
-          if(index!=v) return device;
-          else return [device[0],device[1], device[2], activeModal];
-        });
-        setMyDevices(updated);
+        setActiveModal(0)
     };
 
     const availableDevices = () => {
-        let avDevices:string[][] = []; 
-    
+        let avDevices:Device[] = [];
+        const selectedDao = myDaos[activeModal-1]
         myDevices.map((device)=> {
-            if(device[3]=='--') avDevices.push(device);
+            if(!device.dao) avDevices.push(device);
         })
 
         return avDevices;
     };
     
     const modalDevices = () => {
-        let mDevices: string[][] = [];
+        let mDevices: Device[] = [];
+        const selectedDao = myDaos[activeModal-1]
         myDevices.map((device)=> {
-            if(device[3]==activeModal) mDevices.push(device);
+            if(device.dao==selectedDao.dao_name)
+                mDevices.push(device);
         })
         return mDevices;
     };
@@ -176,12 +201,13 @@ const Home = ({json}:HomeProps) => {
 
     return(
         <>
-        {activeModal!='' && <DAOModal
-        currentDAO={activeModal}
+        {activeModal>0 && <DAOModal
+        currentDAO={myDaos[activeModal-1]}
         availableDevices={availableDevices()}
-        joinedDevices={modalDevices()} 
-        addDeviceToDao={addDeviceToDao}
-        closeModal={closeModal}/>}
+        joinedDevices={modalDevices()}
+        closeModal={closeModal}
+        updateDevices = {toggle}
+        json={json}/>}
 
         <Grid gutter="md" justify='space-evenly' miw={900}  >
         <Grid.Col span={12}>My OASEES</Grid.Col>

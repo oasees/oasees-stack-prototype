@@ -1,8 +1,8 @@
 import { Button, Table, Image} from "@mantine/core";
 
 interface TableProps {
-    elements: string[];
-    setActiveModal(name:string): void;
+    elements: any[];
+    setActiveModal(name:number): void;
   }
 
 
@@ -15,7 +15,7 @@ const DAOTable = ({elements,setActiveModal}:TableProps) => {
         event.preventDefault();
         const button: HTMLButtonElement = event.currentTarget;
 
-        setActiveModal(button.value);
+        setActiveModal(Number(button.value));
     };
 
     const cols = headers.map((header,index)=>(
@@ -25,10 +25,10 @@ const DAOTable = ({elements,setActiveModal}:TableProps) => {
     const rows = elements.map((element,index)=>(
         <Table.Tr key={index}>
             <Table.Td>{index+1}</Table.Td>
-            <Table.Td>{element}</Table.Td>
+            <Table.Td>{element.dao_name}</Table.Td>
             <Table.Td align='center'>
                 
-                <Button color='orange' onClick={handleClick} value={element}>View</Button>
+                <Button color='orange' onClick={handleClick} value={index+1}>View</Button>
             </Table.Td>
         </Table.Tr>
     ));
