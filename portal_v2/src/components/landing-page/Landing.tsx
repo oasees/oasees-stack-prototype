@@ -82,15 +82,15 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
                         </Center>
                     </Stepper.Step>
 
-                    <Stepper.Step label="Second step" description="Verify email">
+                    <Stepper.Step label="Second step" description="Second step">
                         <Center pt={10} >
-                        <Image src="https://download.logo.wine/logo/Python_(programming_language)/Python_(programming_language)-Logo.wine.png" alt="Metamask logo" />
+                        <Image src="https://download.logo.wine/logo/Python_(programming_language)/Python_(programming_language)-Logo.wine.png" alt="Python logo" />
                         </Center>
                     </Stepper.Step>
 
-                    <Stepper.Step label="Final step" description="Get full access">
+                    <Stepper.Step label="Final step" description="Third step">
                         <Center pt={10} >
-                        <Image src="https://upload.wikimedia.org/wikipedia/commons/9/9e/UbuntuCoF.svg" alt="Metamask logo" />
+                        <Image src="" alt="Placeholder" />
                         </Center>
                     </Stepper.Step>
 
@@ -108,7 +108,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
                 <Button onClick={nextStep}>Next step</Button>
                 </Group>
                 :
-                <h1>Install Ubuntu</h1>
+                <h1></h1>
                 }
             </Stack>
         </Center>
