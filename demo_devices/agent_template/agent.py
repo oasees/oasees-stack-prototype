@@ -59,6 +59,14 @@ def deploy_algorithm():
 	f.close()
 
 	return {"device_name":device_name,"algorithm_deployed":algorithm_name}
+
+
+@app.route('/deploy_file', methods=["POST"])
+def deploy_file():
+	_,_,device_name,_,_,_= retrieve_first_account()
+	file = request.files['file']
+	file.save(file.filename)
+	return (device_name + ": File deployed successfully.")
 	
 
 
