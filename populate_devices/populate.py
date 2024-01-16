@@ -62,6 +62,7 @@ for device in DEVICES:
     device_name = device['device_name']
     device_content = {
         "account": device['account'],
+        "name":device_name,
         "device_endpoint": device['endpoint'],
 
     }
@@ -80,11 +81,12 @@ for device in DEVICES:
     client.close()
 
 
+    
     transaction = nft_contract.functions.mint(content_hash).buildTransaction({
         'chainId': 31337,
         'gas': 2000000,
         'gasPrice': w3.eth.gas_price,
-        'nonce': w3.eth.getTransactionCount(portal_account)
+        'nonce': w3.eth.getTransactionCount(portal_account) + i
     })
 
 
@@ -108,3 +110,4 @@ for device in DEVICES:
 
     signed_transaction = w3.eth.account.signTransaction(transaction, private_key=portal_key)
     transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+    # i=1

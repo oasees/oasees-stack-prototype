@@ -2,7 +2,7 @@ module.exports = {
     networks: {
         hardhat: {
             mining:{
-                auto: false,
+                auto: true,
                 interval: 3000
             }
         }

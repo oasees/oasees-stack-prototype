@@ -1,6 +1,6 @@
 import './Landing.css'
-import {Image, AspectRatio, Box, Button, Center, Stack, rem, Stepper, Group, Container, LoadingOverlay, Loader } from '@mantine/core';
-import { useContext, useState } from 'react';
+import {Image, Button, Center, Stack, Stepper, Group, Container, LoadingOverlay, Loader, Modal, Text, List } from '@mantine/core';
+import { useState } from 'react';
 import { ethers } from "ethers"
 import axios from 'axios';
 
@@ -20,52 +20,65 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
     const [active, setActive] = useState(0);
     const nextStep = () => setActive((current) => (current < 3 ? current + 1 : current));
     const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current));
-    const [visible,setVisible] = useState(false)
+    const [visible,setVisible] = useState(false);
+    const [showErrorModal,setShowErrorModal] = useState(false);
 
     const connectToMetaMask = async () =>{
         setVisible(true);
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        try{
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-        const account = accounts[0]
+            const account = accounts[0]
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum);
 
-        const signer = await provider.getSigner();
-        console.log(signer)
+            const signer = await provider.getSigner();
 
-        const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_portal_contracts`, {});
-        const market_contracts_info = resp.data.portal_contracts;
+            const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_portal_contracts`, {});
+            const market_contracts_info = resp.data.portal_contracts;
 
-        const account_payload = { user: account };
-        const user_exists = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/user_exists`, account_payload);
+            const account_payload = { user: account };
+            const user_exists = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/user_exists`, account_payload);
 
-        var jupyter_url = "";
+            var jupyter_url = "";
 
-        if(!user_exists.data.exists){
-            const newUserResponse = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/new_user`, account_payload);
-            jupyter_url = newUserResponse.data.jupyter_url;
-            
-        }else{
-            jupyter_url = user_exists.data.jupyter_url;
+            if(!user_exists.data.exists){
+                const newUserResponse = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/new_user`, account_payload);
+                jupyter_url = newUserResponse.data.jupyter_url;
+                
+            }else{
+                jupyter_url = user_exists.data.jupyter_url;
+            }
+
+            const marketplace = new ethers.Contract(
+                market_contracts_info.marketplace_address, 
+                market_contracts_info.marketplace_abi, 
+                await signer)
+
+            const nft = new ethers.Contract(
+                market_contracts_info.nft_address,
+                market_contracts_info.nft_abi,
+                await signer)
+            setInfo({account:account,provider:provider,marketplace:marketplace,nft:nft,jupyter_url:jupyter_url});
+            setIsConnected(true);
+        } catch (error){
+            console.error(error);
+            setShowErrorModal(true);
         }
-
-        const marketplace = new ethers.Contract(
-            market_contracts_info.marketplace_address, 
-            market_contracts_info.marketplace_abi, 
-            await signer)
-
-        const nft = new ethers.Contract(
-            market_contracts_info.nft_address,
-            market_contracts_info.nft_abi,
-            await signer)
-
         setVisible(false);
-        setInfo({account:account,provider:provider,marketplace:marketplace,nft:nft,jupyter_url:jupyter_url});
-        setIsConnected(true);
+        
     }
 
     return(
         <Container>
+        <Modal opened={showErrorModal} onClose={()=>setShowErrorModal(false)} c="red" title="Could not connect to OASEES." size="60%" centered>
+            <Text c="black"><u>Make sure that:</u></Text>
+            <List type="ordered" c="black" maw="99%" spacing={5}>
+                <List.Item>The rest of the stack is up and running properly.</List.Item>
+                <List.Item>You've replaced the variables in the <b>.env</b> file with <b>your IP Address</b>.</List.Item>
+            </List>
+            
+        </Modal>
         <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }} loaderProps={{children:<Stack align='center'><Loader color='blue'/>Loading...</Stack>}} />
 
             <Center maw="100%">

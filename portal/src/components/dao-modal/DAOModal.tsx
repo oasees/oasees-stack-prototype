@@ -259,7 +259,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                         <Text>Just a moment...</Text>
                         <Text>Your transaction is being processed on the blockchain.</Text>
                     </Stack>
-            }} />
+            }}/>
 
         <Flex justify='flex-end'>
             <CloseButton onClick={handleClose}/>

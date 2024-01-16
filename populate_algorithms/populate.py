@@ -110,4 +110,4 @@ for fc in file_contents.keys():
 
     signed_transaction = w3.eth.account.signTransaction(transaction, private_key=portal_key)
     transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
-    i = 1
+    # i = 1

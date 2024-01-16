@@ -224,7 +224,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 			'chainId': 31337, 
 			'gas': 2000000,  
 			'gasPrice': w3.eth.gas_price,  
-			'nonce': w3.eth.getTransactionCount(deployer_account)
+			'nonce': w3.eth.getTransactionCount(deployer_account) + 0
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
@@ -236,7 +236,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	    'chainId': 31337, 
 	    'gas': 2000000,  
 	    'gasPrice': w3.eth.gas_price,  
-	    'nonce': w3.eth.getTransactionCount(deployer_account)
+	    'nonce': w3.eth.getTransactionCount(deployer_account) + 0
 		}
 	)
 	signed_tx= w3.eth.account.signTransaction(tx, private_key=deployer_key)
@@ -258,7 +258,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		"gasPrice": w3.eth.gas_price,
 		"chainId": 31337,
 		"from": deployer_account,
-		"nonce":w3.eth.getTransactionCount(deployer_account)
+		"nonce":w3.eth.getTransactionCount(deployer_account) + 0
 		}
 	)
 
@@ -329,7 +329,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 		'chainId': 31337,
 		'gas': 2000000,
 		'gasPrice': w3.eth.gas_price,
-		'nonce': w3.eth.getTransactionCount(deployer_account)
+		'nonce': w3.eth.getTransactionCount(deployer_account) + 0
 	})
 
 	signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
@@ -371,6 +371,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	signed_transaction = w3.eth.account.signTransaction(transaction, private_key=deployer_key)
 	transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+	txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
 
 
 	

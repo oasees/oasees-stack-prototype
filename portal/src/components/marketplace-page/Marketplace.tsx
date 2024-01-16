@@ -272,21 +272,6 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
     return (
         <>
-        <Modal opened={showErrorModal} onClose={()=>setShowErrorModal(false)} c="red" title="Transaction failed." size="60%">
-            <Text c="black">Make sure that you have <b>cleared your Metmask activity and nonce data</b> before making a purchase.</Text>
-            <br></br><br></br>
-            <Text c="black"><u>To do that:</u></Text>
-            <List type="ordered" c="black" maw="99%" spacing={5}>
-                <List.Item>Click on the Metamask plugin icon (<img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Metamask logo"/>) on your browser.</List.Item>
-                <List.Item>Click on the three vertical dots on the top right of the window that appears.</List.Item>
-                <List.Item>Select "Settings".</List.Item>
-                <List.Item>Type "activity" in the search bar and click on the option that appears.</List.Item>
-                <List.Item><Text c="red"><i>Clear activity tab data</i></Text></List.Item>
-            </List>
-            
-        </Modal>
-
-
         <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} loaderProps={{
             children:<Stack align='center'>
                         <Loader color='blue'/>
