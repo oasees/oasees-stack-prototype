@@ -1,4 +1,4 @@
-import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, CloseButton, ScrollArea, TextInput, Select, Box, Textarea,} from "@mantine/core";
+import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader,} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
@@ -61,6 +61,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
     const [proposalDescriptions,setProposalDescriptions] = useState<{[key:string]:string}>();
 
+    const [loading,setLoading] = useState(false);
     const [refresh,{toggle}] = useDisclosure();
     const [opened, {close}] = useDisclosure(true);
 
@@ -182,20 +183,23 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
     const handleJoining = async (event: React.MouseEvent<HTMLButtonElement>) =>{
         event.preventDefault();
+        setLoading(true);
         const button: HTMLButtonElement = event.currentTarget;
         const signer = await json.provider.getSigner();
         const device_account = availableDevices[Number(button.value)].account;
 
         try{
-            const transfer_tokens_to_device = await tokenContract!.transfer(device_account,20,{});
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const transfer_tokens_to_device = await tokenContract!.transfer(device_account,20,{nonce:transaction_count});
             await transfer_tokens_to_device.wait();
 
-            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id);
+            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id,{nonce:transaction_count+1});
             await register_device_to_dao.wait();
             updateDevices();
         } catch(error){
             console.error("Metamask error: ",error);
         }
+        setLoading(false);
     };
 
 
@@ -248,6 +252,15 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
   return (
     <>
         <Modal opened={opened} onClose={handleClose} size="80%" withCloseButton={false}>
+        <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }}
+        loaderProps={{
+            children:<Stack align='center'>
+                        <Loader color='blue'/>
+                        <Text>Just a moment...</Text>
+                        <Text>Your transaction is being processed on the blockchain.</Text>
+                    </Stack>
+            }} />
+
         <Flex justify='flex-end'>
             <CloseButton onClick={handleClose}/>
           </Flex>

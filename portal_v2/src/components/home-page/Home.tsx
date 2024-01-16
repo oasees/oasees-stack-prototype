@@ -127,7 +127,6 @@ const Home = ({json}:HomeProps) => {
 
 
     useEffect(()=>{
-        console.log('runs')
         const populateDevices = async () => {
             try{
                 const devices:Device[] = [];

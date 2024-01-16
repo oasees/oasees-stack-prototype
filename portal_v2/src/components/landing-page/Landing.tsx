@@ -31,6 +31,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
         const provider = new ethers.BrowserProvider(window.ethereum);
 
         const signer = await provider.getSigner();
+        console.log(signer)
 
         const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_portal_contracts`, {});
         const market_contracts_info = resp.data.portal_contracts;
@@ -64,17 +65,17 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
     }
 
     return(
-        <Container bg="var(--mantine-color-gray-light)" mah="100%" maw="100%" h="100vh" pos='relative'>
+        <Container>
         <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }} loaderProps={{children:<Stack align='center'><Loader color='blue'/>Loading...</Stack>}} />
 
-            <Center>
-            <Stack align='center' maw="14vw" >
-                        <Image src="./images/oasees-logo.png" alt="Oasees logo"/>
+            <Center maw="100%">
+            <Stack align='center'  >
+                <Image miw={100} maw="11vw" src="./images/oasees-logo.png" alt="Oasees logo"/>
 
-                        <Button color='orange' miw={100} w="15vw" mih={40} onClick={connectToMetaMask}>Connect</Button>
+                <Button color='orange' fz={16} miw={110} w="12vw" mih={40} onClick={connectToMetaMask}>Connect</Button>
 
                 
-                <Stepper active={active} onStepClick={setActive} pt={30} miw={600} mih={20}>
+                <Stepper active={active} onStepClick={setActive} pt={50} w={{sm:'700', md:'800'}}>
 
                     <Stepper.Step label="First step" description="Connect to Metamask" >
                         <Center pt={10} >

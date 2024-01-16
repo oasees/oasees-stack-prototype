@@ -1,4 +1,4 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader} from "@mantine/core";
+import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Modal, Text, List} from "@mantine/core";
 import './Marketplace.css'
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -47,8 +47,10 @@ const Marketplace = ({json}:MarketplaceProps) => {
     const [daos,setDaos] = useState<CardProps[]>([]);
     const [devices,setDevices] = useState<CardProps[]>([]);
 
-    const [visible,setVisible] = useState(false);
+    const [loading,setLoading] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
     const [refresh,{toggle}] = useDisclosure();
+
 
     useEffect(() => {
         const populateAlgorithms = async () => {
@@ -211,21 +213,23 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
 
     const purchase_algorithm = async (marketplace_id:string, price:string) => {
-        setVisible(true);
+        setLoading(true);
         try{
-            const buyAlg_transaction = await json.marketplace.buyNft(json.nft.target,marketplace_id,{value: ethers.parseEther(price)});
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const buyAlg_transaction = await json.marketplace.buyNft(json.nft.target,marketplace_id,{value: ethers.parseEther(price), nonce:transaction_count});
             await buyAlg_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
+            setShowErrorModal(true);
         }
         toggle();
-        setVisible(false);
+        setLoading(false);
     }
 
     
 
     const join_dao = async (id:string, marketplace_id:string) => {
-        setVisible(true);
+        setLoading(true);
         try{
             const dao_content_hash = await json.nft.tokenURI(id);
             const content = await IpfsGet(dao_content_hash);
@@ -236,35 +240,62 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 content.token_provider_abi,
                 await signer)
 
-            const get_tokens_transaction = await dao_token_provider_contract.getTokens();
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
             await get_tokens_transaction.wait();
 
-            const join_transaction = await json.marketplace.joinDao(marketplace_id);
+            const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+1});
             await join_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
+            setShowErrorModal(true);
         }
         toggle();
-        setVisible(false);
+        setLoading(false);
     }
 
     const purchase_device = async (marketplace_id:string, price:string) => {
-        setVisible(true);
+        setLoading(true);
         try{
-            const buyDev_transaction = await json.marketplace.buyDevice(json.nft.target,marketplace_id,{value: ethers.parseEther(price)});
-            await buyDev_transaction.wait();
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const buyDevice_transaction = await json.marketplace.buyDevice(json.nft.target,marketplace_id,{value: ethers.parseEther(price), nonce:transaction_count});
+            await buyDevice_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
+            setShowErrorModal(true);
         }
         toggle();
-        setVisible(false);
+        setLoading(false);
     }
 
-    
+
 
     return (
         <>
-        <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }} loaderProps={{children:<Stack align='center'><Loader color='blue'/></Stack>}} />
+        <Modal opened={showErrorModal} onClose={()=>setShowErrorModal(false)} c="red" title="Transaction failed." size="60%">
+            <Text c="black">Make sure that you have <b>cleared your Metmask activity and nonce data</b> before making a purchase.</Text>
+            <br></br><br></br>
+            <Text c="black"><u>To do that:</u></Text>
+            <List type="ordered" c="black" maw="99%" spacing={5}>
+                <List.Item>Click on the Metamask plugin icon (<img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Metamask logo"/>) on your browser.</List.Item>
+                <List.Item>Click on the three vertical dots on the top right of the window that appears.</List.Item>
+                <List.Item>Select "Settings".</List.Item>
+                <List.Item>Type "activity" in the search bar and click on the option that appears.</List.Item>
+                <List.Item><Text c="red"><i>Clear activity tab data</i></Text></List.Item>
+            </List>
+            
+        </Modal>
+
+
+        <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} loaderProps={{
+            children:<Stack align='center'>
+                        <Loader color='blue'/>
+                        <Text><h3>Just a moment...</h3></Text>
+                        <Text>Your transaction is being processed on the blockchain.</Text>
+                    </Stack>
+                }}/>
+
+
         <Tabs defaultValue="algorithms" pt={30}>
                 <Tabs.List grow>
                     <Tabs.Tab className='marketplace-tab' value="algorithms">
