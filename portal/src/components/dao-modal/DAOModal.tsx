@@ -1,4 +1,4 @@
-import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader,} from "@mantine/core";
+import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader, Group, ActionIcon,} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
@@ -185,7 +185,6 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         event.preventDefault();
         setLoading(true);
         const button: HTMLButtonElement = event.currentTarget;
-        const signer = await json.provider.getSigner();
         const device_account = availableDevices[Number(button.value)].account;
 
         try{
@@ -202,6 +201,21 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         setLoading(false);
     };
 
+    const handleVote = async (proposalId:number, support:boolean) => {
+        var vote=2;
+        if(support)
+            vote=1;
+        else 
+            vote=0;
+
+        try{
+            const vote_transaction = await daoContract!.castVoteWithReason(proposalId,vote,"reason");
+            await vote_transaction.wait();
+        } catch(error){
+            console.error(error);
+        }
+        
+    }
 
     const manageDevices = availableDevices.map((device,index) => (
         <Table.Tr key={index}>
@@ -218,24 +232,33 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         </Table.Tr>
     ));
 
-    const styledStatus= (state:number) => {
-        const status = stateToStatus(state);
+    const styledStatus= (proposal:Proposal) => {
+        const status = stateToStatus(proposal.state);
         switch(status){
             case ProposalStatus.Defeated:
-                return (<Table.Td style={{color:'red'}}>Defeated</Table.Td>);
+                return (<Table.Td colSpan={2} style={{color:'red'}}>Defeated</Table.Td>);
             case ProposalStatus.Active:
-                return (<Table.Td style={{color:'green'}}>Active</Table.Td>);
+                return (<>
+                    <Table.Td>
+                        <Group gap={10} justify="center">
+                            <ActionIcon color="green" size="sm" onClick={()=>handleVote(proposal.proposalId,true)}><img src="./images/thumb_up.png" alt="thumb-up" height={17} width={17}/></ActionIcon>
+                            <ActionIcon color="red" size="sm" onClick={()=>handleVote(proposal.proposalId,false)}><img src="./images/thumb_down.png" alt="thumb-down" height={17} width={17}/></ActionIcon>
+                        </Group>
+                    </Table.Td>
+                    <Table.Td style={{color:'green'}}>Active</Table.Td>
+                </>
+                );
             case ProposalStatus.Succeeded:
-                return (<Table.Td style={{color:'blue'}}>Succeeded</Table.Td>);
+                return (<Table.Td colSpan={2} style={{color:'blue'}}>Succeeded</Table.Td>);
             case ProposalStatus.Pending:
-                return (<Table.Td>Pending</Table.Td>);
+                return (<Table.Td colSpan={2}>Pending</Table.Td>);
         }
     }
 
     const mapped_proposals = proposals.slice(0).reverse().map((proposal,index)=> (
         <Table.Tr key={index}>
             <Table.Td>{proposal.description}</Table.Td>
-            {styledStatus(proposal.state)}
+            {styledStatus(proposal)}
         </Table.Tr>
     ));
 
@@ -252,7 +275,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
   return (
     <>
         <Modal opened={opened} onClose={handleClose} size="80%" withCloseButton={false}>
-        <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }}
+        <LoadingOverlay visible={loading} zIndex={1000} pos="fixed" overlayProps={{ radius: "lg", blur: 2 }}
         loaderProps={{
             children:<Stack align='center'>
                         <Loader color='blue'/>
