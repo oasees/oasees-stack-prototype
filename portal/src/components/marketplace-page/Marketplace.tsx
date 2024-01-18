@@ -250,7 +250,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
             const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+1});
             await join_transaction.wait();
 
-            const delegate_transaction = await vote_token_contract.delegate(json.account);
+            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+2});
             await delegate_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);

@@ -27,7 +27,7 @@ const SideMenu = ({onTabClick}:SideMenuProps) => {
 
     const items = menu_items.map((item,index)=> (
         <List.Item icon=' ' key={index} >
-            <UnstyledButton value={index+1} onClick={handleTabClick}><Group gap="xs"><img src={item[1]}/>{item[0]}</Group></UnstyledButton>
+            <UnstyledButton value={index+1} onClick={handleTabClick}><Group gap="xs"><img src={item[1]} alt={item[0] + "icon"}/>{item[0]}</Group></UnstyledButton>
         </List.Item>
     ));
 

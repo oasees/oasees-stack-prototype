@@ -28,7 +28,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
       case 2:
         return <Marketplace json={json}/>;
       case 3:
-        return <Publish/>;
+        return <Publish json={json}/>;
       case 4:
         return <Notebook json={json}/>;
       default:

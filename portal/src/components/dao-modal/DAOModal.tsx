@@ -23,14 +23,14 @@ enum ProposalStatus{
 }
 
 const stateToStatus = (state:number) => {
-    if(state==0) return ProposalStatus.Pending;
-    else if(state==1) return ProposalStatus.Active;
-    else if(state==3) return ProposalStatus.Defeated;
-    else if(state==4) return ProposalStatus.Succeeded
+    if(state===0) return ProposalStatus.Pending;
+    else if(state===1) return ProposalStatus.Active;
+    else if(state===3) return ProposalStatus.Defeated;
+    else if(state===4) return ProposalStatus.Succeeded
 }
 
 const supportToVote = (support:number) => {
-    if(support==0) return 'Against';
+    if(support===0) return 'Against';
     else return 'For';
 }
 
@@ -62,7 +62,6 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
     const [proposalDescriptions,setProposalDescriptions] = useState<{[key:string]:string}>();
 
     const [loading,setLoading] = useState(false);
-    const [refresh,{toggle}] = useDisclosure();
     const [opened, {close}] = useDisclosure(true);
 
     useEffect(()=>{
