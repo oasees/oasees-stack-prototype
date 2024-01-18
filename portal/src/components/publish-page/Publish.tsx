@@ -172,7 +172,7 @@ const Publish = ({json}:PublishProps) => {
             const market_fee = await json.marketplace.LISTING_FEE();
 
             const makeItem_transaction = await json.marketplace.makeItem(json.nft.target, id, _price, meta_hash, {value:market_fee, nonce:transaction_count + 1});
-            const makeItem_receipt = await makeItem_transaction.wait();
+            await makeItem_transaction.wait();
 
 
 
@@ -196,7 +196,7 @@ const Publish = ({json}:PublishProps) => {
             const market_fee = await json.marketplace.LISTING_FEE();
 
             const makeItem_transaction = await json.marketplace.makeDevice(json.nft.target, id, _price, meta_hash, listed, {value:market_fee, nonce:transaction_count + 1});
-            const makeItem_receipt = await makeItem_transaction.wait();
+            await makeItem_transaction.wait();
 
 
 
