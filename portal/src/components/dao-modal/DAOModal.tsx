@@ -23,38 +23,46 @@ enum ProposalStatus{
 }
 
 const stateToStatus = (state:number) => {
-    if(state===0) return ProposalStatus.Pending;
-    else if(state===1) return ProposalStatus.Active;
-    else if(state===3) return ProposalStatus.Defeated;
-    else if(state===4) return ProposalStatus.Succeeded
+    if(state==0) return ProposalStatus.Pending;
+    else if(state==1) return ProposalStatus.Active;
+    else if(state==3) return ProposalStatus.Defeated;
+    else if(state==4) return ProposalStatus.Succeeded
 }
 
 const supportToVote = (support:number) => {
-    if(support===0) return 'Against';
+    if(support==0) return 'Against';
     else return 'For';
 }
 
 interface Proposal{
-    description: string;
-    state: number;
-    proposalId: number;
+    description: string,
+    state: number,
+    proposalId: number,
+}
+
+interface ProposalForm{
+    title: string,
+    description: string,
+    action: string
 }
 
 interface Vote{
-    proposal: string;
-    support: number;
-    reason: string;
+    proposal: string,
+    support: number,
+    reason: string,
 }
 
 
-const actions = ['First Action', 'Second Action', 'Third Action', 'Fourth Action'];
+const actions = [ '0', '1', '2', '3'];
 
 const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, updateDevices, json}:DAOModalProps) => {
     
     const [daoContract,setDaoContract] = useState<ethers.Contract>();
     const [tokenContract,setTokenContract] = useState<ethers.Contract>();
+    const [boxContract,setBoxContract] = useState<ethers.Contract>();
     const [proposalFilter,setProposalFilter] = useState<ethers.DeferredTopicFilter>();
     const [voteFilter,setVoteFilter] = useState<ethers.DeferredTopicFilter>();
+    const [userBalance,setUserBalance] = useState(0);
 
     const [proposals,setProposals] = useState<Proposal[]>([])
     const [votes,setVotes] = useState<Vote[]>([]);
@@ -72,21 +80,29 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 const dao_contract = new ethers.Contract(
                     currentDAO.governance_address,
                     currentDAO.governance_abi,
-                    await signer)
+                    await signer);
 
                 const dao_token_contract = new ethers.Contract(
                     currentDAO.token_address,
                     currentDAO.token_abi,
-                    await signer)
+                    await signer);
 
+                const dao_box_contract = new ethers.Contract(
+                    currentDAO.box_address,
+                    currentDAO.box_abi,
+                    await signer);
+
+                const token_balance = await dao_token_contract.balanceOf(json.account);
 
                 const proposal_filter = dao_contract.filters.ProposalCreated(null);
                 const vote_filter = dao_contract.filters.VoteCast(null);
 
                 setDaoContract(dao_contract);
                 setTokenContract(dao_token_contract);
+                setBoxContract(dao_box_contract);
                 setProposalFilter(proposal_filter);
                 setVoteFilter(vote_filter);
+                setUserBalance(token_balance);
             } catch(error){
                 console.error("An error occured while initializing the contracts: ", error);
             }
@@ -124,10 +140,13 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             }
         }
 
+        const intervalId = setInterval(()=>{
+            if(daoContract){
+                handleProposalEvent();
+            }
         
-        if(daoContract){
-            handleProposalEvent();
-        }
+        },2000)
+        return () => clearInterval(intervalId);
     },[daoContract]);
 
     useEffect(()=> {
@@ -153,24 +172,23 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 console.error('Error fetching votes: ', error);
             }
         }
-        if(proposals.length>0){
-            handleVoteEvent();
-        }
+
+            if(proposals.length>0){
+                handleVoteEvent();
+            }
     },[proposals])
 
 
-
-    const form = useForm({
+    const form = useForm<ProposalForm>({
         initialValues: {
             title: '',
             description:'',
-            action: '',
+            action: '0',
         },
 
         validate: {
             title: (value) => ((value)? null: 'Title field cannot be blank.'),
             description: (value) => ((value)? null: 'Description field cannot be blank.'),
-            action: (value) => ((value)? null: ' '),
         }
     });
 
@@ -191,6 +209,9 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             const transfer_tokens_to_device = await tokenContract!.transfer(device_account,20,{nonce:transaction_count});
             await transfer_tokens_to_device.wait();
 
+            const new_user_balance = await tokenContract!.balanceOf(json.account);
+            setUserBalance(new_user_balance);
+
             const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id,{nonce:transaction_count+1});
             await register_device_to_dao.wait();
             updateDevices();
@@ -208,12 +229,25 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             vote=0;
 
         try{
-            const vote_transaction = await daoContract!.castVoteWithReason(proposalId,vote,"reason");
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const vote_transaction = await daoContract!.castVoteWithReason(proposalId,vote,"reason",{nonce:transaction_count});
             await vote_transaction.wait();
+            
         } catch(error){
             console.error(error);
         }
         
+    }
+
+    const handleProposalSubmit = async (values:ProposalForm) => {
+        try{
+            const transaction_count = await json.provider.getTransactionCount(json.account);
+            const function_signature = await boxContract?.interface.encodeFunctionData('store',[Number(values.action)]);
+            const propose_transaction = await daoContract!.propose([boxContract?.target],[0],[function_signature],values.title + " " + values.description,{nonce:transaction_count});
+            await propose_transaction.wait();
+        }catch(error){
+            console.error(error);
+        }
     }
 
     const manageDevices = availableDevices.map((device,index) => (
@@ -270,7 +304,6 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
     ));
 
 
-
   return (
     <>
         <Modal opened={opened} onClose={handleClose} size="80%" withCloseButton={false}>
@@ -283,9 +316,10 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     </Stack>
             }}/>
 
-        <Flex justify='flex-end'>
+        <Group justify='space-between'>
+            <Text td="underline" fw={700}>My balance: {String(userBalance)}</Text>
             <CloseButton onClick={handleClose}/>
-          </Flex>
+          </Group>
             <Center>
                 <Image src='./images/dao_icon.png' w={100} h={100}></Image>
                 <h4>{currentDAO.dao_name}</h4>
@@ -378,10 +412,14 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     <Grid.Col span={6}>
                     <Center pb={10} style={{fontSize:14}}><u><b>Create Proposal</b></u></Center>
                     <Box bg='var(--mantine-color-gray-1)' p={10}>
-                    <form className={styles.form} onSubmit={form.onSubmit((values)=>console.log(values))}>
+                    <form className={styles.form} onSubmit={form.onSubmit((values)=>handleProposalSubmit(values))}>
+
                         <TextInput label="Title" placeholder="Insert a title here." withAsterisk {...form.getInputProps('title')} pb={10}/>
+
                         <Textarea minRows={3} maxRows={3} autosize label="Description" placeholder="Insert a description here." withAsterisk {...form.getInputProps('description')} pb={10}/>
+
                         <Select label="Action" placeholder="Pick an action." data={actions} withAsterisk allowDeselect={false} {...form.getInputProps('action')} pb={20}/>
+
                         <Center><Button type='submit' color='green' w={200}>Create</Button></Center>
                     </form>
                     </Box>

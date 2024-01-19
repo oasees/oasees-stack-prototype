@@ -192,7 +192,7 @@ const Home = ({json}:HomeProps) => {
         let mDevices: Device[] = [];
         const selectedDao = myDaos[activeModal-1]
         for (var device of myDevices){
-            if(device.dao===selectedDao.dao_name)
+            if(device.dao==selectedDao.dao_name)
                 mDevices.push(device);
         }
         return mDevices;
