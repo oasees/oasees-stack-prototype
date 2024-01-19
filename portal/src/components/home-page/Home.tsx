@@ -1,4 +1,4 @@
-import { Button, Flex, Grid, Paper, ScrollArea, Stack } from "@mantine/core";
+import {Grid, Paper, ScrollArea, Stack } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import DAOTable from "../tables/dao-table/DAOTable";
 import DeviceTable from "../tables/device-table/DeviceTable";
@@ -179,10 +179,11 @@ const Home = ({json}:HomeProps) => {
 
     const availableDevices = () => {
         let avDevices:Device[] = [];
-        const selectedDao = myDaos[activeModal-1]
-        myDevices.map((device)=> {
-            if(!device.dao) avDevices.push(device);
-        })
+
+        for (var device of myDevices){
+            if(!device.dao)
+                avDevices.push(device);
+        }
 
         return avDevices;
     };
@@ -190,10 +191,10 @@ const Home = ({json}:HomeProps) => {
     const modalDevices = () => {
         let mDevices: Device[] = [];
         const selectedDao = myDaos[activeModal-1]
-        myDevices.map((device)=> {
-            if(device.dao==selectedDao.dao_name)
+        for (var device of myDevices){
+            if(device.dao===selectedDao.dao_name)
                 mDevices.push(device);
-        })
+        }
         return mDevices;
     };
 

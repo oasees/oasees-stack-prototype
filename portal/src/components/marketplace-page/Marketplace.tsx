@@ -1,4 +1,4 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Modal, Text, List} from "@mantine/core";
+import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text} from "@mantine/core";
 import './Marketplace.css'
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -47,8 +47,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
     const [daos,setDaos] = useState<CardProps[]>([]);
     const [devices,setDevices] = useState<CardProps[]>([]);
 
-    const [loading,setLoading] = useState(false);
-    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [refresh,{toggle}] = useDisclosure();
 
 
@@ -83,7 +82,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         
         populateAlgorithms();
         
-    },[refresh]);
+    },[refresh,json.marketplace]);
 
     useEffect(()=>{
         const populateDaos = async() => {
@@ -112,7 +111,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
         
         populateDaos();
-    },[refresh]);
+    },[refresh, json.marketplace]);
 
 
     useEffect(()=>{
@@ -145,7 +144,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
 
         populateDevices();
-    },[refresh]);
+    },[refresh, json.marketplace]);
 
 
 
@@ -220,7 +219,6 @@ const Marketplace = ({json}:MarketplaceProps) => {
             await buyAlg_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
-            setShowErrorModal(true);
         }
         toggle();
         setLoading(false);
@@ -240,15 +238,22 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 content.token_provider_abi,
                 await signer)
 
+            const vote_token_contract = new ethers.Contract(
+                content.token_address,
+                content.token_abi,
+                await signer)
+
             const transaction_count = await json.provider.getTransactionCount(json.account);
             const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
             await get_tokens_transaction.wait();
 
             const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+1});
             await join_transaction.wait();
+
+            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+2});
+            await delegate_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
-            setShowErrorModal(true);
         }
         toggle();
         setLoading(false);
@@ -262,7 +267,6 @@ const Marketplace = ({json}:MarketplaceProps) => {
             await buyDevice_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
-            setShowErrorModal(true);
         }
         toggle();
         setLoading(false);
@@ -272,14 +276,13 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
     return (
         <>
-        <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} loaderProps={{
-            children:<Stack align='center'>
-                        <Loader color='blue'/>
-                        <Text><h3>Just a moment...</h3></Text>
-                        <Text>Your transaction is being processed on the blockchain.</Text>
-                    </Stack>
-                }}/>
-
+        <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} pos="fixed" loaderProps={{
+        children:<Stack align='center'>
+                  <Loader color='blue'/>
+                  <h3>Just a moment...</h3>
+                  <Text>Your transaction is being processed on the blockchain.</Text>
+              </Stack>
+          }}/>
 
         <Tabs defaultValue="algorithms" pt={30}>
                 <Tabs.List grow>

@@ -191,6 +191,36 @@ def ipfs_upload():
     }
 
 
+@app.route('/ipfs_upload_device',methods=['POST','PUT'])
+def ipfs_upload_device():
+    content = json.loads(request.form['content'])
+    meta = json.loads(request.form['meta'])
+    client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
+    
+    device_content = {
+        "account" :content["account"],
+        "name" :content["name"],
+        "device_endpoint" :content["device_endpoint"],
+    }
+
+    metadata = {
+        "price" : meta["price"],
+        "title" : meta["name"],
+        "description" : meta["description"]
+    }
+
+    content_hash = client.add_json(device_content)
+    meta_hash = client.add_json(json.dumps(metadata))
+
+    client.close()
+
+
+    return {
+        "content_hash":content_hash,
+        "meta_hash":meta_hash
+    }
+
+
 
 @app.route('/ipfs_fetch',methods=['GET'])
 def ipfs_fetch():

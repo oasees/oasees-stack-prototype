@@ -1,13 +1,8 @@
-import { AppShell, Image, Center, Grid, Button, Stack, Box, Flex, ScrollArea, Paper } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { AppShell, Image, Center, Button, Stack, Flex, ScrollArea } from "@mantine/core";
 import './Portal.css'
 import '../tables/Table.css'
-import DAOTable from "../tables/dao-table/DAOTable";
-import DAOModal from "../dao-modal/DAOModal";
 import { useState } from "react";
 import SideMenu from "../side-menu/SideMenu";
-import DeviceTable from "../tables/device-table/DeviceTable";
-import ItemTable from "../tables/item-table/ItemTable";
 import Home from "../home-page/Home";
 import Marketplace from "../marketplace-page/Marketplace";
 import Publish from "../publish-page/Publish";
@@ -20,8 +15,8 @@ interface PortalProps {
 
 const Portal = ({json,setIsConnected}:PortalProps) => {
 
-  const [loading,{toggle}] = useDisclosure(false);
-  const [pageId, setPageId] = useState(1)
+  const [pageId, setPageId] = useState(1);
+  
   
 
   const changeCurrentPage = (v:number) => {
@@ -33,7 +28,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
       case 2:
         return <Marketplace json={json}/>;
       case 3:
-        return <Publish/>;
+        return <Publish json={json}/>;
       case 4:
         return <Notebook json={json}/>;
       default:
@@ -72,7 +67,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
         <Stack>
 
           <Flex justify='flex-end'>
-            <Button color='orange' w={200} h={45} loading={loading} onClick={setIsConnected}>Disconnect</Button>
+            <Button color='orange' w={200} h={45} onClick={setIsConnected}>Disconnect</Button>
           </Flex>
 
           {currentPage()}

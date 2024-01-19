@@ -3,7 +3,7 @@ import './App.css';
 import '@mantine/core/styles.css'
 import '@mantine/dropzone/styles.css';
 import Landing from './components/landing-page/Landing';
-import Portal from './components/portal-page/Portal';
+import Portal from './components/portal-layout/Portal';
 
 
 export const UserContext = React.createContext(null);

@@ -74,12 +74,12 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
         <Modal opened={showErrorModal} onClose={()=>setShowErrorModal(false)} c="red" title="Could not connect to OASEES." size="60%" centered>
             <Text c="black"><u>Make sure that:</u></Text>
             <List type="ordered" c="black" maw="99%" spacing={5}>
-                <List.Item>The rest of the stack is up and running properly.</List.Item>
+                <List.Item>The rest of the stack is fully up and running properly.</List.Item>
                 <List.Item>You've replaced the variables in the <b>.env</b> file with <b>your IP Address</b>.</List.Item>
             </List>
             
         </Modal>
-        <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }} loaderProps={{children:<Stack align='center'><Loader color='blue'/>Loading...</Stack>}} />
+        <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "lg", blur: 2 }} pos="fixed" loaderProps={{children:<Stack align='center'><Loader color='blue'/>Loading...</Stack>}} />
 
             <Center maw="100%">
             <Stack align='center'  >
@@ -98,7 +98,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
 
                     <Stepper.Step label="Second step" description="Second step">
                         <Center pt={10} >
-                        <Image src="https://download.logo.wine/logo/Python_(programming_language)/Python_(programming_language)-Logo.wine.png" alt="Python logo" />
+                        <Image src="https://cdn3.iconfinder.com/data/icons/design-n-code/100/272127c4-8d19-4bd3-bd22-2b75ce94ccb4-512.png" alt="Placeholder image" />
                         </Center>
                     </Stepper.Step>
 
@@ -110,7 +110,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
 
                     <Stepper.Completed>
                         <Center pt={10} >
-                        <Image src="https://img.freepik.com/premium-vector/you-win-lettering-pop-art-text-banner_185004-60.jpg?w=2000" alt="Metamask logo" />
+                        <Image src="https://cdn.pixabay.com/photo/2022/07/04/01/58/hook-7300191_1280.png" alt="Checkmark" />
                         </Center>
                     </Stepper.Completed>
 
@@ -122,7 +122,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
                 <Button onClick={nextStep}>Next step</Button>
                 </Group>
                 :
-                <h1></h1>
+                <h2>You're all set.</h2>
                 }
             </Stack>
         </Center>
