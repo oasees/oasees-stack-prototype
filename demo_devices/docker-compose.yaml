@@ -27,3 +27,17 @@ services:
     ports:
       - "8004:5000"
     stop_grace_period: 1s  
+
+  device5:
+    build:
+      context: ./agent_template
+    ports:
+      - "8005:5000"
+    stop_grace_period: 1s 
+
+  device6:
+    build:
+      context: ./agent_template
+    ports:
+      - "8006:5000"
+    stop_grace_period: 1s 

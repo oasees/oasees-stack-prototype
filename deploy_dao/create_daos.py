@@ -35,10 +35,12 @@ Daos_to_create = [
 		"VOTING_PERIOD": 10,
 		"VOTING_DELAY": 0,
 		"DEVICES":[
-			{'device_name':"device1","account":os.getenv("device1_addr"),"endpoint":"http://{}:8001".format(DEVICES_IP)},
-			{'device_name':"device2","account":os.getenv("device2_addr"),"endpoint":"http://{}:8002".format(DEVICES_IP)},
-			{'device_name':"device3","account":os.getenv("device3_addr"),"endpoint":"http://{}:8003".format(DEVICES_IP)},
-			{'device_name':"device4","account":os.getenv("device4_addr"),"endpoint":"http://{}:8004".format(DEVICES_IP)}
+			{'device_name':"Drone1","account":os.getenv("device1_addr"),"endpoint":"http://{}:8001".format(DEVICES_IP)},
+			{'device_name':"Drone2","account":os.getenv("device2_addr"),"endpoint":"http://{}:8002".format(DEVICES_IP)},
+			{'device_name':"Drone3","account":os.getenv("device3_addr"),"endpoint":"http://{}:8003".format(DEVICES_IP)},
+			{'device_name':"Drone4","account":os.getenv("device4_addr"),"endpoint":"http://{}:8004".format(DEVICES_IP)},
+			{'device_name':"Drone5","account":os.getenv("device5_addr"),"endpoint":"http://{}:8005".format(DEVICES_IP)},
+			{'device_name':"Drone6","account":os.getenv("device6_addr"),"endpoint":"http://{}:8006".format(DEVICES_IP)}
 		]
 	},
 

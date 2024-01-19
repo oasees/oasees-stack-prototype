@@ -8,7 +8,6 @@ load_dotenv(dotenv_path=env_file_path)
 
 IPFS_HOST = os.getenv("IPFS_HOST")
 BLOCK_CHAIN_IP = os.getenv("BLOCK_CHAIN_IP")
-DAO_HASH="QmaGFBHKkaf5bpYPFd8eASqDB4kFzGSqEPrEkNwKqpkJpu"
 
 env_file_path = '../.devices_env'
 load_dotenv(dotenv_path=env_file_path)
@@ -24,7 +23,7 @@ devices = [
 		"config_data":{
 	    	"account": os.getenv("device1_addr"),
 	    	"secret_key": os.getenv("device1_key"),
-	    	"device_name": "device1",
+	    	"device_name": "Drone1",
 			"IPFS_HOST": IPFS_HOST,
 			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
@@ -34,7 +33,7 @@ devices = [
 		"config_data":{
 	    	"account": os.getenv("device2_addr"),
 	    	"secret_key": os.getenv("device2_key"),
-	    	"device_name": "device2",
+	    	"device_name": "Drone2",
 			"IPFS_HOST": IPFS_HOST,
 			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
@@ -44,7 +43,7 @@ devices = [
 		"config_data":{
 	    	"account": os.getenv("device3_addr"),
 	    	"secret_key": os.getenv("device3_key"),
-	    	"device_name": "device3",
+	    	"device_name": "Drone3",
 			"IPFS_HOST": IPFS_HOST,
 			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
@@ -54,7 +53,27 @@ devices = [
 		"config_data":{
 	    	"account": os.getenv("device4_addr"),
 	    	"secret_key": os.getenv("device4_key"),
-	    	"device_name": "device4",
+	    	"device_name": "Drone4",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
+	    }	
+	},
+	{
+		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8005),
+		"config_data":{
+	    	"account": os.getenv("device5_addr"),
+	    	"secret_key": os.getenv("device5_key"),
+	    	"device_name": "Drone5",
+			"IPFS_HOST": IPFS_HOST,
+			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
+	    }	
+	},
+	{
+		"device_endpoint":"http://{}:{}".format(DEVICES_IP,8006),
+		"config_data":{
+	    	"account": os.getenv("device6_addr"),
+	    	"secret_key": os.getenv("device6_key"),
+	    	"device_name": "Drone6",
 			"IPFS_HOST": IPFS_HOST,
 			"BLOCK_CHAIN_IP": BLOCK_CHAIN_IP 
 	    }	
@@ -69,5 +88,3 @@ for dev in devices:
 
 	print(response.json())
 
-	response = requests.post("{}/dao_subscription".format(dev["device_endpoint"]), json={"dao_hash":DAO_HASH})
-	print(response.json())

@@ -284,25 +284,12 @@ def oasees_genesis():
 
 
     nft_address, nft_abi = deploy_nft_contract(w3,market_place_address)
-    dao_indexer_address, dao_indexer_abi = deploy_daoIndexer(w3) 
-
-
-    accountToken_abi, accountToken_bytecode = get_account_token_specs()
-
-    daoStorage_abi, daoStorage_bytecode = get_daoStorage_specs()
-
 
     portal_contract_info ={
         "marketplace_address": market_place_address,
         "marketplace_abi": market_place_abi,
         "nft_address": nft_address,
-        "nft_abi": nft_abi,
-        "dao_indexer_address": dao_indexer_address,
-        "dao_indexer_abi": dao_indexer_abi,
-        "accountToken_bytecode": accountToken_bytecode,
-        "accountToken_abi": accountToken_abi,
-        "daoStorage_bytecode": daoStorage_bytecode,
-        "daoStorage_abi": daoStorage_abi
+        "nft_abi": nft_abi
 
     }
 
@@ -318,6 +305,7 @@ def oasees_genesis():
         path = './notebook',
         dockerfile = './Dockerfile',
         tag='oasees_notebook_image',
+        nocache=True
     )
 
 
