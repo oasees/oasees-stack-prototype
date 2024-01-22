@@ -335,7 +335,8 @@ def oasees_genesis():
         path = './notebook',
         dockerfile = './Dockerfile',
         tag='oasees_notebook_image',
-        nocache=True
+        nocache=True,
+        rm=True
     )
 
 

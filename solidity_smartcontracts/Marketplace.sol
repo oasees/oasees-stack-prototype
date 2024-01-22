@@ -207,9 +207,9 @@ contract OaseesMarketplace is ReentrancyGuard {
     emit DaoJoined(msg.sender, _idToDao[_tokenId].tokenId);
   }
 
-  function registerDeviceToDao(address deviceAddress,uint daoId) public {
-    _idToDao[daoId].members.addMember(deviceAddress);
-    emit DaoJoined(deviceAddress, daoId);
+  function registerDeviceToDao(address deviceAddress,uint _tokenId) public {
+    _idToDao[_tokenId].members.addMember(deviceAddress);
+    emit DaoJoined(deviceAddress, _idToDao[_tokenId].tokenId);
   }
 
   function getDaoMembers(uint256 _tokenId) public view returns (address[] memory) {
