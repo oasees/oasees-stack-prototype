@@ -4,4 +4,5 @@ COPY public/ /oasees_portal/public
 COPY src/ /oasees_portal/src
 COPY package.json /oasees_portal/package.json
 COPY tsconfig.json /oasees_portal/tsconfig.json
+COPY .eslintrc.json /oasees_portal/.eslintrc.json
 RUN yarn install
