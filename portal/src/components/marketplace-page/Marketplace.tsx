@@ -49,13 +49,13 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
     const [loading, setLoading] = useState(false);
     const [refresh,{toggle}] = useDisclosure();
-
+    const marketplaceMonitor = json.marketplace.connect(json.callProvider);
 
     useEffect(() => {
         const populateAlgorithms = async () => {
             try{
                 const nft_items = [];
-                const available_nfts = await json.marketplace.getListedNfts();
+                const available_nfts = await marketplaceMonitor.getListedNfts();
 
                 for (const item of available_nfts) {
                     const id = item[1];
@@ -88,7 +88,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         const populateDaos = async() => {
             try{
                 const daos = [];
-                const available_daos = await json.marketplace.getlistedDaos();
+                const available_daos = await marketplaceMonitor.getlistedDaos({from:json.account});
                 
                 for (const item of available_daos) {
                     const id = item[1];
@@ -118,7 +118,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         const populateDevices = async() => {
             try{
                 const devices = [];
-                const available_devices = await json.marketplace.getListedDevices();
+                const available_devices = await marketplaceMonitor.getListedDevices();
 
                 for (const item of available_devices){
                     const id = item[1];
@@ -244,14 +244,12 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 await signer)
 
             const transaction_count = await json.provider.getTransactionCount(json.account);
+
             const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
-            await get_tokens_transaction.wait();
-
             const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+1});
-            await join_transaction.wait();
-
             const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+2});
-            await delegate_transaction.wait();
+
+            await Promise.all([get_tokens_transaction.wait(),join_transaction.wait(),delegate_transaction.wait()]);
         } catch(error){
             console.error("Metamask error",error);
         }

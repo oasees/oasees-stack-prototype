@@ -1,8 +1,9 @@
-import { Group, List, UnstyledButton } from "@mantine/core";
+import { Group, List, UnstyledButton, Text} from "@mantine/core";
 import './SideMenu.css'
 
 
 interface SideMenuProps{
+    currentPage: number
     onTabClick(v:number): void;
 }
 
@@ -16,23 +17,35 @@ const menu_items = [
 
 
 
-const SideMenu = ({onTabClick}:SideMenuProps) => {
+const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
 
     const handleTabClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         const button: HTMLButtonElement = event.currentTarget;
         onTabClick(Number(button.value));
     };
+
+    const styledTab = (text:string, index:number) => {
+        if(currentPage==index)
+            return <Text fw={500} c="var(--mantine-color-orange-7)">{text}</Text>
+        else
+            return <Text>{text}</Text>
+    }
     
 
     const items = menu_items.map((item,index)=> (
         <List.Item icon=' ' key={index} >
-            <UnstyledButton value={index+1} onClick={handleTabClick}><Group gap="xs"><img src={item[1]} alt={item[0] + "icon"}/>{item[0]}</Group></UnstyledButton>
+            <UnstyledButton value={index+1} onClick={handleTabClick}>
+                <Group gap="xs">
+                    <img src={item[1]} alt={item[0] + "icon"}/>
+                    {styledTab(item[0],index+1)}
+                </Group>
+            </UnstyledButton>
         </List.Item>
     ));
 
     return (
-        <List spacing={20}>
+        <List spacing={20} >
             {items}
         </List>
     );

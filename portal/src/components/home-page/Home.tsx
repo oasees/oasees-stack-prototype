@@ -66,11 +66,13 @@ const Home = ({json}:HomeProps) => {
 
     const [modalUpdate,{toggle}] = useDisclosure();
 
+    const marketplaceMonitor = json.marketplace.connect(json.callProvider);
+
     useEffect(()=>{
         const populateAlgorithms = async () => {
             try{
                 const nft_items = [];
-                const available_nfts = await json.marketplace.getMyNfts();
+                const available_nfts = await marketplaceMonitor.getMyNfts({from:json.account});
 
                 for (const item of available_nfts) {
                     const price = ethers.formatEther(item[4]);
@@ -98,15 +100,14 @@ const Home = ({json}:HomeProps) => {
         const populateDaos = async() => {
             try{
                 const daos = [];
-                const available_daos = await json.marketplace.getJoinedDaos();
-
+                const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
                 for (const dao of available_daos){
                     const dao_content_hash = await json.nft.tokenURI(dao[1]);
                     const content = await IpfsGet(dao_content_hash);
                     let m = [];
 
                     //TEST
-                    const members = await json.marketplace.getDaoMembers(dao[4])
+                    const members = await marketplaceMonitor.getDaoMembers(dao[4])
                     for (const member of members){
                         m.push(member);
                     }
@@ -130,7 +131,7 @@ const Home = ({json}:HomeProps) => {
         const populateDevices = async () => {
             try{
                 const devices:Device[] = [];
-                const available_devices = await json.marketplace.getMyDevices();
+                const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
 
 
                 var i=1

@@ -31,8 +31,9 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
             const account = accounts[0]
 
             const provider = new ethers.BrowserProvider(window.ethereum);
-
             const signer = await provider.getSigner();
+
+            const callProvider = new ethers.JsonRpcProvider(`http://${process.env.REACT_APP_BLOCKCHAIN_ADDRESS}`,undefined,{cacheTimeout:-1});
 
             const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_portal_contracts`, {});
             const market_contracts_info = resp.data.portal_contracts;
@@ -59,7 +60,9 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
                 market_contracts_info.nft_address,
                 market_contracts_info.nft_abi,
                 await signer)
-            setInfo({account:account,provider:provider,marketplace:marketplace,nft:nft,jupyter_url:jupyter_url});
+
+ 
+            setInfo({account:account,provider:provider,marketplace:marketplace,nft:nft,jupyter_url:jupyter_url,callProvider:callProvider});
             setIsConnected(true);
         } catch (error){
             console.error(error);
@@ -68,6 +71,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
         setVisible(false);
         
     }
+
 
     return(
         <Container>

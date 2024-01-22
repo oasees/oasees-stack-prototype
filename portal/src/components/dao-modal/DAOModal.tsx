@@ -118,7 +118,8 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
     useEffect(()=>{
         const handleProposalEvent = async () =>{
             try {
-                const results:any = await daoContract!.queryFilter(proposalFilter!);
+                const daoMonitor:any = daoContract!.connect(json.callProvider);
+                const results:any = await daoMonitor.queryFilter(proposalFilter!);
                 const proposals:Proposal[] = [];
                 const proposal_descriptions: {[key:string]:string}= {}
 
@@ -127,7 +128,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     const description = args.description;
                     const proposalId = args.proposalId
 
-                    const state = await daoContract!.state(proposalId);
+                    const state = await daoMonitor.state(proposalId);
 
                     proposals.push({description:description,state:state,proposalId:proposalId});
                     proposal_descriptions[proposalId] = description;
@@ -145,14 +146,15 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 handleProposalEvent();
             }
         
-        },2000)
+        },3000)
         return () => clearInterval(intervalId);
     },[daoContract]);
 
     useEffect(()=> {
         const handleVoteEvent = async () => {
             try {
-                const results:any = await daoContract!.queryFilter(voteFilter!);
+                const daoMonitor:any = daoContract!.connect(json.callProvider);
+                const results:any = await daoMonitor.queryFilter(voteFilter!);
                 const votes:Vote[] = [];
 
                 for (const result of results){
@@ -194,8 +196,10 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
 
     const handleClose = () => {
-        close();
-        closeModal();
+        if(!loading){
+            close();
+            closeModal();
+        }
     };
 
     const handleJoining = async (event: React.MouseEvent<HTMLButtonElement>) =>{
@@ -207,13 +211,16 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         try{
             const transaction_count = await json.provider.getTransactionCount(json.account);
             const transfer_tokens_to_device = await tokenContract!.transfer(device_account,20,{nonce:transaction_count});
-            await transfer_tokens_to_device.wait();
+            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id,{nonce:transaction_count+1});
+
+            await Promise.all([
+                transfer_tokens_to_device.wait(),
+                register_device_to_dao.wait(),
+            ]);
 
             const new_user_balance = await tokenContract!.balanceOf(json.account);
             setUserBalance(new_user_balance);
 
-            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device_account,currentDAO.marketplace_dao_id,{nonce:transaction_count+1});
-            await register_device_to_dao.wait();
             updateDevices();
         } catch(error){
             console.error("Metamask error: ",error);
@@ -222,6 +229,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
     };
 
     const handleVote = async (proposalId:number, support:boolean) => {
+        setLoading(true);
         var vote=2;
         if(support)
             vote=1;
@@ -236,18 +244,22 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         } catch(error){
             console.error(error);
         }
+
+        setLoading(false);
         
     }
 
     const handleProposalSubmit = async (values:ProposalForm) => {
+        setLoading(true);
         try{
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const function_signature = await boxContract?.interface.encodeFunctionData('store',[Number(values.action)]);
+            const function_signature = boxContract?.interface.encodeFunctionData('store',[Number(values.action)]);
             const propose_transaction = await daoContract!.propose([boxContract?.target],[0],[function_signature],values.title + " " + values.description,{nonce:transaction_count});
             await propose_transaction.wait();
         }catch(error){
             console.error(error);
         }
+        setLoading(false);
     }
 
     const manageDevices = availableDevices.map((device,index) => (
@@ -295,7 +307,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         </Table.Tr>
     ));
 
-    const mapped_votes = votes.map((vote,index)=> (
+    const mapped_votes = votes.slice(0).reverse().map((vote,index)=> (
         <Table.Tr key={index}>
             <Table.Td>{vote.proposal}</Table.Td>
             <Table.Td>{supportToVote(vote.support)}</Table.Td>

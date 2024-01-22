@@ -23,7 +23,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
     setPageId(v);
   }
 
-  const currentPage = () => {
+  const mapCurrentPage = () => {
     switch(pageId){
       case 2:
         return <Marketplace json={json}/>;
@@ -56,7 +56,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
 
         <AppShell.Section grow component={ScrollArea} pt={20}>
             <Center>
-              <SideMenu onTabClick={changeCurrentPage}/>
+              <SideMenu currentPage={pageId} onTabClick={changeCurrentPage}/>
             </Center>
         </AppShell.Section>
 
@@ -70,7 +70,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
             <Button color='orange' w={200} h={45} onClick={setIsConnected}>Disconnect</Button>
           </Flex>
 
-          {currentPage()}
+          {mapCurrentPage()}
 
         </Stack>
       </AppShell.Main>
