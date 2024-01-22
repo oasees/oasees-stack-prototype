@@ -18,20 +18,11 @@ load_dotenv(dotenv_path=env_file_path)
 DEVICES_IP= os.getenv("DEVICES_IP")
 
 DEVICES = [
-    {'device_name':"Drone1","account":os.getenv("device1_addr"),"endpoint":"http://{}:8001".format(DEVICES_IP)},
-    {'device_name':"Drone2","account":os.getenv("device2_addr"),"endpoint":"http://{}:8002".format(DEVICES_IP)},
-    {'device_name':"Drone3","account":os.getenv("device3_addr"),"endpoint":"http://{}:8003".format(DEVICES_IP)},
-    {'device_name':"Drone4","account":os.getenv("device4_addr"),"endpoint":"http://{}:8004".format(DEVICES_IP)},
-    {'device_name':"Drone5","account":os.getenv("device5_addr"),"endpoint":"http://{}:8005".format(DEVICES_IP)},
-    {'device_name':"Drone6","account":os.getenv("device6_addr"),"endpoint":"http://{}:8006".format(DEVICES_IP)}
+    {'device_name':os.getenv("device1_name"),"account":os.getenv("device1_addr"),"endpoint":os.getenv("device1_endpoint")},
+    {'device_name':os.getenv("device2_name"),"account":os.getenv("device2_addr"),"endpoint":os.getenv("device2_endpoint")},
+    {'device_name':os.getenv("device3_name"),"account":os.getenv("device3_addr"),"endpoint":os.getenv("device3_endpoint")},
+    {'device_name':os.getenv("device4_name"),"account":os.getenv("device4_addr"),"endpoint":os.getenv("device4_endpoint")}
 ]
-
-
-# DEVICES = [
-#     {'device_name':"DEVICE_1","account":"0x2546BcD3c84621e976D8185a91A922aE77ECEc30","endpoint":"http://{}:5000".format(DEVICES_IP)},
-
-# ]
-
 
 
 portal_account = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'

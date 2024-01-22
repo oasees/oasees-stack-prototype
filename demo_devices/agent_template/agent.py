@@ -44,7 +44,7 @@ vote_states={
 
 
 
-@app.route('/',methods=["GET"])
+@app.route('/status',methods=["GET"])
 def oasees_agent_is_up():
 
 	account,_,device_name,dao_ipfs_hash, IPFS_HOST,BLOCK_CHAIN_IP = oasees_agent_info_get()
@@ -174,7 +174,7 @@ def create_proposal():
 	return {"device_name":device_name,"created_proposal":proposal_description}
 
 
-@app.route('/check_dao_subscription',methods=["GET"])
+@app.route('/check_dao',methods=["GET"])
 def check_dao_subscription():
 
 	_,_,_,dao_ipfs_hash,_,IPFS_HOST= oasees_agent_info_get()
