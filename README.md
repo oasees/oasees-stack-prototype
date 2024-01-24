@@ -9,7 +9,7 @@ This current version of the Oasees stack requires the following:
 ```sh
 cd oasses-stack-prototype
 nano .env (change every ip to your host's ip)
-nano .env_devices (change ip to your host's ip)
+nano .devices_env (change ip to your host's ip)
 docker compose up -d --build
 ```
 The initial building procedure can take a while depending your hardware
