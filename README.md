@@ -207,5 +207,43 @@ By running the following, the devices are published to the oasees marketplace:
 ```sh
 python3 populate.py
 ```
+## Basic Usage Screenshots
+As soon as the oasees stack is up and running, you can access the login page.
+![](imgs/login_page.png)
+<br/>
+Overview of the homepage.
+![](imgs/home_page.png)
+<br/>
+Using the marketplace tab the user can nagivate to all available Algorithms , DAOs and Devices.
+<br/>
+Buy some algorithms by pressing the Buy button
+![](imgs/market1.png)
+<br/>
+Press the Join Button to join a DAO
+![](imgs/market2.png)
+<br/>
+Get the available devices by pressing the Buy button
+![](imgs/market3.png)
+<br/>
+The homepage contains the Joined Daos ,the devices and the purchaced algorithms.
+![](imgs/home_after.png)
+<br/>
+To register the devices as DAO members press the View button. This will open a modal with two tabs: Overview and Manage.
+<br/>
+Click on Manage Tab and register the devices by pressing the join button
+![](imgs/join_devices.png)
+<br/>
+Now at the Overview Tab of the DAO the Devices will be displayed as participants
+![](imgs/devices_as_mebmbers.png)
+<br/>
+
+### Validate that the devices are actually Dao members
+```sh
+curl http://{YOUR_HOST_IP}:8001/check_dao #if you haven't changed the port 
+```
+A sample output would be:
+```sh
+{"msg":"device is member of DRONES DAO"}
+```
 
 ## More detailed instructions and demos will follow
