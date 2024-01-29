@@ -18,6 +18,20 @@ from web3.middleware import geth_poa_middleware
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
+def load_dapp(dapp_path):
+
+
+	try:
+		with open(dapp_path, 'rb') as file:
+			file_bytes = file.read()
+			print(f"Successfully loaded {dapp_path}".strip(".html"))
+	except FileNotFoundError:
+		print(f"Error: File not found at {file_path}")
+	except Exception as e:
+		print(f"Error: {e}")
+
+	return file_bytes
+
 
 def deploy_dao(deployer_account,deployer_key,dao_args):
 
@@ -29,7 +43,9 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	QUORUM_PERCENTAGE = dao_args['QUORUM_PERCENTAGE']
 	VOTING_PERIOD = dao_args['VOTING_PERIOD']
 	VOTING_DELAY = dao_args['VOTING_DELAY']
-
+	DAPP_SOURCE_PATH = dao_args['DAPP_SOURCE_PATH']
+	DAPP = load_dapp(DAPP_SOURCE_PATH)
+	
 
 	#### DEPLOY VOTING TOKEN################
 
@@ -231,7 +247,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 
-
+	dapp_hash = client.add_bytes(DAPP)
 
 	dao_content = {
 		"dao_name": DAO_NAME,
@@ -243,7 +259,8 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	    "token_address": token_address,
 	    "token_abi": token_abi,
 	    "box_address": box_address,
-	    "box_abi": box_abi
+	    "box_abi": box_abi,
+	    "dapp":dapp_hash
 	}
 
 
