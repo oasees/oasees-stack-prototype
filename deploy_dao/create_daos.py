@@ -30,7 +30,11 @@ Daos_to_create = [
 		"QUORUM_PERCENTAGE": 50,
 		"VOTING_PERIOD": 10,
 		"VOTING_DELAY": 0,
-		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html"
+		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html",
+		"DAPP_INFO": {
+			"NAME": "A DApp name",
+			"DESCRIPTION": "A DApp description",
+		}
 	},
 
 	{
@@ -40,7 +44,11 @@ Daos_to_create = [
 		"QUORUM_PERCENTAGE": 4,
 		"VOTING_PERIOD": 9,
 		"VOTING_DELAY": 0,
-		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html"
+		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html",
+		"DAPP_INFO": {
+			"NAME": "A DApp name",
+			"DESCRIPTION": "A DApp description",
+		}
 	},
 	{
 		"DAO_NAME": "DAO 3",
@@ -49,7 +57,11 @@ Daos_to_create = [
 		"QUORUM_PERCENTAGE": 4,
 		"VOTING_PERIOD": 9,
 		"VOTING_DELAY": 0,
-		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html"
+		"DAPP_SOURCE_PATH":"dapp_sources/sampleDAPP.html",
+		"DAPP_INFO": {
+			"NAME": "A DApp name",
+			"DESCRIPTION": "A DApp description",
+		}
 	}
 
 ]

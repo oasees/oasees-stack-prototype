@@ -12,7 +12,8 @@ const menu_items = [
     ['Home', './images/home.svg'],
     ['Marketplace', './images/market.png'],
     ['Publish', './images/upload.png'],
-    ['Notebook', './images/tweak.png']
+    ['Notebook', './images/tweak.png'],
+    ['DApps', './images/chain.png']
   ];
 
 

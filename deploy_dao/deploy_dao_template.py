@@ -39,6 +39,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 	DAO_NAME = dao_args['DAO_NAME']
 	DAO_DESC = dao_args['DAO_DESC']
+	DAPP_INFO = dao_args['DAPP_INFO']
 	MIN_DELAY = dao_args['MIN_DELAY']
 	QUORUM_PERCENTAGE = dao_args['QUORUM_PERCENTAGE']
 	VOTING_PERIOD = dao_args['VOTING_PERIOD']
@@ -260,7 +261,8 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 	    "token_abi": token_abi,
 	    "box_address": box_address,
 	    "box_abi": box_abi,
-	    "dapp":dapp_hash
+	    "dapp":dapp_hash,
+		"dapp_info": DAPP_INFO,
 	}
 
 

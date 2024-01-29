@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 
 
 interface DAOModalProps{
-    currentDAO: any;
+    currentDAO: any,
     availableDevices: any[];
     joinedDevices: any[];
     closeModal(): void;
@@ -126,12 +126,13 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 for (const result of results){
                     const args = result.args;
                     const description = args.description;
-                    const proposalId = args.proposalId
+                    const proposalId = args.proposalId;
 
                     const state = await daoMonitor.state(proposalId);
 
                     proposals.push({description:description,state:state,proposalId:proposalId});
                     proposal_descriptions[proposalId] = description;
+                    // console.log(await json.callProvider.getBlockNumber());
                 }
 
                 setProposals(proposals);
@@ -140,13 +141,16 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 console.error('Error fetching proposals:', error);
             }
         }
+        var intervalId:NodeJS.Timer;
+        if(daoContract){
+            handleProposalEvent();
 
-        const intervalId = setInterval(()=>{
-            if(daoContract){
+            intervalId = setInterval(()=>{
                 handleProposalEvent();
-            }
+            },3000)
+        }
+
         
-        },3000)
         return () => clearInterval(intervalId);
     },[daoContract]);
 

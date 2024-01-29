@@ -6,7 +6,7 @@ import ItemTable from "../tables/item-table/ItemTable";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import axios from "axios";
-import { useDisclosure } from "@mantine/hooks";
+import { useCounter, useDisclosure } from "@mantine/hooks";
 
 interface HomeProps{
     json:any
@@ -53,20 +53,13 @@ const Home = ({json}:HomeProps) => {
 
     const [myAlgorithms,setMyAlgorithms] = useState<string[][]>([]);
     const [myDaos, setMyDaos] = useState<DAO[]>([]);
-    // const [myDevices,setMyDevices] = useState([
-    //     ['1','Drone1','10.5.42.1','FirstDAO'],
-    //     ['2','Drone2','10.6.43.2','FirstDAO'],
-    //     ['3','Drone3','10.5.21.3','--'],
-    //     ['4','Drone4','168.24.1.2','QQQQQQQ']
-    // ])
 
     const [myDevices,setMyDevices] = useState<Device[]>([]);
 
-    const [zeroDaos, setZeroDaos] = useState(false);
-
     const [modalUpdate,{toggle}] = useDisclosure();
+    const [counter, {increment}] = useCounter(0);
 
-    const marketplaceMonitor = json.marketplace.connect(json.callProvider);
+    const marketplaceMonitor:ethers.Contract = json.marketplace.connect(json.callProvider);
 
     useEffect(()=>{
         const populateAlgorithms = async () => {
@@ -94,7 +87,8 @@ const Home = ({json}:HomeProps) => {
         }
         
         populateAlgorithms();
-    },[])
+    },[counter])
+
 
     useEffect(()=>{
         const populateDaos = async() => {
@@ -114,22 +108,17 @@ const Home = ({json}:HomeProps) => {
 
                     daos.push({...content,"marketplace_dao_id": dao[4],"members":m})
                 }
-                if (daos.length >0)
-                    setMyDaos(daos);
-                else
-                    setZeroDaos(true);
+
+                setMyDaos(daos);
+                populateDevices(daos);
             } catch(error){
                 console.error('Error loading contracts: ', error);
             }
         }
 
-        populateDaos();
-    },[modalUpdate])
-
-
-    useEffect(()=>{
-        const populateDevices = async () => {
+        const populateDevices = async (daos:DAO[]) => {
             try{
+                console.log(daos);
                 const devices:Device[] = [];
                 const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
 
@@ -144,7 +133,7 @@ const Home = ({json}:HomeProps) => {
                     const metadata = JSON.parse(await IpfsGet(meta_hash));
                     let device_dao ='';
 
-                    for (const dao of myDaos){
+                    for (const dao of daos){
                         if(dao.members.includes(content.account)){
                             device_dao = dao.dao_name;
                             break;
@@ -166,12 +155,20 @@ const Home = ({json}:HomeProps) => {
             }
         }
 
-        if(myDaos.length>0 || zeroDaos)
-            populateDevices();
-
-    },[myDaos, modalUpdate,zeroDaos])
+        populateDaos();
+    },[modalUpdate,counter])
 
 
+    useEffect(()=> {
+        const algFilter = marketplaceMonitor.filters.NFTSold(null,null,null,json.account);
+        const daoFilter = marketplaceMonitor.filters.DaoJoined(json.account);
+        const devFilter = marketplaceMonitor.filters.DeviceSold(json.account);
+        marketplaceMonitor.on(algFilter,increment);
+        marketplaceMonitor.on(daoFilter,increment);
+        marketplaceMonitor.on(devFilter,increment);
+
+        return () => {marketplaceMonitor.off(algFilter); marketplaceMonitor.off(daoFilter); marketplaceMonitor.off(devFilter);};
+    },[])
 
 
     const closeModal = () =>{
@@ -198,7 +195,9 @@ const Home = ({json}:HomeProps) => {
         }
         return mDevices;
     };
+    
 
+    console.log('render');
 
     return(
         <>

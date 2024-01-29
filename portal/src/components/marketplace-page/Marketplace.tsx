@@ -2,8 +2,8 @@ import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, L
 import './Marketplace.css'
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ethers } from "ethers";
-import { useDisclosure } from "@mantine/hooks";
+import { ContractEventPayload, ethers } from "ethers";
+import { useCounter, useDisclosure } from "@mantine/hooks";
 
 
 interface MarketplaceProps{
@@ -48,8 +48,10 @@ const Marketplace = ({json}:MarketplaceProps) => {
     const [devices,setDevices] = useState<CardProps[]>([]);
 
     const [loading, setLoading] = useState(false);
-    const [refresh,{toggle}] = useDisclosure();
-    const marketplaceMonitor = json.marketplace.connect(json.callProvider);
+    const [algCounter,algHandlers] = useCounter();
+    const [daoCounter,daoHandlers] = useCounter();
+    const [devCounter,devHandlers] = useCounter();
+    const marketplaceMonitor: ethers.Contract = json.marketplace.connect(json.callProvider);
 
     useEffect(() => {
         const populateAlgorithms = async () => {
@@ -82,7 +84,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         
         populateAlgorithms();
         
-    },[refresh,json.marketplace]);
+    },[algCounter]);
 
     useEffect(()=>{
         const populateDaos = async() => {
@@ -111,7 +113,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
         
         populateDaos();
-    },[refresh, json.marketplace]);
+    },[daoCounter]);
 
 
     useEffect(()=>{
@@ -144,7 +146,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
 
         populateDevices();
-    },[refresh, json.marketplace]);
+    },[devCounter]);
 
 
 
@@ -155,7 +157,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 <Center>
                 <Image
                 src="./images/catalogue.png"
-                mah={200} maw={200}
+                mah={200} w="auto"
                 p={10}
                 />
                 </Center>
@@ -174,7 +176,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 <Center>
                 <Image
                 src="./images/dao_icon.png"
-                mah={200} maw={200}
+                mah={200} w="auto"
                 p={10}
                 />
                 </Center>
@@ -192,8 +194,8 @@ const Marketplace = ({json}:MarketplaceProps) => {
             <Card.Section>
                 <Center>
                 <Image
-                src="./images/dao_icon.png"
-                mah={200} maw={200}
+                src="./images/device_icon.png"
+                mah={200} w="auto"
                 p={10}
                 />
                 </Center>
@@ -220,7 +222,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         } catch(error){
             console.error("Metamask error",error);
         }
-        toggle();
+        algHandlers.increment();
         setLoading(false);
     }
 
@@ -237,6 +239,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 content.token_provider_address, 
                 content.token_provider_abi,
                 await signer)
+            
 
             const vote_token_contract = new ethers.Contract(
                 content.token_address,
@@ -246,14 +249,14 @@ const Marketplace = ({json}:MarketplaceProps) => {
             const transaction_count = await json.provider.getTransactionCount(json.account);
 
             const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
-            const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+1});
-            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+2});
+            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+1});
+            const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+2});
 
             await Promise.all([get_tokens_transaction.wait(),join_transaction.wait(),delegate_transaction.wait()]);
         } catch(error){
             console.error("Metamask error",error);
         }
-        toggle();
+        daoHandlers.increment();
         setLoading(false);
     }
 
@@ -266,11 +269,20 @@ const Marketplace = ({json}:MarketplaceProps) => {
         } catch(error){
             console.error("Metamask error",error);
         }
-        toggle();
+        devHandlers.increment();
         setLoading(false);
     }
 
+    useEffect(() => {
+        const checkEvent = async () => {
+            marketplaceMonitor.on("NFTListed",algHandlers.increment);
+            marketplaceMonitor.on("NewDAO",daoHandlers.increment);
+            marketplaceMonitor.on("DeviceListed",devHandlers.increment);
+        }
 
+        checkEvent();
+        return () => {marketplaceMonitor.off("NFTListed"); marketplaceMonitor.off("NewDAO"); marketplaceMonitor.off("DeviceListed");}
+    },[])
 
     return (
         <>

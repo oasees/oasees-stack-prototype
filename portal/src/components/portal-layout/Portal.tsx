@@ -7,6 +7,7 @@ import Home from "../home-page/Home";
 import Marketplace from "../marketplace-page/Marketplace";
 import Publish from "../publish-page/Publish";
 import Notebook from "../notebook-page/Notebook";
+import DAppContainer from "../dapp-page/DAppContainer";
 
 interface PortalProps {
   json:any;
@@ -31,6 +32,8 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
         return <Publish json={json}/>;
       case 4:
         return <Notebook json={json}/>;
+      case 5:
+        return <DAppContainer json={json}/>;
       default:
         return <Home json={json}/>;
     }
@@ -49,7 +52,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
       <AppShell.Navbar p="md">
         <AppShell.Section p={20}>
             <Center>
-              <Image src="./images/oasees-logo.png" alt="Oasees logo" mah={200} maw={100}/>
+              <Image src="./images/oasees-logo.png" alt="Oasees logo" mah={150} w="auto"/>
             </Center>
         </AppShell.Section>
 

@@ -71,11 +71,6 @@ contract OaseesMarketplace is ReentrancyGuard {
     address  _owner = msg.sender;
     address  _seller = msg.sender;
 
-    if(listed){
-      IERC721(_nftContract).transferFrom( msg.sender,address(this),_tokenId);
-      _owner = address(this);
-
-    }
     _deviceCount.increment();
 
     _idToDevice[_deviceCount.current()] = DEVICE(
@@ -88,6 +83,15 @@ contract OaseesMarketplace is ReentrancyGuard {
       listed,
       _deviceCount.current()
     );
+
+    if(listed){
+      IERC721(_nftContract).transferFrom( msg.sender,address(this),_tokenId);
+      _owner = address(this);
+      emit DeviceListed();
+    }else{
+      emit DeviceSold(msg.sender);
+    }
+
   } 
 
   function getListedDevices() public view returns (DEVICE[] memory) {
@@ -122,6 +126,7 @@ contract OaseesMarketplace is ReentrancyGuard {
     device.owner = buyer;
     device.listed = false;
 
+    emit DeviceSold(buyer);
   }
 
 
@@ -156,7 +161,7 @@ contract OaseesMarketplace is ReentrancyGuard {
 
 
   event DaoJoined (
-    address member_address,
+    address indexed member_address,
     uint256 tokenId
   );
 
@@ -172,6 +177,8 @@ contract OaseesMarketplace is ReentrancyGuard {
       new DaoMembers(),
       _daoCount.current()
     );
+
+    emit NewDAO();
   } 
 
   function getJoinedDaos() public view returns (DAO[] memory){
@@ -265,8 +272,16 @@ contract OaseesMarketplace is ReentrancyGuard {
     address nftContract,
     uint256 tokenId,
     address seller,
-    address owner,
+    address indexed owner,
     uint256 price
+  );
+
+  event NewDAO();
+
+  event DeviceListed();
+
+  event DeviceSold(
+    address indexed owner
   );
 
 
