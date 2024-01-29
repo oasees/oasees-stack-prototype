@@ -207,6 +207,28 @@ By running the following, the devices are published to the oasees marketplace:
 ```sh
 python3 populate.py
 ```
+
+## Metamask Configuration
+Click to Metamask Browser Extention and follow the steps as depicted bellow:
+![](imgs/metamask1.png)
+<br/>
+The network options will open the following.Click the marked options in red:
+![](imgs/metamask2.png)
+<br/>
+Configure the local oasees-net:
+![](imgs/metamask3.png)
+<br/>
+After the successfull network configuration, click the marked button:
+![](imgs/metamask4.png)
+<br/>
+Follow the step bellow to import an account by providing a private key from **hardhat_accounts.txt**.
+![](imgs/metamask5.png)
+<br/>
+Finally make sure that you use the imported account when you click the Oasees portal Connect button as shown to the Basic Usage Screenshots.
+![](imgs/metamask6.png)
+<br/>
+
+
 ## Basic Usage Screenshots
 As soon as the oasees stack is up and running, you can access the login page.
 ![](imgs/login_page.png)
