@@ -236,6 +236,20 @@ def ipfs_fetch():
     return {"content":content}
 
 
+@app.route('/ipfs_fetch_dapp', methods=["GET"])
+def ipfs_fetch_dapp():
+    ipfs_hash = request.args.get("ipfs_hash")
+
+
+    client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
+    content = client.cat(ipfs_hash)
+    client.close()
+
+    content = content.decode('utf-8')
+
+    return {"content":(content)}
+
+
 
 @app.route('/ipfs_portal_contracts',methods=["GET"])
 def get_marketplace_ipfs_hash():

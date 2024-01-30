@@ -118,12 +118,18 @@ function DAppContainer({json}:DAppProps) {
 
   useEffect(()=>{
     const getDevice = async() => {
-      const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
-      const device = available_devices[0];
+      try{
+        const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
+        if(available_devices.length>0){
+          const device = available_devices[0];
 
-      const content_hash = await json.nft.tokenURI(device[1]);
-      const content = await IpfsGet(content_hash);
-      setDeviceEndpoint(content.device_endpoint);
+          const content_hash = await json.nft.tokenURI(device[1]);
+          const content = await IpfsGet(content_hash);
+          setDeviceEndpoint(content.device_endpoint);
+        }
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     getDevice();
@@ -163,8 +169,6 @@ function DAppContainer({json}:DAppProps) {
     }
   }
 
-
-  console.log(deviceEndpoint);
   return (
     <>
       {pageContent()}

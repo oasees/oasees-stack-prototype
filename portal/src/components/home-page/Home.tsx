@@ -118,7 +118,6 @@ const Home = ({json}:HomeProps) => {
 
         const populateDevices = async (daos:DAO[]) => {
             try{
-                console.log(daos);
                 const devices:Device[] = [];
                 const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
 
@@ -197,7 +196,6 @@ const Home = ({json}:HomeProps) => {
     };
     
 
-    console.log('render');
 
     return(
         <>
@@ -209,11 +207,11 @@ const Home = ({json}:HomeProps) => {
         updateDevices = {toggle}
         json={json}/>}
 
-        <Grid gutter="md" justify='space-evenly' miw={900}  >
+        <Grid gutter="md" justify='space-evenly'  >
         <Grid.Col span={12}>My OASEES</Grid.Col>
 
 
-        <Grid.Col span={4}>
+        <Grid.Col span={{md:6, xl:5}}>
             <Stack>
             Joined DAOs
             <Paper shadow='xl' radius='xs' withBorder>
@@ -225,7 +223,7 @@ const Home = ({json}:HomeProps) => {
         </Grid.Col>
 
 
-        <Grid.Col span={4}>
+        <Grid.Col span={{md:6, xl:5}}>
             <Stack >
             Purchased Items
             <Paper shadow='xl' radius='xs' withBorder>
@@ -237,7 +235,7 @@ const Home = ({json}:HomeProps) => {
         </Grid.Col>
 
 
-        <Grid.Col span={5}>
+        <Grid.Col span={{md:6, xl:5}}>
             <Stack>
             Devices
             <Paper shadow='xl' radius='xs' withBorder>

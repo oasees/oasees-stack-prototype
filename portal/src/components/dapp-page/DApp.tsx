@@ -41,8 +41,14 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
 
     useEffect(()=>{
         const getAudioFiles = async() => {
-            const audio_files:any = await axios.get(`${device_endpoint}/list_wav_files`);
-            setWavFiles(audio_files.data.wav_files);
+            if(device_endpoint){
+                try{
+                    const audio_files:any = await axios.get(`${device_endpoint}/list_wav_files`);
+                    setWavFiles(audio_files.data.wav_files);
+                }catch (error){
+                    console.error(error);
+                }
+            }
         }
 
         getAudioFiles();
@@ -82,7 +88,7 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
             </Table.Tbody>
         </Table>
         <Flex justify='center'>
-            <Button color="red">Record</Button>
+            {device_endpoint && <Button color="red">Record</Button>}
         </Flex>
         {/* <div dangerouslySetInnerHTML={{ __html: html_page }} /> */}
         </>

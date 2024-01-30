@@ -1,4 +1,4 @@
-import { AppShell, Image, Center, Button, Stack, Flex, ScrollArea } from "@mantine/core";
+import { AppShell, Image, Center, Button, Stack, Flex, ScrollArea, Burger } from "@mantine/core";
 import './Portal.css'
 import '../tables/Table.css'
 import { useState } from "react";
@@ -8,6 +8,7 @@ import Marketplace from "../marketplace-page/Marketplace";
 import Publish from "../publish-page/Publish";
 import Notebook from "../notebook-page/Notebook";
 import DAppContainer from "../dapp-page/DAppContainer";
+import { useDisclosure } from "@mantine/hooks";
 
 interface PortalProps {
   json:any;
@@ -17,6 +18,7 @@ interface PortalProps {
 const Portal = ({json,setIsConnected}:PortalProps) => {
 
   const [pageId, setPageId] = useState(1);
+  const [opened, {toggle}] = useDisclosure();
   
   
 
@@ -42,12 +44,27 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
 
   return (
     <AppShell
+      header={{ height: 32 }}
       navbar={{
         width: {base:190, sm:250, xl:300},
-        breakpoint: '',
+        breakpoint: 'xs',
+        collapsed:{mobile:!opened}
       }}
+      layout="alt"
       padding="md"
     >
+
+      <AppShell.Header withBorder={false} zIndex={1000}>
+        <Flex justify="center" align="center">
+          <Burger
+            opened={opened}
+            onClick={toggle}
+            hiddenFrom="xs"
+            size="md"
+            
+          />
+        </Flex>
+      </AppShell.Header>
 
       <AppShell.Navbar p="md">
         <AppShell.Section p={20}>
@@ -63,13 +80,19 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
             </Center>
         </AppShell.Section>
 
+        <AppShell.Section>
+          <Flex justify="center" hiddenFrom="xs">
+            <Button color='orange' w={200} h={45} onClick={setIsConnected}>Disconnect</Button>
+          </Flex>
+        </AppShell.Section>
+
       </AppShell.Navbar>
 
 
       <AppShell.Main >
         <Stack>
 
-          <Flex justify='flex-end'>
+          <Flex justify='flex-end' visibleFrom="xs">
             <Button color='orange' w={200} h={45} onClick={setIsConnected}>Disconnect</Button>
           </Flex>
 
