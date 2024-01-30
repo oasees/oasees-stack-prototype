@@ -23,6 +23,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
   
 
   const changeCurrentPage = (v:number) => {
+    toggle();
     setPageId(v);
   }
 

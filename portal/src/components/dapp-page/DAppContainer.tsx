@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '@mantine/core/styles.css'
 import '@mantine/dropzone/styles.css';
-import { Button, Card, Group, SimpleGrid } from '@mantine/core';
+import { Button, Card, Center, Group, SimpleGrid } from '@mantine/core';
 import axios from 'axios';
 import DApp from './DApp';
 
@@ -171,6 +171,7 @@ function DAppContainer({json}:DAppProps) {
 
   return (
     <>
+      <Center pt={20}>DApps</Center>
       {pageContent()}
     </>
   );
