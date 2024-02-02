@@ -1,5 +1,6 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text} from "@mantine/core";
-import './Marketplace.css'
+import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Container, Box} from "@mantine/core";
+import styles from './Marketplace.module.css'
+import classNames from "classnames";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ContractEventPayload, ethers } from "ethers";
@@ -152,60 +153,60 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
 
     const card_algorithms = algorithms.map((item,index) => (
-        <Card shadow="sm" padding="lg" radius="md" withBorder style={{textAlign:"center"}} key={index}>
-            <Card.Section>
+        <Card shadow="sm" key={index} h={300} className={styles.card}>
+            <Card.Section className={styles.imgBx}>
                 <Center>
                 <Image
                 src="./images/catalogue.png"
-                mah={200} w="auto"
+                mah={150} w="auto"
                 p={10}
                 />
                 </Center>
             </Card.Section>
-            <Stack align='center'>
-                <h2>{item.title}</h2>
-                <h4>{item.price}</h4>
+            <div className={styles.contentBx}>
+                <h3>{item.title}</h3>
+                <h5>{item.price}</h5>
+                <br/><br/>
                 <Button color='orange' onClick={() => purchase_algorithm(item.marketplace_id,(item.price as string))}>PURCHASE NOW</Button>
-            </Stack>
+            </div>
         </Card>
     ))
 
     const card_daos = daos.map((item,index) => (
-        <Card shadow="sm" padding="lg" radius="md" withBorder style={{textAlign:"center"}} key={index}>
-            <Card.Section>
-                <Center>
+        <Card shadow="sm" key={index} h={300} className={styles.card}>
+            <Card.Section className={styles.imgBx}>
                 <Image
                 src="./images/dao_icon.png"
-                mah={200} w="auto"
+                mah={150} w="auto"
                 p={10}
                 />
-                </Center>
             </Card.Section>
-            <Stack align='center'>
-                <h2>{item.title}</h2>
+            <div className={styles.contentBx}>
+                <h3>{item.title}</h3>
                 <h4>{item.desc}</h4>
-                <Button color='orange' onClick={()=>join_dao(item.id,item.marketplace_id)}>JOIN</Button>
-            </Stack>
+                <br/><br/>
+                <Button color='var(--mantine-color-orange-6)' onClick={()=>join_dao(item.id,item.marketplace_id)}>JOIN</Button>
+            </div>
         </Card>
     ))
 
     const card_devices = devices.map((item,index) => (
-        <Card shadow="sm" padding="lg" radius="md" withBorder style={{textAlign:"center"}} key={index}>
-            <Card.Section>
+        <Card shadow="sm" key={index} h={300} className={styles.card}>
+            <Card.Section className={styles.imgBx}>
                 <Center>
                 <Image
                 src="./images/device_icon.png"
-                mah={200} w="auto"
+                mah={150} w="auto"
                 p={10}
                 />
                 </Center>
             </Card.Section>
-            <Stack align='center'>
-                <h2>{item.title}</h2>
-                <h3>{item.desc}</h3>
-                <h4>{item.price}</h4>
+            <div className={styles.contentBx}>
+                <h3>{item.title}</h3>
+                <h4>{item.desc}</h4>
+                <h5>{item.price}</h5>
                 <Button color='orange' onClick={()=>purchase_device(item.marketplace_id,(item.price as string))}>BUY</Button>
-            </Stack>
+            </div>
         </Card>
     ))
 
@@ -296,15 +297,15 @@ const Marketplace = ({json}:MarketplaceProps) => {
 
         <Tabs defaultValue="algorithms" pt={30}>
                 <Tabs.List grow>
-                    <Tabs.Tab className='marketplace-tab' value="algorithms">
+                    <Tabs.Tab className={styles.marketplace_tab} value="algorithms">
                         Algorithms
                     </Tabs.Tab>
 
-                    <Tabs.Tab className='marketplace-tab' value="daos">
+                    <Tabs.Tab className={styles.marketplace_tab} value="daos">
                         DAOs
                     </Tabs.Tab>
 
-                    <Tabs.Tab className='marketplace-tab' value="devices">
+                    <Tabs.Tab className={styles.marketplace_tab} value="devices">
                         Devices
                     </Tabs.Tab>
                 </Tabs.List>
@@ -320,6 +321,11 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     <SimpleGrid cols={{base:1, sm:2, md:3, lg:4}}>
                         {card_daos}
                     </SimpleGrid>
+                    {/* <div className={classNames(styles.root)}>
+                        <div className={styles.subdiv}>
+                            {card_daos}
+                        </div>
+                    </div> */}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="devices" pt={20}>

@@ -221,11 +221,11 @@ const Publish = ({json}:PublishProps) => {
           }}/>
         <Tabs defaultValue="algorithms" pt={30}>
             <Tabs.List grow>
-                <Tabs.Tab value="algorithms">
+                <Tabs.Tab value="algorithms" className="publish_tab">
                     Publish an Algorithm
                 </Tabs.Tab>
 
-                <Tabs.Tab value="devices">
+                <Tabs.Tab value="devices" className="publish_tab">
                     Upload a Device
                 </Tabs.Tab>
             </Tabs.List>

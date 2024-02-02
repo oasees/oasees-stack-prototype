@@ -35,7 +35,7 @@ const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
     
 
     const items = menu_items.map((item,index)=> (
-        <List.Item icon=' ' key={index} >
+        <List.Item key={index} >
             <UnstyledButton value={index+1} onClick={handleTabClick}>
                 <Group gap="xs">
                     <img src={item[1]} alt={item[0] + "icon"}/>
@@ -46,7 +46,7 @@ const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
     ));
 
     return (
-        <List spacing={20} >
+        <List spacing={20} w={142} listStyleType="none">
             {items}
         </List>
     );

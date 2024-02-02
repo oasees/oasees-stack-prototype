@@ -342,7 +342,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             </Center>
             
             <Tabs defaultValue="overview">
-                <Tabs.List>
+                <Tabs.List hiddenFrom="sm" justify="center">
                     <Tabs.Tab value="overview">
                         Overview
                     </Tabs.Tab>
@@ -352,11 +352,20 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     </Tabs.Tab>
                 </Tabs.List>
 
+                <Tabs.List visibleFrom="sm">
+                    <Tabs.Tab value="overview">
+                        Overview
+                    </Tabs.Tab>
+
+                    <Tabs.Tab value="manage">
+                        Manage
+                    </Tabs.Tab>
+                </Tabs.List>
 
                 <Tabs.Panel value="overview" h={585}>
-                    <Grid gutter='md' miw={500}>
+                    <Grid gutter='md'>
 
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{base:12, md:6}}>
                         <Center pb={10} style={{fontSize:14}}><u><b>Participants</b></u></Center>
 
                         <ScrollArea h={156}>
@@ -369,7 +378,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                         </ScrollArea>
                         </Grid.Col>
 
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{base:12, md:6}}>
                             <Center pb={10} style={{fontSize:14}}><b><u>Proposals</u></b></Center>
                             <ScrollArea h={156}>
                         <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top" >
@@ -406,9 +415,9 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 </Tabs.Panel>
 
                 <Tabs.Panel value="manage" h={585}>
-                    <Grid miw={500}>
+                    <Grid>
 
-                        <Grid.Col span={6}>
+                        <Grid.Col span={{base:12,md:6}}>
                         <Center pb={10} style={{fontSize:14}}><u><b>Available devices</b></u></Center>
                     <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
                         <Table.Thead>
@@ -425,7 +434,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     </Table>
                     </Grid.Col>
 
-                    <Grid.Col span={6}>
+                    <Grid.Col span={{base:12,md:6}}>
                     <Center pb={10} style={{fontSize:14}}><u><b>Create Proposal</b></u></Center>
                     <Box bg='var(--mantine-color-gray-1)' p={10}>
                     <form className={styles.form} onSubmit={form.onSubmit((values)=>handleProposalSubmit(values))}>
