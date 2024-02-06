@@ -247,7 +247,6 @@ const Publish = ({json}:PublishProps) => {
                     h={120}
                     p={0}
                     multiple={false}
-                    accept={{'text/x-python':['.py']}}
                     onDrop={(file) => {
                         algorithm_form.setFieldValue('file', file)}}
                     onReject={() => algorithm_form.setFieldError('file', 'Please choose a valid file.')}

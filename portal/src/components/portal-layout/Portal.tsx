@@ -47,7 +47,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
     <AppShell
       header={{ height: 32 }}
       navbar={{
-        width: {base:190, sm:250, xl:300},
+        width: {base:190, sm:215, xl:300},
         breakpoint: 'xs',
         collapsed:{mobile:!opened}
       }}
@@ -55,7 +55,7 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
       padding="md"
     >
 
-      <AppShell.Header withBorder={false} zIndex={1000}>
+      <AppShell.Header withBorder={false} zIndex={1000} hiddenFrom="xs">
         <Flex justify="center" align="center">
           <Burger
             opened={opened}

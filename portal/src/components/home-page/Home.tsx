@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import axios from "axios";
 import { useCounter, useDisclosure } from "@mantine/hooks";
+import DAOCards from "../home-cards/DAOCards";
+import DeviceCards from "../home-cards/DeviceCards";
+import ItemCards from "../home-cards/ItemCards";
+import styles from "./Home.module.css"
 
 interface HomeProps{
     json:any
@@ -207,44 +211,52 @@ const Home = ({json}:HomeProps) => {
         updateDevices = {toggle}
         json={json}/>}
 
-        <Grid gutter="md" justify='space-evenly'  >
-        <Grid.Col span={12}>My OASEES</Grid.Col>
+        <Grid  justify='space-evenly'>
+        <Grid.Col span={12} fw={600}>My OASEES</Grid.Col>
 
+       
 
-        <Grid.Col span={{md:6, xl:5}}>
-            <Stack>
+        <Grid.Col className={styles.grid_col} span={12} >
+        <Paper shadow='xl' py={30} radius={20}>
+            <Stack justify="center" align="center">
             Joined DAOs
-            <Paper shadow='xl' radius='xs' withBorder>
-                <ScrollArea h={208}>
+                {/* <ScrollArea h={208}>
                 <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
-                </ScrollArea>
-            </Paper>
+                </ScrollArea> */}
+                <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
             </Stack>
+        </Paper>
         </Grid.Col>
 
-
-        <Grid.Col span={{md:6, xl:5}}>
-            <Stack >
-            Purchased Items
-            <Paper shadow='xl' radius='xs' withBorder>
-                <ScrollArea h={207}>
-                <ItemTable elements={myAlgorithms}/>
-                </ScrollArea>
-            </Paper>
-            </Stack>
-        </Grid.Col>
-
-
-        <Grid.Col span={{md:6, xl:5}}>
-            <Stack>
+        <Grid.Col className={styles.grid_col} span={{base:12, lg:6}}>
+            <Paper shadow='xl' py={30} radius={20}>
+            <Stack justify="center" align="center">
             Devices
-            <Paper shadow='xl' radius='xs' withBorder>
+            {/* <Paper shadow='xl' radius='xs' withBorder>
                 <ScrollArea h={207}>
                     <DeviceTable elements={myDevices}/>
                 </ScrollArea>
-            </Paper>
+            </Paper> */}
+
+                <DeviceCards elements={myDevices}/>
             </Stack>
+            </Paper>
         </Grid.Col>
+
+        <Grid.Col className={styles.grid_col} span={{base:12, lg:6}} >
+        <Paper shadow='xl' py={30} radius={20}>
+            <Stack justify="center" align="center">
+            Purchased Items
+            {/* <Paper shadow='xl' radius='xs' withBorder>
+                <ScrollArea h={207}>
+                <ItemTable elements={myAlgorithms}/>
+                </ScrollArea>
+            </Paper> */}
+                <ItemCards elements={myAlgorithms}/>
+            </Stack>
+            </Paper>
+        </Grid.Col>
+        
 
         </Grid>
         </>
