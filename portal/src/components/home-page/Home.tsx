@@ -1,16 +1,14 @@
-import {AspectRatio, Container, Grid, Paper, Stack } from "@mantine/core";
+import {Grid, Paper, Stack } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
 import axios from "axios";
 import { useCounter, useDisclosure } from "@mantine/hooks";
 import DAOCards from "../home-cards/DAOCards";
-import DeviceCards from "../home-cards/DeviceCards";
 import ItemCards from "../home-cards/ItemCards";
 import styles from "./Home.module.css"
 import "./Home.css"
-import {GraphCanvas} from "reagraph"
-import ForceGraph2D, {ForceGraphMethods,NodeObject,LinkObject,GraphData} from "react-force-graph-2d";
+import ForceGraph2D, {ForceGraphMethods,NodeObject,LinkObject} from "react-force-graph-2d";
 
 
 interface HomeProps{
