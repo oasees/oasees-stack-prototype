@@ -28,12 +28,12 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
         try{
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-            const account = accounts[0]
+            const account = accounts[0];
 
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = await provider.getSigner();
 
-            const callProvider = new ethers.JsonRpcProvider(`http://${process.env.REACT_APP_BLOCKCHAIN_ADDRESS}`,undefined,{cacheTimeout:-1});
+            const callProvider = new ethers.providers.JsonRpcProvider(`http://${process.env.REACT_APP_BLOCKCHAIN_ADDRESS}`,undefined);
 
             const resp = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_portal_contracts`, {});
             const market_contracts_info = resp.data.portal_contracts;

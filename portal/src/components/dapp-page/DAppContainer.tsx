@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '@mantine/core/styles.css'
 import '@mantine/dropzone/styles.css';
-import { Button, Card, Center, Group, SimpleGrid } from '@mantine/core';
+import { Button, Card, Center, SimpleGrid } from '@mantine/core';
 import axios from 'axios';
 import DApp from './DApp';
 
@@ -30,46 +30,9 @@ async function hitDApp(action:string){
   }
 
 
-async function IpfsGet(_ipfs_hash:string){
-
-  const config = {
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-
-    },
-    data: {},
-    params: {
-      "ipfs_hash": _ipfs_hash
-    }
-  }
-
-  const response = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch`,config);
-
-
-  return response.data.content;
-
-}
-
-async function IpfsGetDapp(_ipfs_hash:string){
-
-  const config = {
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-
-    },
-    data: {},
-    params: {
-      "ipfs_hash": _ipfs_hash
-    }
-  }
-
-  const response = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch_dapp`,config);
-
-
-  return response.data.content;
-
+const ipfs_get = async (ipfs_hash:string) => {
+  const response = await axios.post(`http://${process.env.REACT_APP_IPFS_HOST}/api/v0/cat?arg=` + ipfs_hash);
+  return response; 
 }
 
 interface DAppProps{
@@ -94,12 +57,12 @@ function DAppContainer({json}:DAppProps) {
         const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
         for (const dao of available_daos){
           const dao_content_hash = await json.nft.tokenURI(dao[1]);
-          const content = await IpfsGet(dao_content_hash);
+          const content = (await ipfs_get(dao_content_hash)).data;
           const name = content.dapp_info.NAME;
           const description = content.dapp_info.DESCRIPTION;
 
 
-          const dapp_page = await IpfsGetDapp(content.dapp);
+          const dapp_page = (await ipfs_get(content.dapp)).data;
 
           dapp_pages.push(dapp_page);
           dapp_infos.push({name:name, description:description})
@@ -124,7 +87,7 @@ function DAppContainer({json}:DAppProps) {
           const device = available_devices[0];
 
           const content_hash = await json.nft.tokenURI(device[1]);
-          const content = await IpfsGet(content_hash);
+          const content = (await ipfs_get(content_hash)).data;
           setDeviceEndpoint(content.device_endpoint);
         }
       } catch (error) {

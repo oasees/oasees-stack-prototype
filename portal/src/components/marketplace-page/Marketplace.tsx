@@ -1,10 +1,9 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Container, Box} from "@mantine/core";
+import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text} from "@mantine/core";
 import styles from './Marketplace.module.css'
-import classNames from "classnames";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ContractEventPayload, ethers } from "ethers";
-import { useCounter, useDisclosure } from "@mantine/hooks";
+import { ethers } from "ethers";
+import { useCounter } from "@mantine/hooks";
 
 
 interface MarketplaceProps{
@@ -20,25 +19,9 @@ interface CardProps{
 }
 
 
-async function IpfsGet(_ipfs_hash:string){
-
-    const config = {
-      headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-
-      },
-      data: {},
-      params: {
-        "ipfs_hash": _ipfs_hash
-      }
-    }
-
-    const response = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_fetch`,config);
-
-
-    return response.data.content;
-
+const ipfs_get = async (ipfs_hash:string) => {
+    const response = await axios.post(`http://${process.env.REACT_APP_IPFS_HOST}/api/v0/cat?arg=` + ipfs_hash);
+    return response; 
   }
 
 
@@ -63,10 +46,10 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 for (const item of available_nfts) {
                     const id = item[1];
                     const marketplace_id = item[7];
-                    const price = ethers.formatEther(item[4]);
+                    const price = ethers.utils.formatEther(item[4]);
                     const meta_hash = item[5];
                     
-                    const content = JSON.parse(await IpfsGet(meta_hash));
+                    const content = JSON.parse((await ipfs_get(meta_hash)).data);
 
                     nft_items.push({
                         desc: content.description,
@@ -97,7 +80,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     const id = item[1];
                     const marketplace_id = item[4];
                     const meta_hash = item[2];
-                    const meta_content = await IpfsGet(meta_hash);
+                    const meta_content = (await ipfs_get(meta_hash)).data;
 
                     daos.push({
                         title: meta_content.dao_name,
@@ -127,9 +110,9 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     const id = item[1];
                     const marketplace_id = item[7];
                     const meta_hash = item[5];
-                    const price = ethers.formatEther(item[4]);
+                    const price = ethers.utils.formatEther(item[4]);
 
-                    const content = JSON.parse(await IpfsGet(meta_hash));
+                    const content = JSON.parse((await ipfs_get(meta_hash)).data);
 
                     devices.push({
                         desc: content.description,
@@ -218,7 +201,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         setLoading(true);
         try{
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const buyAlg_transaction = await json.marketplace.buyNft(json.nft.target,marketplace_id,{value: ethers.parseEther(price), nonce:transaction_count});
+            const buyAlg_transaction = await json.marketplace.buyNft(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
             await buyAlg_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
@@ -233,7 +216,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         setLoading(true);
         try{
             const dao_content_hash = await json.nft.tokenURI(id);
-            const content = await IpfsGet(dao_content_hash);
+            const content = (await ipfs_get(dao_content_hash)).data;
             const signer = await json.provider.getSigner();
 
             const dao_token_provider_contract = new ethers.Contract(
@@ -265,7 +248,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         setLoading(true);
         try{
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const buyDevice_transaction = await json.marketplace.buyDevice(json.nft.target,marketplace_id,{value: ethers.parseEther(price), nonce:transaction_count});
+            const buyDevice_transaction = await json.marketplace.buyDevice(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
             await buyDevice_transaction.wait();
         } catch(error){
             console.error("Metamask error",error);
@@ -282,7 +265,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         }
 
         checkEvent();
-        return () => {marketplaceMonitor.off("NFTListed"); marketplaceMonitor.off("NewDAO"); marketplaceMonitor.off("DeviceListed");}
+        return () => {marketplaceMonitor.off("NFTListed",algHandlers.increment); marketplaceMonitor.off("NewDAO",daoHandlers.increment); marketplaceMonitor.off("DeviceListed",devHandlers.increment);}
     },[])
 
     return (

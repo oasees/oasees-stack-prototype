@@ -3,7 +3,7 @@ import { useForm } from "@mantine/form";
 import './Publish.css'
 import {Dropzone, DropzoneFactory} from "@mantine/dropzone";
 import axios from "axios";
-import { ethers, isAddress } from "ethers";
+import { ethers } from "ethers";
 import { useState } from "react";
 
 interface AlgorithmFormValues {
@@ -64,7 +64,7 @@ const Publish = ({json}:PublishProps) => {
         },
 
         validate: {
-            account: (value) => (isAddress(value)? null: "Insert a vaild blockchain account."),
+            account: (value) => (ethers.utils.isAddress(value)? null: "Insert a vaild blockchain account."),
             name: (value) => ((value)? null: "The device's name cannot be blank."),
             ip_address: (value) => (/^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(value)? null: "Insert a valid IP address."),
             port:(value)=> ((value>1023 && value<65536 && Number.isInteger(value)) ? null : "Insert a valid port number (1024-65535)."),
@@ -169,11 +169,11 @@ const Publish = ({json}:PublishProps) => {
             const mint_receipt = await mint_transaction.wait();
 
             const id = parseInt(mint_receipt.logs[2].data, 16);
-            const _price = ethers.parseEther(algorithm_form.values.price.toString())
+            const _price = ethers.utils.parseEther(algorithm_form.values.price.toString())
 
             const market_fee = await json.marketplace.LISTING_FEE();
 
-            const makeItem_transaction = await json.marketplace.makeItem(json.nft.target, id, _price, meta_hash, {value:market_fee, nonce:transaction_count + 1});
+            const makeItem_transaction = await json.marketplace.makeItem(json.nft.address, id, _price, meta_hash, {value:market_fee, nonce:transaction_count + 1});
             await makeItem_transaction.wait();
 
 
@@ -193,11 +193,11 @@ const Publish = ({json}:PublishProps) => {
             const mint_receipt = await mint_transaction.wait();
 
             const id = parseInt(mint_receipt.logs[2].data, 16);
-            const _price = ethers.parseEther(algorithm_form.values.price.toString())
+            const _price = ethers.utils.parseEther(algorithm_form.values.price.toString())
 
             const market_fee = await json.marketplace.LISTING_FEE();
 
-            const makeItem_transaction = await json.marketplace.makeDevice(json.nft.target, id, _price, meta_hash, listed, {value:market_fee, nonce:transaction_count + 1});
+            const makeItem_transaction = await json.marketplace.makeDevice(json.nft.address, id, _price, meta_hash, listed, {value:market_fee, nonce:transaction_count + 1});
             await makeItem_transaction.wait();
 
 
@@ -206,6 +206,36 @@ const Publish = ({json}:PublishProps) => {
             console.error("Metamask error",error)
         }
 
+    }
+
+
+    const switchToMumbai = async () => {
+        const chainId = 80001 // Polygon Mainnet
+
+        if (window.ethereum.net_version !== chainId) {
+            try {
+                await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x13881' }]
+                });
+            } catch (err: any) {
+                // This error code indicates that the chain has not been added to MetaMask
+                if (err.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [
+                    {
+                        chainName: 'Polygon Mumbai',
+                        chainId: '0x13881',
+                        nativeCurrency: { name: 'MATIC', decimals: 18, symbol: 'MATIC' },
+                        rpcUrls: ['https://rpc-mumbai.maticvigil.com'],
+                        blockExplorerUrls: ['https://mumbai.polygonscan.com']
+                    }
+                    ]
+                });
+                }
+            }
+            }
     }
 
 
@@ -269,6 +299,8 @@ const Publish = ({json}:PublishProps) => {
 
             </form>
         </Paper>
+
+        <Button color="red" onClick={switchToMumbai}>Switch</Button>
         </Stack>
         </Center>
         </Tabs.Panel>

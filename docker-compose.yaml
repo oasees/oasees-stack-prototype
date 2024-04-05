@@ -28,8 +28,10 @@ services:
       - "8545:8545"
 
   oasees_ipfs:
-    image: ipfs/kubo:latest
+    build: ./ipfs_node
     container_name: ipfs
+    env_file:
+      - .env
     ports:
       - "4001:4001"
       - "4001:4001/udp"

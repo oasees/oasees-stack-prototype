@@ -1,4 +1,4 @@
-import { Button, Center, CloseButton, Container, Flex, Paper, Stack, Table } from "@mantine/core";
+import { Button, Center, CloseButton, Flex, Paper, Stack, Table } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -92,6 +92,8 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
         }
     };
 
+    
+
     return (
         <>
         <Paper withBorder>
@@ -125,6 +127,9 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
         </Flex>
         {/* <div dangerouslySetInnerHTML={{ __html: html_page }} /> */}
         </Stack>
+
+
+        
         </Paper>
         </>
     );

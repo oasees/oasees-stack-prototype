@@ -16,9 +16,11 @@
     "@types/react-dom": "^18.2.17",
     "axios": "^1.6.5",
     "classnames": "^2.5.1",
-    "ethers": "^6.9.2",
+    "ethers": "^5.7.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-force-graph": "^1.44.3",
+    "react-force-graph-2d": "^1.25.4",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"

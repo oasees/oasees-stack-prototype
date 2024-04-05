@@ -1,5 +1,4 @@
-import { Button, Card, CardSection, Center, Flex, Group, Image, Paper, Popover, ScrollArea, Stack, Text } from "@mantine/core";
-import styles from "./DAOCards.module.css"
+import { Flex, Group, Image, Paper, ScrollArea, Text } from "@mantine/core";
 
 interface ItemCardProps{
     elements: any[];

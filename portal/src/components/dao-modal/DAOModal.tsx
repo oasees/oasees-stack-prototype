@@ -60,8 +60,8 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
     const [daoContract,setDaoContract] = useState<ethers.Contract>();
     const [tokenContract,setTokenContract] = useState<ethers.Contract>();
     const [boxContract,setBoxContract] = useState<ethers.Contract>();
-    const [proposalFilter,setProposalFilter] = useState<ethers.DeferredTopicFilter>();
-    const [voteFilter,setVoteFilter] = useState<ethers.DeferredTopicFilter>();
+    const [proposalFilter,setProposalFilter] = useState<ethers.EventFilter>();
+    const [voteFilter,setVoteFilter] = useState<ethers.EventFilter>();
     const [userBalance,setUserBalance] = useState(0);
 
     const [proposals,setProposals] = useState<Proposal[]>([])
@@ -258,7 +258,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         try{
             const transaction_count = await json.provider.getTransactionCount(json.account);
             const function_signature = boxContract?.interface.encodeFunctionData('store',[Number(values.action)]);
-            const propose_transaction = await daoContract!.propose([boxContract?.target],[0],[function_signature],values.title + " " + values.description,{nonce:transaction_count});
+            const propose_transaction = await daoContract!.propose([boxContract?.address],[0],[function_signature],values.title + " " + values.description,{nonce:transaction_count});
             await propose_transaction.wait();
         }catch(error){
             console.error(error);

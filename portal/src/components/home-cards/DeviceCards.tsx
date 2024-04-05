@@ -1,4 +1,4 @@
-import { Box, Button, Card, CardSection, Center, Flex, Grid, Group, Image, Paper, Popover, ScrollArea, Stack, Text } from "@mantine/core";
+import { Flex, Group, Image, Paper, ScrollArea, Text } from "@mantine/core";
 
 
 interface DeviceCardProps{
