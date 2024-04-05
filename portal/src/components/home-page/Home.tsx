@@ -7,7 +7,6 @@ import { useCounter, useDisclosure } from "@mantine/hooks";
 import DAOCards from "../home-cards/DAOCards";
 import ItemCards from "../home-cards/ItemCards";
 import styles from "./Home.module.css"
-import "./Home.css"
 import ForceGraph2D, {ForceGraphMethods,NodeObject,LinkObject} from "react-force-graph-2d";
 
 
