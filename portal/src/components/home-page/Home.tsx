@@ -1,4 +1,4 @@
-import {Grid, Paper, Stack } from "@mantine/core";
+import {Button, Grid, Paper, Stack } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
@@ -17,6 +17,7 @@ interface HomeProps{
 interface DAO{
     dao_name:string,
     members: string[],
+    hasCluster: boolean,
 }
 
 interface Device{
@@ -85,19 +86,26 @@ const Home = ({json}:HomeProps) => {
                 const daos = [];
                 const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
                 for (const dao of available_daos){
-                    const dao_content_hash = await json.nft.tokenURI(dao[1]);
-                    const content = (await ipfs_get(dao_content_hash)).data;
+                    const tokenId = dao[1] == 100 ? dao[5] : dao[1];
                     let m = [];
-
-                    //TEST
                     const members = await marketplaceMonitor.getDaoMembers(dao[4])
                     for (const member of members){
                         m.push(member);
                     }
 
-                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m})
-                }
+                    let dao_content_hash;
+                    let hasCluster;
+                    if(dao[6]==false){
+                        dao_content_hash = await json.nft.tokenURI(tokenId);
+                        hasCluster = false;
+                    }   else{
+                        dao_content_hash = dao[2];
+                        hasCluster = true;
+                    }
+                    const content = (await ipfs_get(dao_content_hash)).data;
 
+                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m,"hasCluster":hasCluster})
+                }
                 setMyDaos(daos);
                 populateDevices(daos);
             } catch(error){
@@ -163,6 +171,7 @@ const Home = ({json}:HomeProps) => {
         setActiveModal(0)
     };
 
+
     const availableDevices = () => {
         let avDevices:Device[] = [];
 
@@ -197,24 +206,42 @@ const Home = ({json}:HomeProps) => {
             let i = 1;
 
             let nodes:any= [];
+            let links:any = [];
             for (const dao of myDaos){
-                    
-                    nodes.push({
-                        id: dao.dao_name,
-                        name: dao.dao_name,
-                        label:"dao",
-                        x: daoX,
-                        y: daoY,
-                        val:12,
-                    })
-
-                    daoX+=70;
-                    i+=1;
                 
+                nodes.push({
+                    id: dao.dao_name,
+                    name: dao.dao_name,
+                    label:"dao",
+                    x: daoX,
+                    y: daoY,
+                    val:6,
+                })
+
+                    // for (let j=1; j<dao.members.length; j++) {
+                    //     nodes.push({
+                    //         id: "worker" + j,
+                    //         name: "Worker",
+                    //         label: "device",
+                    //         x: deviceX,
+                    //         y: 0,
+                    //         val: 2,
+                    //     })
+
+                    //     links.push({
+                    //         source: "worker"+j,
+                    //         target: "master"+i,
+                    //     })
+
+                    //     deviceX+= links.length==0 ? 50 : 50/links.length;
+                    // }
+
+                daoX+=15;
+                daoY+=5;
+                i+=1;
             }
 
 
-            let links:any = [];
 
             for (const device of myDevices){
                 nodes.push({
@@ -223,7 +250,7 @@ const Home = ({json}:HomeProps) => {
                     label: "device",
                     x: deviceX,
                     y: 0,
-                    val: 5,
+                    val: 2,
                 })
 
                 if(device.dao){
@@ -242,85 +269,23 @@ const Home = ({json}:HomeProps) => {
             return {"nodes": nodes, "links": links}
         }
 
-        // graphData={{
-        //     "nodes": [
-        //         {
-        //           id: "id1",
-        //           name:"name1",
-        //           label:"dao",
-        //           x:0,
-        //           y:50,
-        //           val:12,
-        //         },
-        //         { 
-        //           id: "id2",
-        //           name: "name2",
-        //           label:"dao",
-        //           val:12,
-        //           x:70,
-        //           y:30,
-        //         },
-        //         {
-        //             id:"id3",
-        //             name:"name3",
-        //             label:"dao",
-        //             val:12,
-        //             x:140,
-        //             y:50,
-        //         },
-        //         {
-        //             id:"id4",
-        //             name:"name4",
-        //             val:5,
-        //             x:0,
-        //             y:0,
-        //         },
-        //         {
-        //             id:"id5",
-        //             name:"name5",
-        //             val:5,
-        //             x:50,
-        //             y:0,
-        //         },
-        //         {
-        //             id:"id6",
-        //             name:"name6",
-        //             val:5,
-        //             x:100,
-        //             y:0,
-        //         },
-        //     ],
-        //     "links": [
-        //         {
-        //             "source": "id4",
-        //             "target": "id1"
-        //         },
-        //         {
-        //             "source": "id5",
-        //             "target": "id1"
-        //         },
-        //         {
-        //             "source": "id6",
-        //             "target": "id2"
-        //         },
-        //     ]
-        // }}
-
-        return <ForceGraph2D ref={fgRef} cooldownTicks={50} onEngineStop={()=> {if(myDaos.length>0){fgRef.current?.zoomToFit(1000,40)}}} height={253} width={w} graphData={calcGraphData()}
+        return <ForceGraph2D ref={fgRef} cooldownTicks={50} onEngineStop={()=> {if(myDaos.length>0){
+            fgRef.current?.zoomToFit(1000,40);
+        }}}
+        height={253} width={w} graphData={calcGraphData()}
         nodeCanvasObject={(node, ctx)=>{
             const label = node.label;
             const img = new Image();
             if(label=="dao"){
-                img.src = "./images/dao_icon.png";
-                const sx=32*1.24;
-                ctx.drawImage(img, node.x!-sx/2, node.y!-16,sx,32);
+                img.src = "./images/k8s_master.png";
+                ctx.drawImage(img, node.x!-16/2, node.y!-16/2,16,16);
                 ctx.textAlign= 'center';
                 ctx.textBaseline= 'top';
                 ctx.font = '6px Sans-Serif';
                 ctx.fillStyle="black"
-                ctx.fillText(node.name!,node.x!,node.y!+14);
+                ctx.fillText(node.name!,node.x!,node.y!+8);
             }else{
-                img.src = "./images/device_icon.png";
+                img.src = "./images/k8s_worker.png";
                 ctx.drawImage(img, node.x!-8, node.y!-8,16,16);
 
                 ctx.textAlign= 'center';
@@ -343,6 +308,17 @@ const Home = ({json}:HomeProps) => {
               />
     }
 
+    const getModalDaos = () => {
+        let modalDaos = [];
+
+        for (const dao of myDaos) {
+            if (!dao.hasCluster){
+                modalDaos.push(dao);
+            }
+        }
+
+        return modalDaos;
+    }
 
     return(
         <>
@@ -366,7 +342,7 @@ const Home = ({json}:HomeProps) => {
                 {/* <ScrollArea h={208}>
                 <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
                 </ScrollArea> */}
-                <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
+                <DAOCards elements={getModalDaos()} setActiveModal={setActiveModal}/>
             </Stack>
         </Paper>
         </Grid.Col>
@@ -403,10 +379,6 @@ const Home = ({json}:HomeProps) => {
                 <ItemCards elements={myAlgorithms}/>
             </Stack>
             </Paper>
-        </Grid.Col>
-        
-        <Grid.Col span={12}>
-            
         </Grid.Col>
 
         </Grid>

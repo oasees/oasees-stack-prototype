@@ -22,10 +22,22 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
     const prevStep = () => setActive((current) => (current > 0 ? current - 1 : current));
     const [visible,setVisible] = useState(false);
     const [showErrorModal,setShowErrorModal] = useState(false);
+    
+    const switchToOasees = async () => {
+        const chainId = 31337 // Hardhat Net
+
+        if (window.ethereum.net_version !== chainId) {
+            await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x7a69' }]
+            });
+        }
+    }
 
     const connectToMetaMask = async () =>{
         setVisible(true);
         try{
+            await switchToOasees();
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
             const account = accounts[0];
@@ -78,6 +90,7 @@ const Landing = ({setInfo,setIsConnected}:LandingProps) => {
         <Modal opened={showErrorModal} onClose={()=>setShowErrorModal(false)} c="red" title="Could not connect to OASEES." size="60%" centered>
             <Text c="black"><u>Make sure that:</u></Text>
             <List type="ordered" c="black" maw="99%" spacing={5}>
+                <List.Item>You've added the OASEES Network to the Metamask plugin with the correct information.</List.Item>
                 <List.Item>The rest of the stack is fully up and running properly.</List.Item>
                 <List.Item>You've replaced the variables in the <b>.env</b> file with <b>your IP Address</b>.</List.Item>
             </List>

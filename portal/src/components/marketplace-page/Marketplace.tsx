@@ -77,10 +77,18 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 const available_daos = await marketplaceMonitor.getlistedDaos({from:json.account});
                 
                 for (const item of available_daos) {
-                    const id = item[1];
                     const marketplace_id = item[4];
-                    const meta_hash = item[2];
-                    const meta_content = (await ipfs_get(meta_hash)).data;
+                    var id;
+                    var meta_content;
+
+                    if(item[6]==false){
+                        id = item[1];
+                        const meta_hash = item[2];
+                        meta_content = (await ipfs_get(meta_hash)).data;
+                    // }else{
+                    //     id = item[5];
+                    //     meta_content = {"dao_name": "Cluster", "dao_desc": "Oasees SDK."};
+                    // }
 
                     daos.push({
                         title: meta_content.dao_name,
@@ -88,6 +96,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         marketplace_id: marketplace_id,
                         desc: meta_content.dao_desc
                     })
+                }
                 }
 
                 setDaos(daos);

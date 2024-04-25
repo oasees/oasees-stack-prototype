@@ -324,7 +324,7 @@ def deploy_dao(deployer_account,deployer_key,dao_args):
 
 
 
-	transaction = marketplace_contract.functions.makeDao(nft_address,token_id,dao_info_hash).buildTransaction({
+	transaction = marketplace_contract.functions.makeDao(nft_address,token_id,dao_info_hash,100,False).buildTransaction({
 		'value':0,
 		'chainId': 31337, 
 		'gas': 2000000,  
