@@ -14,6 +14,7 @@ services:
           /bin/sh -c '
           echo "REACT_APP_INFRA_HOST=$INFRA_HOST:6001" > /oasees_portal/.env >> /oasees_portal/.env
           && echo "REACT_APP_BLOCKCHAIN_ADDRESS=$INFRA_HOST:8545" >> /oasees_portal/.env
+          && echo "REACT_APP_IPFS_HOST=$IPFS_HOST:5001" >> /oasees_portal/.env
           && npm start
           '
 
