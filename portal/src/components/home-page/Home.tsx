@@ -18,6 +18,7 @@ interface DAO{
     dao_name:string,
     members: string[],
     hasCluster: boolean,
+    hasDaoLogic: boolean,
 }
 
 interface Device{
@@ -86,7 +87,9 @@ const Home = ({json}:HomeProps) => {
                 const daos = [];
                 const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
                 for (const dao of available_daos){
-                    const tokenId = dao[1] == 100 ? dao[5] : dao[1];
+                    const tokenId = dao[1];
+                    const clusterTokenId = dao[5];
+                    const hasDaoLogic = dao[1] == 0 ? false : true;
                     let m = [];
                     const members = await marketplaceMonitor.getDaoMembers(dao[4])
                     for (const member of members){
@@ -95,7 +98,7 @@ const Home = ({json}:HomeProps) => {
 
                     let dao_content_hash;
                     let hasCluster;
-                    if(dao[6]==false){
+                    if(hasDaoLogic){
                         dao_content_hash = await json.nft.tokenURI(tokenId);
                         hasCluster = false;
                     }   else{
@@ -103,8 +106,9 @@ const Home = ({json}:HomeProps) => {
                         hasCluster = true;
                     }
                     const content = (await ipfs_get(dao_content_hash)).data;
+                    console.log(content)
 
-                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m,"hasCluster":hasCluster})
+                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m,"hasCluster":hasCluster, "hasDaoLogic":hasDaoLogic})
                 }
                 setMyDaos(daos);
                 populateDevices(daos);
@@ -158,12 +162,14 @@ const Home = ({json}:HomeProps) => {
     useEffect(()=> {
         const algFilter = marketplaceMonitor.filters.NFTSold(null,null,null,json.account);
         const daoFilter = marketplaceMonitor.filters.DaoJoined(json.account);
+        const clusterFilter = marketplaceMonitor.filters.ClusterJoined(json.account);
         const devFilter = marketplaceMonitor.filters.DeviceSold(json.account);
         marketplaceMonitor.on(algFilter,increment);
         marketplaceMonitor.on(daoFilter,increment);
+        marketplaceMonitor.on(clusterFilter,increment);
         marketplaceMonitor.on(devFilter,increment);
 
-        return () => {marketplaceMonitor.off(algFilter,increment); marketplaceMonitor.off(daoFilter,increment); marketplaceMonitor.off(devFilter,increment);};
+        return () => {marketplaceMonitor.off(algFilter,increment); marketplaceMonitor.off(daoFilter,increment); marketplaceMonitor.off(clusterFilter,increment); marketplaceMonitor.off(devFilter,increment);};
     },[])
 
 
@@ -308,18 +314,6 @@ const Home = ({json}:HomeProps) => {
               />
     }
 
-    const getModalDaos = () => {
-        let modalDaos = [];
-
-        for (const dao of myDaos) {
-            if (!dao.hasCluster){
-                modalDaos.push(dao);
-            }
-        }
-
-        return modalDaos;
-    }
-
     return(
         <>
         {activeModal>0 && <DAOModal
@@ -342,7 +336,7 @@ const Home = ({json}:HomeProps) => {
                 {/* <ScrollArea h={208}>
                 <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
                 </ScrollArea> */}
-                <DAOCards elements={getModalDaos()} setActiveModal={setActiveModal}/>
+                <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
             </Stack>
         </Paper>
         </Grid.Col>

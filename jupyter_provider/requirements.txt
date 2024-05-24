@@ -1,5 +1,5 @@
 flask
-requests
+requests==2.31.0
 Flask-Cors
 docker
 ipfshttpclient==0.8.0a2

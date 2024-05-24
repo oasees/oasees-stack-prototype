@@ -2,6 +2,7 @@ import { Button, Center, CloseButton, Flex, Paper, Stack, Table } from "@mantine
 import { useDisclosure } from "@mantine/hooks";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import "./DApp.css"
 
 interface DAppHTML{
     html_page: string;
@@ -102,7 +103,7 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
             <CloseButton onClick={closeFunction}/>
         </Flex>
 
-        <Center>
+        {/* <Center>
             <h3>Sample DApp</h3>
         </Center>
 
@@ -124,8 +125,9 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
 
         <Flex justify='center' pb={10}>
             {device_endpoint && <Button color="red" onClick={recordFile} loading={loadingRecord}>Record</Button>}
-        </Flex>
+        </Flex> */}
         {/* <div dangerouslySetInnerHTML={{ __html: html_page }} /> */}
+        <iframe title="Application" className="dapp" src={html_page}></iframe>
         </Stack>
 
 

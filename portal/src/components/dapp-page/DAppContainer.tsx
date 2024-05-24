@@ -56,16 +56,28 @@ function DAppContainer({json}:DAppProps) {
         let dapp_infos = [];
         const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
         for (const dao of available_daos){
-          const dao_content_hash = await json.nft.tokenURI(dao[1]);
-          const content = (await ipfs_get(dao_content_hash)).data;
-          const name = content.dapp_info.NAME;
-          const description = content.dapp_info.DESCRIPTION;
+          // const dao_content_hash = await json.nft.tokenURI(dao[1]);
+          // const content = (await ipfs_get(dao_content_hash)).data;
+          // const name = content.dapp_info.NAME;
+          // const description = content.dapp_info.DESCRIPTION;
 
 
-          const dapp_page = (await ipfs_get(content.dapp)).data;
+          // const dapp_page = (await ipfs_get(content.dapp)).data;
 
-          dapp_pages.push(dapp_page);
-          dapp_infos.push({name:name, description:description})
+          // dapp_pages.push(dapp_page);
+          // dapp_infos.push({name:name, description:description})
+          if (dao.hasCluster){
+            const cluster_config_hash = await json.nft.tokenURI(dao[5]);
+            const config = (await ipfs_get(cluster_config_hash)).data;
+            const ip = (config.clusters[0].cluster.server).split(":")[1].substring(2);
+
+            const cluster_info = (await ipfs_get(dao.desc_uri)).data;
+            const app_name = cluster_info.dao_app_name;
+
+            const endpoint = `http://${ip}/${app_name}`
+            dapp_pages.push(endpoint);
+            dapp_infos.push({name:cluster_info.dao_name, description:cluster_info.dao_desc})
+          }
         }
 
         setDapps(dapp_pages);

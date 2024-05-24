@@ -81,7 +81,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     var id;
                     var meta_content;
 
-                    if(item[6]==false){
+                    
                         id = item[1];
                         const meta_hash = item[2];
                         meta_content = (await ipfs_get(meta_hash)).data;
@@ -96,7 +96,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         marketplace_id: marketplace_id,
                         desc: meta_content.dao_desc
                     })
-                }
+                
                 }
 
                 setDaos(daos);

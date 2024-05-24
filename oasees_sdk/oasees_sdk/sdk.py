@@ -4,8 +4,17 @@ from dotenv import load_dotenv
 import ipfshttpclient
 import json
 import requests
+<<<<<<< HEAD
 import os
 
+=======
+import yaml
+import os
+
+from kubernetes import client, config
+from .deploy_pipeline import create_job
+from .cluster_ipfs_upload import assets_to_ipfs
+>>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 load_dotenv()
 __IPFS_HOST = os.getenv('IPFS_HOST')
@@ -84,6 +93,44 @@ def __getDevices():
     
     return devices
 
+<<<<<<< HEAD
+=======
+def __getDaos():
+    results = __marketplace.caller({'from':__ACCOUNT_ADDRESS}).getJoinedDaos()
+    daos = []
+
+    client = ipfshttpclient.connect(f"/ip4/{__IPFS_HOST}/tcp/5001")  
+    for r in results:
+        token_id = r[5]
+        content_hash = __nft.functions.tokenURI(token_id).call()
+
+        content = client.cat(content_hash)
+        content = content.decode("UTF-8")
+        content = yaml.safe_load(content)
+
+        print(content)
+
+    client.close()
+
+
+def __get_config():
+    results = __marketplace.caller({'from':__ACCOUNT_ADDRESS}).getJoinedDaos()
+
+    client = ipfshttpclient.connect(f"/ip4/{__IPFS_HOST}/tcp/5001") 
+    for r in results:
+        if(r[6]):
+            token_id = r[5]
+            content_hash = __nft.functions.tokenURI(token_id).call()
+
+            content = client.cat(content_hash)
+            content = content.decode("UTF-8")
+            config = yaml.safe_load(content)
+
+    with open('config', 'w') as f:
+        yaml.safe_dump(config,f)
+
+    client.close()
+>>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 
 def my_algorithms():
@@ -176,7 +223,81 @@ def deploy_local_file(path:str):
         print(__response.text)
     
     file.close()
+<<<<<<< HEAD
     
+=======
+
+
+def build_image(image_folder_path):
+
+    __get_config()
+
+    with open('config', 'r') as f:
+        kube_config = yaml.safe_load(f)
+
+    master_ip = kube_config['clusters'][0]['cluster']['server']
+    master_ip = master_ip.split(':')
+
+    ipfs_api_url = "http://{}:31005".format(master_ip[1][2:])
+    directory_path = image_folder_path
+    ipfs_cid = assets_to_ipfs(ipfs_api_url, directory_path)
+    print(ipfs_cid)
+    app_name = directory_path.split('/')[-1].lower()
+    print(app_name)
+    config.load_kube_config("./config")
+    # config.load_kube_config()
+    batch_v1 = client.BatchV1Api()
+    resp = create_job(batch_v1,ipfs_cid, app_name)
+    print(resp)
+
+
+def deploy_manifest(manifest_file_path):
+
+    __get_config()
+
+    # Load kube config
+    config.load_kube_config("./config")
+
+    api_instance = client.CustomObjectsApi()
+
+    try:
+        # Read manifest file
+        with open(manifest_file_path, 'r') as f:
+            manifest_documents = yaml.safe_load_all(f)
+
+            # Iterate over each document and deploy it
+            for manifest in manifest_documents:
+                try:
+                    if manifest['kind'] == 'Service':
+                        # Deploy Service
+                        api_response = client.CoreV1Api().create_namespaced_service(
+                            namespace="default",
+                            body=manifest
+                        )
+                    elif manifest['kind'] == 'Ingress':
+                        # Deploy Ingress
+                        api_response = client.NetworkingV1Api().create_namespaced_ingress(
+                            namespace="default",
+                            body=manifest
+                        )
+                    else:
+                        # Deploy other resources
+                        api_response = api_instance.create_namespaced_custom_object(
+                            group=manifest['apiVersion'].split('/')[0],
+                            version=manifest['apiVersion'].split('/')[1],
+                            namespace="default",
+                            plural=manifest['kind'].lower() + 's',  # Convert resource kind to plural form
+                            body=manifest
+                        )
+                    print("Manifest deployed successfully!")
+                except Exception as e:
+                    print(f"Error deploying manifest: {e}")
+                    print("Problematic manifest:")
+                    print(yaml.dump(manifest))  # Print the problematic manifest
+    except Exception as e:
+        print(f"Error reading manifest file: {e}")
+
+>>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 
 def instructions():
@@ -217,5 +338,8 @@ def __print_msg_box(msg, indent=1, width=None, title=None):
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝'  # lower_border
     print(box)
+<<<<<<< HEAD
 
 instructions()
+=======
+>>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
