@@ -4,17 +4,12 @@ from dotenv import load_dotenv
 import ipfshttpclient
 import json
 import requests
-<<<<<<< HEAD
-import os
-
-=======
 import yaml
 import os
 
 from kubernetes import client, config
 from .deploy_pipeline import create_job
 from .cluster_ipfs_upload import assets_to_ipfs
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 load_dotenv()
 __IPFS_HOST = os.getenv('IPFS_HOST')
@@ -93,8 +88,6 @@ def __getDevices():
     
     return devices
 
-<<<<<<< HEAD
-=======
 def __getDaos():
     results = __marketplace.caller({'from':__ACCOUNT_ADDRESS}).getJoinedDaos()
     daos = []
@@ -130,7 +123,6 @@ def __get_config():
         yaml.safe_dump(config,f)
 
     client.close()
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 
 def my_algorithms():
@@ -223,9 +215,6 @@ def deploy_local_file(path:str):
         print(__response.text)
     
     file.close()
-<<<<<<< HEAD
-    
-=======
 
 
 def build_image(image_folder_path):
@@ -297,7 +286,6 @@ def deploy_manifest(manifest_file_path):
     except Exception as e:
         print(f"Error reading manifest file: {e}")
 
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 
 def instructions():
@@ -338,8 +326,3 @@ def __print_msg_box(msg, indent=1, width=None, title=None):
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝'  # lower_border
     print(box)
-<<<<<<< HEAD
-
-instructions()
-=======
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)

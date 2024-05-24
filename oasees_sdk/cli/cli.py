@@ -1,8 +1,5 @@
 import subprocess
-<<<<<<< HEAD
-=======
 import time
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 import click
 import getpass
 import json
@@ -12,9 +9,6 @@ import web3
 import socket
 import os
 from dotenv import load_dotenv
-<<<<<<< HEAD
-
-=======
 import yaml
 from kubernetes import client,config
 
@@ -74,7 +68,6 @@ spec:
 """
 
 SDK_PATH = "/home/" + getpass.getuser() + "/.oasees_sdk"
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -132,11 +125,7 @@ def init_cluster():
     '''Creates a new kubernetes cluster with the current machine as its master, and registers it to the blockchain.'''
     config_setup()
     try:
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'r') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
 
         w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(config['BLOCKCHAIN_IP'])))
@@ -159,16 +148,6 @@ def init_cluster():
         deployer_account = w3.to_checksum_address(config['ACCOUNT'])
         deployer_key = config['KEY']
 
-<<<<<<< HEAD
-        curl = subprocess.Popen(['curl','-sfL', 'https://get.k3s.io'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        result = subprocess.check_output(['sh','-s','-','--write-kubeconfig-mode','644', '--write-kubeconfig', '/home/'+getpass.getuser()+'/.kube/config'], stdin=curl.stdout)
-        click.echo(result)
-        curl.wait()
-        # Print the output of the 'ls' command
-
-        client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(config['IPFS_IP']))
-        cluster_config_hash = client.add_json({"test": "test string"})
-=======
         mkdir_1 = subprocess.run(['sudo','mkdir','/etc/rancher'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         mkdir_2 = subprocess.run(['sudo','mkdir','/etc/rancher/k3s'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         echo = subprocess.run(['sudo','sh', '-c','echo "mirrors:\n  docker.io:\n  registry.k8s.io:" > /etc/rancher/k3s/registries.yaml'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -200,7 +179,6 @@ def init_cluster():
         cluster_config_hash = client.add_json(cluster_config)
         click.echo(cluster_config_hash)
 
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
         transaction = nft_contract.functions.mint(cluster_config_hash).build_transaction({
 		'chainId': 31337,
@@ -216,20 +194,6 @@ def init_cluster():
 
         token_id=int(tx_json['logs'][2]['data'],16)
 
-<<<<<<< HEAD
-        dao_info = {
-            "dao_name": socket.gethostname(),
-            "dao_desc": "A Cluster created with Oasees SDK.",
-            "dao_nft_address":nft_address,
-            "dao_nft_abi":nft_abi,
-	        "dao_nft_id":token_id
-        }
-
-        dao_info_hash = client.add_json(dao_info)
-        client.close()
-
-        transaction = marketplace_contract.functions.makeDao(nft_address,100,dao_info_hash,token_id,True).build_transaction({
-=======
 
 
 
@@ -261,7 +225,6 @@ def init_cluster():
         
 
         transaction = marketplace_contract.functions.makeDao(nft_address,0,dao_info_hash,token_id,True).build_transaction({
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 		'value':0,
 		'chainId': 31337, 
 		'gas': 2000000,  
@@ -280,10 +243,6 @@ def init_cluster():
                 update_cluster_id(dao[4])
                 break
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
         click.echo("Cluster successfully deployed.")
 
     except FileNotFoundError:
@@ -328,12 +287,9 @@ def uninstall(role):
 def join_cluster(ip,token):
     '''Joins the current machine to the specified cluster.'''
     try:
-<<<<<<< HEAD
-=======
         mkdir_1 = subprocess.run(['sudo','mkdir','/etc/rancher'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         mkdir_2 = subprocess.run(['sudo','mkdir','/etc/rancher/k3s'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         echo = subprocess.run(['sudo','sh', '-c','echo "mirrors:\n  docker.io:\n  registry.k8s.io:" > /etc/rancher/k3s/registries.yaml'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
         curl = subprocess.Popen(['curl','-sfL', 'https://get.k3s.io'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         result = subprocess.check_output(['sh','-'], env={'K3S_URL' : 'https://'+ip+':6443', 'K3S_TOKEN': token}, stdin=curl.stdout)
         click.echo(result)
@@ -344,14 +300,9 @@ def join_cluster(ip,token):
 
 @cli.command()
 def get_config():
-<<<<<<< HEAD
-    try:
-        with open('/home/'+getpass.getuser()+'/config.json', "r") as f:
-=======
     '''Prints out the SDK's current configuration file.'''
     try:
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', "r") as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
             click.echo(config)
     except FileNotFoundError:
@@ -377,11 +328,7 @@ def register_new_nodes():
         result = subprocess.run(['kubectl','get','nodes','-l','!node-role.kubernetes.io/master','-o','custom-columns=IP:.status.addresses[].address','--no-headers'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         node_ips = result.stdout.strip().split('\n')
         
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'r') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
 
         w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(config['BLOCKCHAIN_IP'])))
@@ -406,11 +353,7 @@ def register_new_nodes():
 
         new_nodes_names = []
         new_nodes_ips = []
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json','r') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json','r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
         
         agents = config['agents']
@@ -421,11 +364,8 @@ def register_new_nodes():
 
         for i in range(len(new_nodes_names)):
             new_acc = w3.eth.account.create()
-<<<<<<< HEAD
-=======
             new_acc_address = new_acc.address
             new_acc_pkey = w3.to_hex(new_acc.key)
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             agents[new_nodes_names[i]] = [new_acc.address, w3.to_hex(new_acc.key)]
 
             device_name = new_nodes_names[i]
@@ -480,22 +420,6 @@ def register_new_nodes():
             txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
 
 
-<<<<<<< HEAD
-
-            transaction = marketplace_contract.functions.registerDeviceToDao(new_acc.address,config['OASEES_CLUSTER_ID']).build_transaction({
-            'value':0,
-            'chainId': 31337, 
-            'gas': 2000000,  
-            'gasPrice': w3.eth.gas_price,  
-            'nonce': w3.eth.get_transaction_count(deployer_account)
-            })
-
-            signed_transaction = w3.eth.account.sign_transaction(transaction, private_key=deployer_key)
-            transaction_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
-            txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
-
-            
-=======
             transaction = {
                 'to': new_acc_address,
                 'from': config['ACCOUNT'],
@@ -563,16 +487,11 @@ def register_new_nodes():
                 transaction_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
                 txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
 
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 
         
         config['agents'] = agents
 
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             json.dump(config, f)
 
         if(len(new_nodes_names)>0):
@@ -584,10 +503,6 @@ def register_new_nodes():
         click.echo("Error: Process could not be completed.")
 
 
-<<<<<<< HEAD
-def reset_config():
-    with open('/home/'+getpass.getuser()+'/config.json', 'r') as f:
-=======
 @cli.command()
 @click.argument('dao_content_hash', type=str)
 def apply_dao_logic(dao_content_hash):
@@ -794,15 +709,10 @@ def deploy_agent(node_name,account,pkey):
 
 def reset_config():
     with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
         config = json.load(f)
     
     config['OASEES_CLUSTER_ID'] = -1
     config['agents'] = {}
-<<<<<<< HEAD
-
-    with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-=======
     config['DAO_TOKEN_ID'] = -1
 
     with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
@@ -812,66 +722,38 @@ def reset_config():
 def config_full_reset():
     config = {}
     with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
         json.dump(config,f)
 
 
 def update_cluster_id(id):
     try:
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'r') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
         
         config['OASEES_CLUSTER_ID'] = id
 
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             json.dump(config,f)
     except FileNotFoundError:
         click.echo("Error: Config file doesn't exist in the cli program's directory.")
 
 
 def config_exists():
-<<<<<<< HEAD
-    default_config = {'BLOCKCHAIN_IP':'', 'PROVIDER_IP':'', 'IPFS_IP':'', 'ACCOUNT': '', 'KEY':'', 'OASEES_CLUSTER_ID': -1, 'agents':{}}
-    try:
-        with open('/home/'+getpass.getuser()+'/config.json','r') as f:
-=======
     if not os.path.isdir(SDK_PATH):
         os.makedirs(SDK_PATH)
 
     default_config = {'BLOCKCHAIN_IP':'', 'PROVIDER_IP':'', 'IPFS_IP':'', 'ACCOUNT': '', 'KEY':'', 'OASEES_CLUSTER_ID': -1, 'agents':{}, "DAO_TOKEN_ID":-1}
     try:
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json','r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
             
         for key in default_config.keys():
             if key not in config.keys():
-<<<<<<< HEAD
-                with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-=======
                 with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
                     json.dump(default_config,f)
                 break
 
     except FileNotFoundError:
-<<<<<<< HEAD
-        with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-            config = default_config
-            json.dump(config,f)
-
-def config_setup():
-    try:
-        with open('/home/'+getpass.getuser()+'/config.json', 'r') as f:
-=======
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
             config = default_config
             json.dump(config,f)
@@ -880,7 +762,6 @@ def config_setup():
 def config_setup():
     try:
         with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'r') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
             config = json.load(f)
 
         changed = False
@@ -900,19 +781,13 @@ def config_setup():
             changed = True
 
         if(changed):
-<<<<<<< HEAD
-            with open('/home/'+getpass.getuser()+'/config.json', 'w') as f:
-=======
             with open('/home/'+getpass.getuser()+'/.oasees_sdk/config.json', 'w') as f:
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
                 json.dump(config,f)
 
     except FileNotFoundError:
         click.echo("Error: config file not found.")
     
 
-<<<<<<< HEAD
-=======
 
 
 
@@ -933,5 +808,4 @@ def config_setup():
 #     echo.wait()
 
 
->>>>>>> 4515de2 (SDK v0.3.1 | Cluster provisioning and association with blockchain.)
 config_exists()
