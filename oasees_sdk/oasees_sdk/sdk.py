@@ -165,59 +165,70 @@ def my_devices():
 
 
 
-def deploy_algorithm(algorithm_title:str):
-    '''Deploys a purchased algorithm on all your connected devices.
+# def deploy_algorithm(algorithm_title:str):
+#     '''Deploys a purchased algorithm on all your connected devices.
 
-        - algorithm_title: Needs to be provided in "string" form.
+#         - algorithm_title: Needs to be provided in "string" form.
     
-        e.g. algorithm.py -> deploy_algorithm("algorithm.py")
-    '''
+#         e.g. algorithm.py -> deploy_algorithm("algorithm.py")
+#     '''
 
-    purchases = __getPurchases()
-    devices = __getDevices()
-    found = False
-    for purchase in purchases:
-        if found:
-            break
+#     purchases = __getPurchases()
+#     devices = __getDevices()
+#     found = False
+#     for purchase in purchases:
+#         if found:
+#             break
 
-        if(purchase['title']==algorithm_title):
-            found = True
-            algo_hash = purchase['contentURI']
+#         if(purchase['title']==algorithm_title):
+#             found = True
+#             algo_hash = purchase['contentURI']
 
-            client = ipfshttpclient.connect(f"/ip4/{__IPFS_HOST}/tcp/5001")                       # IPFS
+#             client = ipfshttpclient.connect(f"/ip4/{__IPFS_HOST}/tcp/5001")                       # IPFS
 
-            for device in devices:
-                __response = requests.post("http://{}/deploy_algorithm".format(device['endpoint']), json = {'algorithm_hash': algo_hash, 'algorithm_name':algorithm_title})                 
-                print(__response.text)
-            client.close()
+#             for device in devices:
+#                 __response = requests.post("http://{}/deploy_algorithm".format(device['endpoint']), json = {'algorithm_hash': algo_hash, 'algorithm_name':algorithm_title})                 
+#                 print(__response.text)
+#             client.close()
             
 
-    if not found:
-        print("The file you requested was not found in your purchases.")
+#     if not found:
+#         print("The file you requested was not found in your purchases.")
 
 
 
-def deploy_local_file(path:str):
-    '''Deploys the file found in the specified path on all your connected devices.
+# def deploy_local_file(path:str):
+#     '''Deploys the file found in the specified path on all your connected devices.
     
-        - path: -> Needs to be provided in "string" form.
-                -> Is equal to the filename when the file is located in
-                   the Jupyter Notebook's directory.
+#         - path: -> Needs to be provided in "string" form.
+#                 -> Is equal to the filename when the file is located in
+#                    the Jupyter Notebook's directory.
     
-        e.g. algorithm.py -> deploy_local_file("algorithm.py")
-    '''
+#         e.g. algorithm.py -> deploy_local_file("algorithm.py")
+#     '''
 
-    devices = __getDevices()
-    file = open(path,"rb")
+#     devices = __getDevices()
+#     file = open(path,"rb")
 
-    for device in devices:
-        __response= requests.post("http://{}/deploy_file".format(device['endpoint']), files={'file': file})                 
-        print(__response.text)
+#     for device in devices:
+#         __response= requests.post("http://{}/deploy_file".format(device['endpoint']), files={'file': file})                 
+#         print(__response.text)
     
-    file.close()
+#     file.close()
 
 
 def build_image(image_folder_path):
+
+    '''Deploys a job on the Kubernetes cluster associated with your blockchain
+    account, which builds a container image out of your specified folder.
+    The image will then be stored on your master node, and will be available
+    for deployment on any of the cluster's nodes specified in your manifest file. 
+    
+        - image_folder_path: Needs to be providerd in "string" form.
+
+    e.g. DApp_Image_Folder -> build_image("DApp_Image_Folder")
+
+    '''
 
     __get_config()
 
@@ -241,6 +252,12 @@ def build_image(image_folder_path):
 
 
 def deploy_manifest(manifest_file_path):
+    '''Deploys all the objects included in your specified manifest file, on the
+    Kubernetes cluster associated with your blockchain account.
+
+    - manifest_file_path: Needs to be providerd in "string" form.
+
+    e.g. manifest.yaml -> build_image("manifest.yaml")'''
 
     __get_config()
 
@@ -289,6 +306,14 @@ def deploy_manifest(manifest_file_path):
 
 
 def instructions():
+    
+    # \033[1m{deploy_algorithm.__name__}\033[0m(algorithm_title: str) \t \t
+    #     {deploy_algorithm.__doc__}
+
+
+    # \033[1m{deploy_local_file.__name__}\033[0m(path: str) \t   \t
+    #     {deploy_local_file.__doc__}
+
     text = (f'''
     \033[1m{my_algorithms.__name__}\033[0m() \t\t
         {my_algorithms.__doc__}
@@ -297,13 +322,13 @@ def instructions():
     \033[1m{my_devices.__name__}\033[0m() \t   \t
         {my_devices.__doc__}
     
+        
+    \033[1m{build_image.__name__}\033[0m() \t  \t
+        {build_image.__doc__}
 
-    \033[1m{deploy_algorithm.__name__}\033[0m(algorithm_title: str) \t \t
-        {deploy_algorithm.__doc__}
-
-
-    \033[1m{deploy_local_file.__name__}\033[0m(path: str) \t   \t
-        {deploy_local_file.__doc__}
+        
+    \033[1m{deploy_manifest.__name__}\033[0m() \t      \t
+        {deploy_manifest.__doc__}
 
         
     \033[1m{instructions.__name__}\033[0m() \t \t
@@ -326,3 +351,5 @@ def __print_msg_box(msg, indent=1, width=None, title=None):
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝'  # lower_border
     print(box)
+
+instructions()
