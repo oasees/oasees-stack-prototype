@@ -6,7 +6,7 @@ import requests
 from dotenv import load_dotenv
 import os
 
-env_file_path = '.env'
+env_file_path = '../.env'
 load_dotenv(dotenv_path=env_file_path)
 
 IPFS_HOST = os.getenv("IPFS_HOST")
@@ -225,8 +225,8 @@ tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 
 dao_content = {
-    "dao_name": "a name",
-    "dao_description": "a dao",
+    "dao_name": "K3S Cluster DAO",
+    "dao_description": "This is a DAO associated with a K3S Cluster's nodes.",
     "governance_address": governance_address,
     "governance_abi": governance_abi,
     "token_provider_address": token_provider_contract_address,

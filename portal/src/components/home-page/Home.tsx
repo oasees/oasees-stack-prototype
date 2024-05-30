@@ -15,6 +15,7 @@ interface HomeProps{
 }
 
 interface DAO{
+    cluster_name:string,
     dao_name:string,
     members: string[],
     hasCluster: boolean,
@@ -26,7 +27,7 @@ interface Device{
     name: string,
     ip_address: string,
     account: string,
-    dao: string
+    dao: DAO,
 }
 
 
@@ -97,18 +98,19 @@ const Home = ({json}:HomeProps) => {
                     }
 
                     let dao_content_hash;
-                    let hasCluster;
+                    let cluster_name;
                     if(hasDaoLogic){
                         dao_content_hash = await json.nft.tokenURI(tokenId);
-                        hasCluster = false;
-                    }   else{
+                    }else{
                         dao_content_hash = dao[2];
-                        hasCluster = true;
                     }
+
+                    const meta = (await ipfs_get(dao[2])).data;
                     const content = (await ipfs_get(dao_content_hash)).data;
+
                     console.log(content)
 
-                    daos.push({...content,"marketplace_dao_id": dao[4],"members":m,"hasCluster":hasCluster, "hasDaoLogic":hasDaoLogic})
+                    daos.push({...content,"cluster_name": meta.dao_name, "marketplace_dao_id": dao[4],"members":m,"hasCluster":dao[6], "hasDaoLogic":hasDaoLogic})
                 }
                 setMyDaos(daos);
                 populateDevices(daos);
@@ -131,11 +133,11 @@ const Home = ({json}:HomeProps) => {
                     
                     const content = (await ipfs_get(content_hash)).data;
                     const metadata = JSON.parse((await ipfs_get(meta_hash)).data);
-                    let device_dao ='';
+                    let device_dao: any;
 
                     for (const dao of daos){
                         if(dao.members.includes(content.account)){
-                            device_dao = dao.dao_name;
+                            device_dao = dao;
                             break;
                         }
                     }
@@ -145,7 +147,7 @@ const Home = ({json}:HomeProps) => {
                         name: metadata.title,
                         ip_address: content.device_endpoint.substring(7),
                         account: content.account,
-                        dao: device_dao
+                        dao: device_dao,
                     })
                     i++;
                 }
@@ -193,7 +195,7 @@ const Home = ({json}:HomeProps) => {
         let mDevices: Device[] = [];
         const selectedDao = myDaos[activeModal-1]
         for (var device of myDevices){
-            if(device.dao==selectedDao.dao_name)
+            if(device.dao.dao_name==selectedDao.dao_name)
                 mDevices.push(device);
         }
         return mDevices;
@@ -214,10 +216,9 @@ const Home = ({json}:HomeProps) => {
             let nodes:any= [];
             let links:any = [];
             for (const dao of myDaos){
-                
                 nodes.push({
-                    id: dao.dao_name,
-                    name: dao.dao_name,
+                    id: dao.cluster_name,
+                    name: dao.cluster_name,
                     label:"dao",
                     x: daoX,
                     y: daoY,
@@ -262,7 +263,7 @@ const Home = ({json}:HomeProps) => {
                 if(device.dao){
                     links.push({
                         source: device.ip_address,
-                        target: device.dao,
+                        target: device.dao.cluster_name,
                     })
                 }
 
