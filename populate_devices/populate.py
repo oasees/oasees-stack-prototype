@@ -99,7 +99,7 @@ for device in DEVICES:
     print(token_id)
 
 
-    transaction = market_contract.functions.makeDevice(nft_address,token_id,w3.toWei(price, 'ether'),meta_hash,True).buildTransaction({
+    transaction = market_contract.functions.makeDevice(nft_address,token_id,w3.toWei(price, 'ether'),meta_hash,True,False).buildTransaction({
         'value':market_fee,
         'chainId': 31337,
         'gas': 2000000,

@@ -1,9 +1,0 @@
-.DAOCard{
-    border-style:solid;
-    border-radius:35px;
-    border-color: #c9c7c7;
-}
-
-.DAOCard:hover {
-    border-color: rgb(131, 130, 130);
-}

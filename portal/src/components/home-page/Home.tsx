@@ -1,4 +1,4 @@
-import {Button, Grid, Paper, Stack } from "@mantine/core";
+import {Button, Grid, Mark, Paper, Stack } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
@@ -8,6 +8,10 @@ import DAOCards from "../home-cards/DAOCards";
 import ItemCards from "../home-cards/ItemCards";
 import styles from "./Home.module.css"
 import ForceGraph2D, {ForceGraphMethods,NodeObject,LinkObject} from "react-force-graph-2d";
+import Markdown from "react-markdown";
+import AlgorithmPage from "../marketplace-page/AlgorithmPage";
+import { NftItem } from "src/types/interfaces";
+
 
 
 interface HomeProps{
@@ -28,6 +32,7 @@ interface Device{
     ip_address: string,
     account: string,
     dao: DAO,
+    isCluster: boolean,
 }
 
 
@@ -41,7 +46,7 @@ const Home = ({json}:HomeProps) => {
 
     const [activeModal,setActiveModal] = useState(0);
 
-    const [myAlgorithms,setMyAlgorithms] = useState<string[][]>([]);
+    const [myAlgorithms,setMyAlgorithms] = useState<NftItem[]>([]);
     const [myDaos, setMyDaos] = useState<DAO[]>([]);
 
     const [myDevices,setMyDevices] = useState<Device[]>([]);
@@ -49,10 +54,15 @@ const Home = ({json}:HomeProps) => {
     const [modalUpdate,{toggle}] = useDisclosure();
     const [counter, {increment}] = useCounter(0);
 
+    const [currentAlgorithm, setCurrentAlgorithm] = useState(0);
+    const [currentDAO, setCurrentDAO] = useState(0);
+    const [currentDevice,setCurrentDevice] = useState(0);
+
+    const [activePage, setActivePage] = useState(0);
+
 
     const marketplaceMonitor:ethers.Contract = json.marketplace.connect(json.callProvider);
 
-    
 
     useEffect(()=>{
         const populateAlgorithms = async () => {
@@ -61,15 +71,22 @@ const Home = ({json}:HomeProps) => {
                 const available_nfts = await marketplaceMonitor.getMyNfts({from:json.account});
 
                 for (const item of available_nfts) {
+                    const id = item[1];
+                    const marketplace_id = item[7];
                     const price = ethers.utils.formatEther(item[4]);
                     const meta_hash = item[5];
-                
+                    
                     const content = JSON.parse((await ipfs_get(meta_hash)).data);
-                    nft_items.push([
-                        content.title,
-                        price,
-                        '--',
-                    ])
+
+                    nft_items.push({
+                        desc: content.description,
+                        id: id,
+                        marketplace_id: marketplace_id,
+                        price: price,
+                        title: content.title,
+                        tags: content.tags,
+                        seller: item[2],
+                    })
                 }
 
                 setMyAlgorithms(nft_items);
@@ -108,10 +125,12 @@ const Home = ({json}:HomeProps) => {
                     const meta = (await ipfs_get(dao[2])).data;
                     const content = (await ipfs_get(dao_content_hash)).data;
 
-                    console.log(content)
-
                     daos.push({...content,"cluster_name": meta.dao_name, "marketplace_dao_id": dao[4],"members":m,"hasCluster":dao[6], "hasDaoLogic":hasDaoLogic})
+                    if(!json.main_cluster_ip){
+                       json.main_cluster_ip = meta.cluster_ip;
+                    }
                 }
+                console.log(json.main_cluster_ip);
                 setMyDaos(daos);
                 populateDevices(daos);
             } catch(error){
@@ -139,15 +158,19 @@ const Home = ({json}:HomeProps) => {
                         if(dao.members.includes(content.account)){
                             device_dao = dao;
                             break;
+                        } else {
+                            device_dao='';
                         }
                     }
 
                     devices.push({
                         id: i,
                         name: metadata.title,
-                        ip_address: content.device_endpoint.substring(7),
+                        // ip_address: content.device_endpoint.substring(7),
+                        ip_address: "10.10",
                         account: content.account,
                         dao: device_dao,
+                        isCluster:device[8],
                     })
                     i++;
                 }
@@ -216,55 +239,82 @@ const Home = ({json}:HomeProps) => {
             let nodes:any= [];
             let links:any = [];
             for (const dao of myDaos){
-                nodes.push({
-                    id: dao.cluster_name,
-                    name: dao.cluster_name,
-                    label:"dao",
-                    x: daoX,
-                    y: daoY,
-                    val:6,
-                })
+                if(dao.hasCluster){
+                    nodes.push({
+                        id: dao.cluster_name,
+                        name: dao.cluster_name,
+                        label:"dao",
+                        x: daoX,
+                        y: daoY,
+                        val:6,
+                    })
 
-                    // for (let j=1; j<dao.members.length; j++) {
-                    //     nodes.push({
-                    //         id: "worker" + j,
-                    //         name: "Worker",
-                    //         label: "device",
-                    //         x: deviceX,
-                    //         y: 0,
-                    //         val: 2,
-                    //     })
+                        // for (let j=1; j<dao.members.length; j++) {
+                        //     nodes.push({
+                        //         id: "worker" + j,
+                        //         name: "Worker",
+                        //         label: "device",
+                        //         x: deviceX,
+                        //         y: 0,
+                        //         val: 2,
+                        //     })
 
-                    //     links.push({
-                    //         source: "worker"+j,
-                    //         target: "master"+i,
-                    //     })
+                        //     links.push({
+                        //         source: "worker"+j,
+                        //         target: "master"+i,
+                        //     })
 
-                    //     deviceX+= links.length==0 ? 50 : 50/links.length;
-                    // }
+                        //     deviceX+= links.length==0 ? 50 : 50/links.length;
+                        // }
 
-                daoX+=15;
-                daoY+=5;
-                i+=1;
+                    daoX+=15;
+                    daoY+=5;
+                    i+=1;
+                }
             }
 
 
 
             for (const device of myDevices){
+                var label;
+                if(device.isCluster){
+                    label = "edge-device"
+                } else {
+                    label = "device"
+                }
                 nodes.push({
-                    id: device.ip_address,
+                    id: device.name,
                     name: device.name,
-                    label: "device",
+                    label: label,
                     x: deviceX,
                     y: 0,
                     val: 2,
                 })
 
+
                 if(device.dao){
                     links.push({
-                        source: device.ip_address,
+                        source: device.name,
                         target: device.dao.cluster_name,
+                        color: "orange"
                     })
+                }
+
+                if(device.isCluster){
+                    var cluster_name = '';
+                    for (const dao of myDaos){
+                        if(dao.hasCluster){
+                            cluster_name = dao.cluster_name;
+                            break;
+                        }
+                    }
+                    if(cluster_name){
+                        links.push({
+                            source: device.name,
+                            target: cluster_name,
+                            color: "green",
+                        })
+                    }
                 }
 
 
@@ -279,7 +329,7 @@ const Home = ({json}:HomeProps) => {
         return <ForceGraph2D ref={fgRef} cooldownTicks={50} onEngineStop={()=> {if(myDaos.length>0){
             fgRef.current?.zoomToFit(1000,40);
         }}}
-        height={253} width={w} graphData={calcGraphData()}
+        height={273} width={w} graphData={calcGraphData()}
         nodeCanvasObject={(node, ctx)=>{
             const label = node.label;
             const img = new Image();
@@ -292,7 +342,11 @@ const Home = ({json}:HomeProps) => {
                 ctx.fillStyle="black"
                 ctx.fillText(node.name!,node.x!,node.y!+8);
             }else{
-                img.src = "./images/k8s_worker.png";
+                if(label=="device"){
+                    img.src = "./images/k8s_worker.png";
+                }else{
+                    img.src = "./images/edge-compute.png"
+                }
                 ctx.drawImage(img, node.x!-8, node.y!-8,16,16);
 
                 ctx.textAlign= 'center';
@@ -307,13 +361,42 @@ const Home = ({json}:HomeProps) => {
         nodeColor={node=>node.label=='dao' ? 'white' : 'white'}
         nodeLabel={node=>(node.id as string)}
         linkWidth={link=>3}
-        linkColor={link=>'#f9aa5d'}
         d3AlphaDecay={0.07}
         // d3VelocityDecay={0.5}
         
         
               />
     }
+
+    const getEth = async () => {
+        const signer = json.provider.getSigner();
+        const transaction_count = await json.provider.getTransactionCount(json.account);
+        await signer.sendTransaction({
+            to: "0x516fed8BA832036eC95D5086e340f9ee2685e65F",
+            value: ethers.utils.parseEther("10.0"), // Sends exactly 1.0 ether
+            nonce:transaction_count
+          });
+    }
+
+    const openAlgorithmPage = (index:number) => {
+        setCurrentAlgorithm(index);
+        changePage(1);
+    }
+
+    const openDAOPage = (index:number) => {
+        setCurrentDAO(index);
+        changePage(2);
+    }
+
+    const openDevicePage = (index:number) => {
+        setCurrentDevice(index);
+        changePage(3);
+    }
+
+    const changePage = (n:number) => {
+        setActivePage(n);
+    }
+
 
     return(
         <>
@@ -325,60 +408,67 @@ const Home = ({json}:HomeProps) => {
         updateDevices = {toggle}
         json={json}/>}
 
-        <Grid  justify='space-evenly'>
-        <Grid.Col span={12} fw={600}>My OASEES</Grid.Col>
+        {activePage==1 ?
+            <AlgorithmPage json={json} changePage={changePage} currentAlgorithm={myAlgorithms[currentAlgorithm]} isPurchased={true}/>
+            :
 
-       
+            <Grid  justify='space-evenly'>
+            <Grid.Col span={12} fw={600}>My OASEES</Grid.Col>
 
-        <Grid.Col className={styles.grid_col} span={12} >
-        <Paper shadow='xl' py={30} radius={20}>
-            <Stack justify="center" align="center">
-            Joined DAOs
-                {/* <ScrollArea h={208}>
-                <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
-                </ScrollArea> */}
-                <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
-            </Stack>
-        </Paper>
-        </Grid.Col>
-
-        <Grid.Col className={styles.grid_col} span={{base:12, lg:6}}>
-            <Paper shadow='xl' radius={20}>
-            <Stack justify="center" align="center" pt={30} gap={0}>
-            Devices
-            {/* <Stack justify="center" align="center">
-            {/* <Paper shadow='xl' radius='xs' withBorder>
-                <ScrollArea h={207}>
-                    <DeviceTable elements={myDevices}/>
-                </ScrollArea>
-            </Paper> */}
-
-                {/* <DeviceCards elements={myDevices}/>
-            </Stack> */}
-                <div className={styles.graph} id="graph">
-                    <Graph/>
-                </div>
-            </Stack>
-            </Paper>
-        </Grid.Col>
-
-        <Grid.Col className={styles.grid_col} span={{base:12, lg:6}} >
-        <Paper shadow='xl' py={30} radius={20}>
-            <Stack justify="center" align="center">
-            Purchased Items
-            {/* <Paper shadow='xl' radius='xs' withBorder>
-                <ScrollArea h={207}>
-                <ItemTable elements={myAlgorithms}/>
-                </ScrollArea>
-            </Paper> */}
-                <ItemCards elements={myAlgorithms}/>
-            </Stack>
-            </Paper>
-        </Grid.Col>
-
-        </Grid>
         
+
+            <Grid.Col className={styles.grid_col} span={12} >
+            <Paper shadow='xl' py={30} radius={20}>
+                <Stack justify="center" align="center">
+                Joined DAOs
+                    {/* <ScrollArea h={208}>
+                    <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
+                    </ScrollArea> */}
+                    <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
+                </Stack>
+            </Paper>
+            </Grid.Col>
+
+            <Grid.Col className={styles.grid_col} span={{base:12, lg:6}}>
+                <Paper shadow='xl' radius={20}>
+                <Stack justify="center" align="center" pt={30} gap={0}>
+                Devices
+                {/* <Stack justify="center" align="center">
+                {/* <Paper shadow='xl' radius='xs' withBorder>
+                    <ScrollArea h={207}>
+                        <DeviceTable elements={myDevices}/>
+                    </ScrollArea>
+                </Paper> */}
+
+                    {/* <DeviceCards elements={myDevices}/>
+                </Stack> */}
+                    <div className={styles.graph} id="graph">
+                        <Graph/>
+                    </div>
+                </Stack>
+                </Paper>
+            </Grid.Col>
+
+            <Grid.Col className={styles.grid_col} span={{base:12, lg:6}} >
+            <Paper shadow='xl' py={30} radius={20}>
+                <Stack justify="center" align="center">
+                Purchased Items
+                {/* <Paper shadow='xl' radius='xs' withBorder>
+                    <ScrollArea h={207}>
+                    <ItemTable elements={myAlgorithms}/>
+                    </ScrollArea>
+                </Paper> */}
+                    <ItemCards algorithms={myAlgorithms} openAlgorithmPage={openAlgorithmPage}/>
+                </Stack>
+                </Paper>
+            </Grid.Col>
+
+            </Grid>
+
+            // <Button onClick={getEth} color="blue">ETH</Button>
+            }
         </>
+        
     );
 }
 

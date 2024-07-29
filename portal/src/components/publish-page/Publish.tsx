@@ -1,26 +1,26 @@
-import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, Checkbox, LoadingOverlay, Loader } from "@mantine/core";
+import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, Checkbox, LoadingOverlay, Loader, Tooltip, PillsInput, Pill, TagsInput, Modal, UnstyledButton } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import './Publish.css'
 import {Dropzone, DropzoneFactory} from "@mantine/dropzone";
 import axios from "axios";
 import { ethers } from "ethers";
 import { useState } from "react";
+import { AssetBuilder, FileTypes, Nautilus, ServiceBuilder, ServiceTypes, UrlFile } from "@deltadao/nautilus";
 
-interface AlgorithmFormValues {
+interface OaseesFormValues {
     title:string,
     description:string,
     price:number,
+    tags:string[],
     file: File[]
 }
 
-interface DeviceFormValues {
-    account: string,
-    name:string,
-    ip_address:string,
-    port:number,
+interface OceanFormValues {
+    url: string,
+    title:string,
+    author: string,
     description: string,
     price: number,
-    listed: boolean
 }
 
 interface PublishProps {
@@ -35,12 +35,17 @@ const varsResolver: PartialVarsResolver<DropzoneFactory> = (theme,props) =>{
 
 const Publish = ({json}:PublishProps) => {
     const [loading,setLoading] = useState(false);
+    const [showOaseesPublishComplete, setShowOaseesPublishComplete] = useState(false);
+    const [showOceanPublishComplete, setShowOceanPublishComplete] = useState(false);
+    const [nautilus, setNautilus] = useState<Nautilus>();
 
-    const algorithm_form = useForm<AlgorithmFormValues>({
+
+    const oasees_form = useForm<OaseesFormValues>({
         initialValues: {
             title: '',
             description:'',
             price: 0,
+            tags:[],
             file: [],
         },
 
@@ -52,29 +57,26 @@ const Publish = ({json}:PublishProps) => {
         }
     });
 
-    const device_form = useForm<DeviceFormValues>({
+    const ocean_form = useForm<OceanFormValues>({
         initialValues: {
-            account: '',
-            name: '',
-            ip_address: '',
-            port:0,
+            url: '',
+            title: '',
+            author: '',
             description:'',
             price: 0,
-            listed: false
         },
 
         validate: {
-            account: (value) => (ethers.utils.isAddress(value)? null: "Insert a vaild blockchain account."),
-            name: (value) => ((value)? null: "The device's name cannot be blank."),
-            ip_address: (value) => (/^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(value)? null: "Insert a valid IP address."),
-            port:(value)=> ((value>1023 && value<65536 && Number.isInteger(value)) ? null : "Insert a valid port number (1024-65535)."),
+            url: (value) => ((value.includes("http://") || value.includes("https://")) ? null: "Enter a valid URL."),
+            title: (value) => ((value)? null: "The dataset's title cannot be blank."),
+            author: (value) => ((value)? null: "Author field cannot be blank."),
             description: (value) => ((value)? null: 'Description field cannot be blank.'),
-            price: (value, values) => ((values.listed)? ((value>=1e-6)? null: 'Item price cannot be lower than 0.000001 ETH .'): null),
+            price: (value) => ((value>=1e-2 || value==0)? null: 'Item price cannot be lower than 0.01 OCEAN.'),
         }
     });
 
     const selectedFile = () => {
-        const file = algorithm_form.values.file[0];
+        const file = oasees_form.values.file[0];
         if(file){
             return(
             <Text key={file.name} pt={5}>
@@ -82,30 +84,31 @@ const Publish = ({json}:PublishProps) => {
                 <CloseButton
                     size="xs"
                     onClick={() =>
-                    algorithm_form.setFieldValue('file', [])
+                    oasees_form.setFieldValue('file', [])
                     }
                 />
             </Text>
             );
         }else{
             return(
-                <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}><Text>{algorithm_form.errors.file}</Text></Flex>
+                <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}><Text>{oasees_form.errors.file}</Text></Flex>
             );
         }
     }
 
 
-    const handleAlgorithmSubmit = async (values:AlgorithmFormValues) => {
+    const handleAlgorithmSubmit = async (values:OaseesFormValues) => {
         setLoading(true);
         try {
             const price = values.price;
             const title = values.title;
             const description = values.description
+            const tags = values.tags;
 
             var ifs_data = new FormData();
             
             ifs_data.append("asset", values.file[0]);
-            ifs_data.append("meta",JSON.stringify({price,title,description}));
+            ifs_data.append("meta",JSON.stringify({price,title,description,tags}));
             
 
             const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
@@ -115,6 +118,8 @@ const Publish = ({json}:PublishProps) => {
             })
 
             await mintThenListAlgorithm(nft_hashes.data.file_hash,nft_hashes.data.meta_hash)
+            oasees_form.reset()
+            setShowOaseesPublishComplete(true);
 
 
         } catch (error) {
@@ -125,30 +130,17 @@ const Publish = ({json}:PublishProps) => {
     }
 
 
-    const handleDeviceSubmit = async (values:DeviceFormValues) => {
+
+
+    const handleDeviceSubmit = async (values:OceanFormValues) => {
         setLoading(true);
         try {
-            const account = values.account;
+            const title = values.title;
             const price = values.price;
-            const name = values.name;
-            const device_endpoint= "http://" + values.ip_address + ":" + values.port;
             const description = values.description;
-            const listed = values.listed;
 
             var ifs_data = new FormData();
             
-            ifs_data.append("content", JSON.stringify({account,name,device_endpoint}));
-            ifs_data.append("meta",JSON.stringify({price,name,description}));
-            
-
-
-            const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload_device`, ifs_data, {
-                headers: {
-                'Content-Type': 'multipart/form-data'
-                }
-            })
-
-            await mintThenListDevice(nft_hashes.data.content_hash,nft_hashes.data.meta_hash,listed)
 
 
         } catch (error) {
@@ -169,7 +161,7 @@ const Publish = ({json}:PublishProps) => {
             const mint_receipt = await mint_transaction.wait();
 
             const id = parseInt(mint_receipt.logs[2].data, 16);
-            const _price = ethers.utils.parseEther(algorithm_form.values.price.toString())
+            const _price = ethers.utils.parseEther(oasees_form.values.price.toString())
 
             const market_fee = await json.marketplace.LISTING_FEE();
 
@@ -184,60 +176,115 @@ const Publish = ({json}:PublishProps) => {
     }
     
 
-    const mintThenListDevice = async (content_hash:string, meta_hash:string, listed:boolean) => {
-        
-        try{
-            const transaction_count = await json.provider.getTransactionCount(json.account);
-
-            const mint_transaction = await json.nft.mint(content_hash, {nonce:transaction_count});
-            const mint_receipt = await mint_transaction.wait();
-
-            const id = parseInt(mint_receipt.logs[2].data, 16);
-            const _price = ethers.utils.parseEther(algorithm_form.values.price.toString())
-
-            const market_fee = await json.marketplace.LISTING_FEE();
-
-            const makeItem_transaction = await json.marketplace.makeDevice(json.nft.address, id, _price, meta_hash, listed, {value:market_fee, nonce:transaction_count + 1});
-            await makeItem_transaction.wait();
 
 
 
-        }catch(error){
-            console.error("Metamask error",error)
-        }
-
-    }
-
-
-    const switchToMumbai = async () => {
-        const chainId = 80001 // Polygon Mainnet
+    const switchToSepolia = async () => {
+        const chainId = 11155111 // Sepolia Testnet
 
         if (window.ethereum.net_version !== chainId) {
             try {
                 await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x13881' }]
+                params: [{ chainId: '0xaa36a7' }]
                 });
             } catch (err: any) {
-                // This error code indicates that the chain has not been added to MetaMask
-                if (err.code === 4902) {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [
-                    {
-                        chainName: 'Polygon Mumbai',
-                        chainId: '0x13881',
-                        nativeCurrency: { name: 'MATIC', decimals: 18, symbol: 'MATIC' },
-                        rpcUrls: ['https://rpc-mumbai.maticvigil.com'],
-                        blockExplorerUrls: ['https://mumbai.polygonscan.com']
-                    }
-                    ]
-                });
-                }
+                console.log("Could not switch to Sepolia Network.")
             }
             }
     }
 
+    const switchToOasees = async () => {
+        const chainId = 31337 // Hardhat Net
+
+        if (window.ethereum.net_version !== chainId) {
+            await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x7a69' }]
+            });
+        }
+
+    }
+
+    const getEth = async () => {
+        const signer = json.provider.getSigner();
+        const transaction_count = await json.provider.getTransactionCount(json.account);
+        await signer.sendTransaction({
+            to: "0x516fed8BA832036eC95D5086e340f9ee2685e65F",
+            value: ethers.utils.parseEther("1.0"), // Sends exactly 1.0 ether
+            nonce:transaction_count
+          });
+    }
+
+    const publish = async (values:OceanFormValues) => {
+        setLoading(true);
+        await switchToSepolia();
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = await provider.getSigner();
+        const nautilus = await Nautilus.create(signer);
+        setNautilus(nautilus);
+
+        try{
+
+        const assetBuilder = new AssetBuilder();
+
+        assetBuilder
+            .setType('dataset') // 'dataset' or 'algorithm'
+            .setName(values.title)
+            .setDescription(values.description) // supports markdown
+            .setAuthor(values.author)
+            .setLicense('MIT')
+
+            const serviceBuilder = new ServiceBuilder({serviceType: ServiceTypes.ACCESS, fileType: FileTypes.URL});
+
+            const urlFile: UrlFile = {
+            type: 'url', // there are multiple supported types. See the docs above for more info
+            url: values.url,
+            method: 'GET'
+            }
+
+            serviceBuilder
+            .setServiceEndpoint('https://v4.provider.oceanprotocol.com')
+            .setTimeout(0)
+            .addFile(urlFile);
+
+            if(values.price==0){
+            serviceBuilder.setPricing({type:'free'});
+            } else {
+            serviceBuilder.setPricing(
+                {
+                type: 'fixed', // 'fixed' or 'free'
+                // freCreationParams can be ommitted for 'free' pricing schemas
+                freCreationParams: {
+                fixedRateAddress: '0x80E63f73cAc60c1662f27D2DFd2EA834acddBaa8', // Fixed Rate Contract address on Sepolia network
+                baseTokenAddress: '0x1B083D8584dd3e6Ff37d04a6e7e82b5F622f3985', // OCEAN token contract address on Sepolia network
+                baseTokenDecimals: 18, // adjusted to OCEAN token
+                datatokenDecimals: 18,
+                fixedRate: (values.price.toString()), // PRICE
+                marketFee: '0',
+                marketFeeCollector: '0x0000000000000000000000000000000000000000'
+                }
+            }
+            )
+        }
+            
+
+            const service = serviceBuilder.build();
+            assetBuilder.addService(service);
+            assetBuilder.setOwner(json.account);
+            const asset = assetBuilder.build()
+            const result = await nautilus!.publish(asset);
+            console.log(result);
+        } catch (error){
+            console.error(error);
+            setLoading(false);
+        }
+
+        switchToOasees();
+        setLoading(false);
+    }
 
 
     return (
@@ -249,28 +296,70 @@ const Publish = ({json}:PublishProps) => {
                   <Text>Your transaction is being processed on the blockchain.</Text>
               </Stack>
           }}/>
-        <Tabs defaultValue="algorithms" pt={30}>
+
+        <Modal 
+        opened={showOaseesPublishComplete}
+        onClose={()=>{setShowOaseesPublishComplete(false);}}
+        centered={true}
+        size="sm"
+        >
+            <Stack align="center" gap="xl" my={30}>
+                <Image src="./images/checkmark.png" h={64} w={64}></Image>
+                <Text fw={500} ta="center" mt={10}>The algorithm was published successfully.</Text>
+            </Stack>
+        </Modal>
+
+        <Modal 
+        opened={showOceanPublishComplete}
+        onClose={()=>{setShowOceanPublishComplete(false);}}
+        centered={true}
+        size="sm"
+        >
+            <Stack align="center" gap="xl" my={30}>
+                <Image src="./images/checkmark.png" h={64} w={64}></Image>
+                <Text fw={500} ta="center" mt={10}>The algorithm was published successfully.</Text>
+            </Stack>
+        </Modal>
+        
+        <Tabs defaultValue="oasees" pt={30}>
             <Tabs.List grow>
-                <Tabs.Tab value="algorithms" className="publish_tab">
-                    Publish an Algorithm
+                <Tabs.Tab value="oasees" className="publish_tab">
+                    Publish on OASEES Marketplace
                 </Tabs.Tab>
 
-                <Tabs.Tab value="devices" className="publish_tab">
-                    Upload a Device
+                <Tabs.Tab value="ocean" className="publish_tab">
+                    Publish on Ocean Market
                 </Tabs.Tab>
             </Tabs.List>
 
-        <Tabs.Panel value="algorithms" pt={20}>
+        <Tabs.Panel value="oasees" pt={20}>
         <Center>
             <Stack align='center' pt={30} gap={50} w={1000}>
         <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg' w="100%">
-            <form onSubmit={algorithm_form.onSubmit((values)=>handleAlgorithmSubmit(values))}>
+            <form onSubmit={oasees_form.onSubmit((values)=>handleAlgorithmSubmit(values))}>
 
-                <TextInput size="md" label="Algorithm Title" withAsterisk {...algorithm_form.getInputProps('title')} pb={10}/>
+                <TextInput className="form_field" size="md" label="Algorithm Title" withAsterisk {...oasees_form.getInputProps('title')}/>
 
-                <Textarea size="md" minRows={3} maxRows={3} autosize label="Description" withAsterisk {...algorithm_form.getInputProps('description')} pb={10}/>
+                <TagsInput className="form_field" size="md" label={
+                    <Group gap={5} >
+                        <Text fw="500">Tags</Text>
+                        <Tooltip label="Type in a tag and press Enter to confirm it." position="right-end">
+                            <Text fw="500" fz={12}>ⓘ</Text>
+                        </Tooltip>
+                    </Group>
+                    } {...oasees_form.getInputProps('tags')}/>
+                
+                <Textarea className="form_field" size="md" minRows={3} maxRows={3} autosize label={
+                    <Group gap={5} >
+                        <Text fw="500">Description</Text>
+                        <Text c="red">*</Text>
+                        <Tooltip label="You can use Markdown." position="right-end">
+                            <Text fw="500" fz={12}>ⓘ</Text>
+                        </Tooltip>
+                    </Group>
+                    }  {...oasees_form.getInputProps('description')}/>
 
-                <NumberInput size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...algorithm_form.getInputProps('price')} pb={20} allowNegative={false}/>
+                <NumberInput className="form_field" size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...oasees_form.getInputProps('price')} allowNegative={false}/>
 
                 <Dropzone
                     vars = {varsResolver}
@@ -278,8 +367,8 @@ const Publish = ({json}:PublishProps) => {
                     p={0}
                     multiple={false}
                     onDrop={(file) => {
-                        algorithm_form.setFieldValue('file', file)}}
-                    onReject={() => algorithm_form.setFieldError('file', 'Please choose a valid file.')}
+                        oasees_form.setFieldValue('file', file)}}
+                    onReject={() => oasees_form.setFieldError('file', 'Please choose a valid file.')}
                 >
                     <Center h={120}>
                     <Dropzone.Idle>
@@ -295,44 +384,48 @@ const Publish = ({json}:PublishProps) => {
 
                 {selectedFile()}
 
-                <Center pt={30}><Button type='submit' color='green' w={200}>Upload to Marketplace</Button></Center>
+                <Center pt={30}><Button type='submit' color='green' w={260}>Upload to OASEES Marketplace</Button></Center>
 
             </form>
         </Paper>
 
-        <Button color="red" onClick={switchToMumbai}>Switch</Button>
+        
         </Stack>
         </Center>
         </Tabs.Panel>
 
 
-        <Tabs.Panel value="devices" pt={20}>
+        <Tabs.Panel value="ocean" pt={20}>
             <Center>
                 <Stack align='center' pt={30} gap={50} w={1000}>
                     <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg' w="100%">
 
-                        <form onSubmit={device_form.onSubmit((values)=>handleDeviceSubmit(values))}>
+                        <form onSubmit={ocean_form.onSubmit((values)=>publish(values))}>
+                            <TextInput size="md" label="URL" withAsterisk {...ocean_form.getInputProps('url')} pb={10}/>
 
-                            <TextInput size="md" label="Device Blockchain Account" withAsterisk {...device_form.getInputProps('account')} pb={10}/>
+                            <TextInput size="md" label="Dataset Title" withAsterisk {...ocean_form.getInputProps('title')} pb={10}/>
 
-                            <TextInput size="md" label="Device Name" withAsterisk {...device_form.getInputProps('name')} pb={10}/>
+                            <TextInput size="md" label="Dataset Author" withAsterisk {...ocean_form.getInputProps('author')} pb={10}/>
 
-                            <Group pb={10}>
-                                <TextInput size="md" label="Device IP" withAsterisk {...device_form.getInputProps('ip_address')}/>
-                                <NumberInput size="md" label ="Device Port" withAsterisk hideControls {...device_form.getInputProps('port')}/>
+                            <Textarea className="form_field" size="md" minRows={3} maxRows={3} autosize label={
+                            <Group gap={5} >
+                                <Text fw="500">Description</Text>
+                                <Text c="red">*</Text>
+                                <Tooltip label="You can use Markdown." position="right-end">
+                                    <Text fw="500" fz={12}>ⓘ</Text>
+                                </Tooltip>
                             </Group>
+                            }  {...ocean_form.getInputProps('description')}/>
 
-                            <Textarea size="md" minRows={2} maxRows={2} autosize label="Description" withAsterisk {...device_form.getInputProps('description')} pb={10}/>
+                            <NumberInput size="md" label="Price (OCEAN)" placeholder="Insert a price." withAsterisk hideControls {...ocean_form.getInputProps('price')} pb={30} allowNegative={false}/>
 
-                            {device_form.values.listed &&
-                            <NumberInput size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...device_form.getInputProps('price')} pb={30} allowNegative={false}/>}
-
-                            <Checkbox size="md" color='orange' onClick={()=> {device_form.setFieldValue('price',0)}} {...device_form.getInputProps('listed')} label="List this device on the Marketplace" pb={39}></Checkbox>
-
-                            <Center pt={30}><Button type='submit' color='green' w={200}>Upload to Marketplace</Button></Center>
-
+                            <Center pt={30}><Button type='submit' color='green' w={260}>Upload to Ocean Market</Button></Center>
+                            
                         </form>
                     </Paper>
+                    <Button variant="gradient" gradient={{from: 'black', to: 'deeppink', deg: 30}} component="a" href="https://market.oceanprotocol.com/" rightSection={<Image src="./images/external-link-white.png" w={12} h={12} alt="External Link icon"/>}>
+                            <Text c="white" fw={500}>Visit the Ocean Market</Text>
+                    </Button>
                 </Stack>
             </Center>
         </Tabs.Panel>

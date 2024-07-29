@@ -176,7 +176,8 @@ def ipfs_upload():
     asset_meta = {
         "price" : meta["price"],
         "title" : meta["title"],
-        "description" : meta["description"]
+        "description" : meta["description"],
+        "tags" : meta["tags"],
     }
 
 

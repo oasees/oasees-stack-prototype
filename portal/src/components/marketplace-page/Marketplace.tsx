@@ -1,22 +1,20 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text} from "@mantine/core";
+import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Modal, Flex, Group, Container, Paper, CardSection} from "@mantine/core";
 import styles from './Marketplace.module.css'
+import "./ItemPage.css"
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ethers } from "ethers";
-import { useCounter } from "@mantine/hooks";
-
+import { useCounter, useDisclosure } from "@mantine/hooks";
+import Markdown from "react-markdown";
+import AlgorithmPage from "./AlgorithmPage";
+import DAOPage from "./DAOPage";
+import DevicePage from "./DevicePage";
+import { NftItem } from "src/types/interfaces";
 
 interface MarketplaceProps{
     json:any;
 }
 
-interface CardProps{
-    desc: string;
-    id: string;
-    marketplace_id: string;
-    price?: string;
-    title: string;
-}
 
 
 const ipfs_get = async (ipfs_hash:string) => {
@@ -26,16 +24,25 @@ const ipfs_get = async (ipfs_hash:string) => {
 
 
 const Marketplace = ({json}:MarketplaceProps) => {
+    const [algorithms,setAlgorithms] = useState<NftItem[]>([]);
+    const [daos,setDaos] = useState<NftItem[]>([]);
+    const [devices,setDevices] = useState<NftItem[]>([]);
 
-    const [algorithms,setAlgorithms] = useState<CardProps[]>([]);
-    const [daos,setDaos] = useState<CardProps[]>([]);
-    const [devices,setDevices] = useState<CardProps[]>([]);
+    const [currentAlgorithm, setCurrentAlgorithm] = useState(0);
+    const [currentDAO, setCurrentDAO] = useState(0);
+    const [currentDevice,setCurrentDevice] = useState(0);
+
+    const [currentTab,setCurrentTab] = useState('algorithms');
 
     const [loading, setLoading] = useState(false);
     const [algCounter,algHandlers] = useCounter();
     const [daoCounter,daoHandlers] = useCounter();
     const [devCounter,devHandlers] = useCounter();
     const marketplaceMonitor: ethers.Contract = json.marketplace.connect(json.callProvider);
+
+    const [activePage, setActivePage] = useState(0);
+
+    const removeMd = require('remove-markdown');
 
     useEffect(() => {
         const populateAlgorithms = async () => {
@@ -56,7 +63,9 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         id: id,
                         marketplace_id: marketplace_id,
                         price: price,
-                        title: content.title
+                        title: content.title,
+                        tags: content.tags,
+                        seller: item[2],
                     })
                 }
 
@@ -81,7 +90,6 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     var id;
                     var meta_content;
 
-                    
                         id = item[1];
                         const meta_hash = item[2];
                         meta_content = (await ipfs_get(meta_hash)).data;
@@ -94,7 +102,8 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         title: meta_content.dao_name,
                         id: id,
                         marketplace_id: marketplace_id,
-                        desc: meta_content.dao_desc
+                        desc: meta_content.dao_desc,
+                        members: await marketplaceMonitor.getDaoMembers(item[4])
                     })
                 
                 }
@@ -128,7 +137,8 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         id: id,
                         marketplace_id: marketplace_id,
                         price: price,
-                        title: content.title
+                        title: content.title,
+                        seller: item[2],
                     })
                 }
                 setDevices(devices);
@@ -142,130 +152,106 @@ const Marketplace = ({json}:MarketplaceProps) => {
     },[devCounter]);
 
 
+    const truncate_middle = (str:string) => {
+        if (str.length > 35) {
+          return str.substring(0, 6) + '...' + str.substring(str.length-4, str.length);
+        }
+        return str;
+      }
 
+
+    const openAlgorithmPage = (index:number) => {
+        setCurrentAlgorithm(index);
+        setCurrentTab('algorithms');
+        changePage(1);
+    }
+
+    const openDAOPage = (index:number) => {
+        setCurrentDAO(index);
+        setCurrentTab('daos');
+        changePage(2);
+    }
+
+    const openDevicePage = (index:number) => {
+        setCurrentDevice(index);
+        setCurrentTab('devices');
+        changePage(3);
+    }
+
+    const changePage = (n:number) => {
+        setActivePage(n);
+    }
 
     const card_algorithms = algorithms.map((item,index) => (
-        <Card shadow="sm" key={index} h={300} className={styles.card}>
-            <Card.Section className={styles.imgBx}>
-                <Center>
-                <Image
-                src="./images/catalogue.png"
-                mah={150} w="auto"
-                p={10}
-                />
-                </Center>
-            </Card.Section>
-            <div className={styles.contentBx}>
-                <h3>{item.title}</h3>
-                <h5>{item.price}</h5>
-                <br/><br/>
-                <Button color='orange' onClick={() => purchase_algorithm(item.marketplace_id,(item.price as string))}>PURCHASE NOW</Button>
-            </div>
+        <Card key={index} radius={0} withBorder className="newCard" padding={30} py={25} onClick={()=> openAlgorithmPage(index)}>
+            <Group gap={8} align="center">
+                <Image src="./images/asset.png" w={15} h={15}/>
+                <Text fz={10} mt={0}>ASSET | ALGORITHM</Text>
+            </Group>
+            <Text fw={600} mt={13} c="#00304e" truncate="end">{item.title.replaceAll('_', ' ').replace('.py', '')}</Text>
+            <Text fz={13} mt={5}>{truncate_middle(item.seller!)}</Text>
+            <Flex w="100%" h={110} p={0} direction="column" justify="space-between" mt={15}>                
+                    <Markdown className="markdown_desc" disallowedElements={['hr', 'strong','ul','h1','h2']}>
+                        {item.desc}
+                    </Markdown>
+                    {/* {removeMd(item.desc)} */}
+                <Group className="cardFooter" justify="space-between" mt={10}>
+                    <Text fz={13}><Text fw={600} inherit span>{item.price}</Text> ETH</Text>
+                    <Group gap={8}>
+                        <Image src="./images/oasees-logo2.png" w={16} h={16}/>
+                        <Text fz={10}>OASEES Network</Text>
+                    </Group>
+                </Group>
+            </Flex>
         </Card>
     ))
 
-    const card_daos = daos.map((item,index) => (
-        <Card shadow="sm" key={index} h={300} className={styles.card}>
-            <Card.Section className={styles.imgBx}>
-                <Image
-                src="./images/dao_icon.png"
-                mah={150} w="auto"
-                p={10}
-                />
-            </Card.Section>
-            <div className={styles.contentBx}>
-                <h3>{item.title}</h3>
-                <h4>{item.desc}</h4>
-                <br/><br/>
-                <Button color='var(--mantine-color-orange-6)' onClick={()=>join_dao(item.id,item.marketplace_id)}>JOIN</Button>
-            </div>
-        </Card>
+    const card_daos = daos.map((dao,index) => (
+        <Center key={index}>
+            <Card withBorder className="DAOCard" key={index} h={280} w={{base:180, sm:300}} onClick={()=>openDAOPage(index)}>
+                <CardSection >
+                    <Center>
+                        <Image src="./images/dao_icon.png" w="auto" mah={140} alt="DAO icon"/>
+                    </Center>
+                </CardSection>
+                <Flex align="center" direction="column" justify="space-between" w="100%" h="100%">
+                    <Text fw={600} c="#00304e">{dao.title}</Text>
+                    <Markdown disallowedElements={['hr', 'strong','ul','h1','h2']} className="markdown_desc_dao">
+                        {dao.desc}
+                    </Markdown>
+                    {/* {removeMd(dao.desc)} */}
+                    <Text>Members : <b>{dao.members?.length}</b></Text>
+                </Flex>
+            </Card>
+        </Center>
     ))
 
     const card_devices = devices.map((item,index) => (
-        <Card shadow="sm" key={index} h={300} className={styles.card}>
-            <Card.Section className={styles.imgBx}>
-                <Center>
-                <Image
-                src="./images/device_icon.png"
-                mah={150} w="auto"
-                p={10}
-                />
-                </Center>
-            </Card.Section>
-            <div className={styles.contentBx}>
-                <h3>{item.title}</h3>
-                <h4>{item.desc}</h4>
-                <h5>{item.price}</h5>
-                <Button color='orange' onClick={()=>purchase_device(item.marketplace_id,(item.price as string))}>BUY</Button>
-            </div>
+        <Card key={index} radius={0} withBorder className="newCard" padding={30} py={25} onClick={()=> openDevicePage(index)}>
+            <Group gap={8} align="center">
+                <Image src="./images/asset.png" w={15} h={15}/>
+                <Text fz={10} mt={0}>EDGE DEVICE</Text>
+            </Group>
+            <Text fw={600} mt={13} c="#00304e" truncate="end">{item.title}</Text>
+            <Text fz={13} mt={5}>{truncate_middle(item.seller!)}</Text>
+            <Flex w="100%" h={110} p={0} direction="column" justify="space-between" mt={15}>                
+                    <Markdown className="markdown_desc" disallowedElements={['hr', 'strong','ul','h1','h2']}>
+                        {item.desc}
+                    </Markdown>
+                    {/* {removeMd(item.desc)} */}
+                <Group className="cardFooter" justify="space-between" mt={10}>
+                    <Text fz={13}><Text fw={600} inherit span>{item.price}</Text> ETH</Text>
+                    <Group gap={8}>
+                        <Image src="./images/oasees-logo2.png" w={16} h={16}/>
+                        <Text fz={10}>OASEES Network</Text>
+                    </Group>
+                </Group>
+            </Flex>
         </Card>
     ))
 
 
-
-
-
-    const purchase_algorithm = async (marketplace_id:string, price:string) => {
-        setLoading(true);
-        try{
-            const transaction_count = await json.provider.getTransactionCount(json.account);
-            const buyAlg_transaction = await json.marketplace.buyNft(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
-            await buyAlg_transaction.wait();
-        } catch(error){
-            console.error("Metamask error",error);
-        }
-        algHandlers.increment();
-        setLoading(false);
-    }
-
     
-
-    const join_dao = async (id:string, marketplace_id:string) => {
-        setLoading(true);
-        try{
-            const dao_content_hash = await json.nft.tokenURI(id);
-            const content = (await ipfs_get(dao_content_hash)).data;
-            const signer = await json.provider.getSigner();
-
-            const dao_token_provider_contract = new ethers.Contract(
-                content.token_provider_address, 
-                content.token_provider_abi,
-                await signer)
-            
-
-            const vote_token_contract = new ethers.Contract(
-                content.token_address,
-                content.token_abi,
-                await signer)
-
-            const transaction_count = await json.provider.getTransactionCount(json.account);
-
-            const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
-            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+1});
-            const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+2});
-
-            await Promise.all([get_tokens_transaction.wait(),join_transaction.wait(),delegate_transaction.wait()]);
-        } catch(error){
-            console.error("Metamask error",error);
-        }
-        daoHandlers.increment();
-        setLoading(false);
-    }
-
-    const purchase_device = async (marketplace_id:string, price:string) => {
-        setLoading(true);
-        try{
-            const transaction_count = await json.provider.getTransactionCount(json.account);
-            const buyDevice_transaction = await json.marketplace.buyDevice(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
-            await buyDevice_transaction.wait();
-        } catch(error){
-            console.error("Metamask error",error);
-        }
-        devHandlers.increment();
-        setLoading(false);
-    }
-
     useEffect(() => {
         const checkEvent = async () => {
             marketplaceMonitor.on("NFTListed",algHandlers.increment);
@@ -277,6 +263,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
         return () => {marketplaceMonitor.off("NFTListed",algHandlers.increment); marketplaceMonitor.off("NewDAO",daoHandlers.increment); marketplaceMonitor.off("DeviceListed",devHandlers.increment);}
     },[])
 
+
     return (
         <>
         <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} pos="fixed" loaderProps={{
@@ -287,47 +274,57 @@ const Marketplace = ({json}:MarketplaceProps) => {
               </Stack>
           }}/>
 
-        <Tabs defaultValue="algorithms" pt={30}>
-                <Tabs.List grow>
-                    <Tabs.Tab className={styles.marketplace_tab} value="algorithms">
-                        Algorithms
-                    </Tabs.Tab>
+        {activePage==1 ? 
+            <AlgorithmPage json={json} changePage={changePage} currentAlgorithm={algorithms[currentAlgorithm]} algHandlers={algHandlers} isPurchased={false}/>
+            :
+            activePage==2 ?
+            <DAOPage json={json} changePage={changePage} currentDao={daos[currentDAO]} daoHandlers={daoHandlers}/>
+            :
+            activePage==3 ?
+            <DevicePage json={json} changePage={changePage} currentDevice={devices[currentDevice]} devHandlers={devHandlers}/>
+            :
+            <Tabs defaultValue={currentTab} pt={30}>
+                    <Tabs.List grow>
+                        <Tabs.Tab className={styles.marketplace_tab} value="algorithms">
+                            Algorithms
+                        </Tabs.Tab>
 
-                    <Tabs.Tab className={styles.marketplace_tab} value="daos">
-                        DAOs
-                    </Tabs.Tab>
+                        <Tabs.Tab className={styles.marketplace_tab} value="daos">
+                            DAOs
+                        </Tabs.Tab>
 
-                    <Tabs.Tab className={styles.marketplace_tab} value="devices">
-                        Devices
-                    </Tabs.Tab>
-                </Tabs.List>
+                        <Tabs.Tab className={styles.marketplace_tab} value="devices">
+                            Devices
+                        </Tabs.Tab>
+                    </Tabs.List>
 
 
-                <Tabs.Panel value="algorithms" pt={20}>
-                    <SimpleGrid cols={{base:1, sm:2, md:3, lg:4}}>
-                        {card_algorithms}
-                    </SimpleGrid>
-                </Tabs.Panel>
+                    <Tabs.Panel value="algorithms" pt={20}> 
+                        <SimpleGrid cols={{base:1, sm:2, lg:3, xl:4}} spacing={30}>
+                            {card_algorithms}
+                        </SimpleGrid>
+                    </Tabs.Panel>
 
-                <Tabs.Panel value="daos" pt={20}>
-                    <SimpleGrid cols={{base:1, sm:2, md:3, lg:4}}>
-                        {card_daos}
-                    </SimpleGrid>
-                    {/* <div className={classNames(styles.root)}>
-                        <div className={styles.subdiv}>
+                    <Tabs.Panel value="daos" p={30} pt={20}>
+                        <SimpleGrid cols={{base:1, sm:2, md:3, lg:4, xl:5}} >
                             {card_daos}
-                        </div>
-                    </div> */}
-                </Tabs.Panel>
+                        </SimpleGrid>
+                        {/* <div className={classNames(styles.root)}>
+                            <div className={styles.subdiv}>
+                                {card_daos}
+                            </div>
+                        </div> */}
+                    </Tabs.Panel>
 
-                <Tabs.Panel value="devices" pt={20}>
-                    <SimpleGrid cols={{base:1, sm:2, md:3, lg:4}}>
-                        {card_devices}
-                    </SimpleGrid>
-                </Tabs.Panel>
-                
-            </Tabs>
-            </>
+                    <Tabs.Panel value="devices" pt={20}>
+                        <SimpleGrid cols={{base:1, sm:2, lg:3, xl:4}} spacing={30}>
+                            {card_devices}
+                        </SimpleGrid>
+                    </Tabs.Panel>
+                    
+                </Tabs>
+        }
+                </>
     );
 }
 

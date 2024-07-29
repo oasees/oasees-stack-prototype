@@ -17,8 +17,7 @@ const DAOCards = ({elements,setActiveModal}:DAOCardProps) => {
     const dao_cards = elements.map((dao,index)=>(
         <div key={index}>
         {dao.hasDaoLogic &&
-            <Paper className={styles.DAOCard} shadow='xl' radius='xl' key={index} h={280} w={{base:180, sm:220}} onClick={()=>setActiveModal(index+1)}>
-                <Card >
+                <Card  withBorder className="DAOCard" key={index} h={280} w={{base:180, sm:220}} onClick={()=>setActiveModal(index+1)}>
                     <CardSection >
                         <Center>
                         <Image src="./images/dao_icon.png" w="auto" mah={140} alt="DAO icon"/>
@@ -30,7 +29,6 @@ const DAOCards = ({elements,setActiveModal}:DAOCardProps) => {
                         <Button color='orange' radius={50} maw={100} onClick={handleClick} value={index+1}>View</Button>
                     </Stack>
                 </Card>
-            </Paper>
         }
         </div>
     ))

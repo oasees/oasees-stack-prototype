@@ -63,15 +63,24 @@ contract OaseesMarketplace is ReentrancyGuard {
     string desc_uri; 
     bool listed;
     uint256 marketPlaceId;
+    bool isCluster;
   }
 
-  function makeDevice(address _nftContract, uint256 _tokenId,uint256 _price,string memory _desc_uri,bool listed) public payable nonReentrant {
+  function makeDevice(address _nftContract, uint256 _tokenId,uint256 _price,string memory _desc_uri,bool listed, bool isCluster) public payable nonReentrant {
 
 
     address  _owner = msg.sender;
     address  _seller = msg.sender;
 
     _deviceCount.increment();
+
+    if(listed){
+      IERC721(_nftContract).transferFrom( msg.sender,address(this),_tokenId);
+      _owner = address(this);
+      emit DeviceListed();
+    }else{
+      emit DeviceSold(msg.sender);
+    }
 
     _idToDevice[_deviceCount.current()] = DEVICE(
       _nftContract,
@@ -81,16 +90,11 @@ contract OaseesMarketplace is ReentrancyGuard {
       _price,
       _desc_uri,
       listed,
-      _deviceCount.current()
+      _deviceCount.current(),
+      isCluster
     );
 
-    if(listed){
-      IERC721(_nftContract).transferFrom( msg.sender,address(this),_tokenId);
-      _owner = address(this);
-      emit DeviceListed();
-    }else{
-      emit DeviceSold(msg.sender);
-    }
+    
 
   } 
 

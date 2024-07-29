@@ -16,18 +16,34 @@ BLOCK_CHAIN_IP=os.getenv("BLOCK_CHAIN_IP")
 
 def read_samples(folder_path):
     file_contents = {}
+    file_descriptions = {}
+
 
     if not os.path.isdir(folder_path):
         print(f"Error: {folder_path} is not a directory.")
         return file_contents
 
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-        if os.path.isfile(file_path):
-            with open(file_path, 'rb') as file:
-                file_contents[filename] = file.read()
 
-    return file_contents
+    # for filename in os.listdir(folder_path):
+    #     file_path = os.path.join(folder_path, filename)
+    #     if os.path.isfile(file_path):
+    #         with open(file_path, 'rb') as file:
+    #             file_contents[filename] = file.read()
+
+    for foldername in os.listdir(folder_path):
+            subfolder_path = os.path.join(folder_path,foldername)
+            if not os.path.isfile(subfolder_path):
+                for filename in os.listdir(subfolder_path):
+                    file_path = os.path.join(subfolder_path, filename)
+                    if os.path.isfile(file_path):
+                            if ".md" in file_path:
+                                with open(file_path, 'r') as file:
+                                    file_descriptions[filename] = file.read()
+                            else:
+                                with open(file_path, 'rb') as file:
+                                    file_contents[filename] = file.read()
+
+    return file_contents, file_descriptions
 
 
 
@@ -58,7 +74,9 @@ nft_abi=contracts_info['nft_abi']
 market_contract = w3.eth.contract(address=market_address, abi=market_abi)
 nft_contract = w3.eth.contract(address=nft_address, abi=nft_abi)
 
-file_contents=read_samples('samples')
+folders=read_samples('samples')
+file_contents = folders[0]
+description_contents= folders[1]
 
 market_fee = market_contract.functions.LISTING_FEE().call()
 
@@ -70,7 +88,7 @@ for fc in file_contents.keys():
     metadata={
         "price":price,
         "title":algo_name,
-        "description": "A description for {}".format(algo_name)
+        "description": description_contents[fc.split(".")[0]+".md"]
     }
 
     metadata = json.dumps(metadata)
