@@ -1,4 +1,4 @@
-import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, Checkbox, LoadingOverlay, Loader, Tooltip, PillsInput, Pill, TagsInput, Modal, UnstyledButton } from "@mantine/core";
+import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, LoadingOverlay, Loader, Tooltip, TagsInput, Modal } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import './Publish.css'
 import {Dropzone, DropzoneFactory} from "@mantine/dropzone";

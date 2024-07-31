@@ -1,4 +1,4 @@
-import {Button, Grid, Mark, Paper, Stack } from "@mantine/core";
+import {Grid, Paper, Stack } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
@@ -8,7 +8,6 @@ import DAOCards from "../home-cards/DAOCards";
 import ItemCards from "../home-cards/ItemCards";
 import styles from "./Home.module.css"
 import ForceGraph2D, {ForceGraphMethods,NodeObject,LinkObject} from "react-force-graph-2d";
-import Markdown from "react-markdown";
 import AlgorithmPage from "../marketplace-page/AlgorithmPage";
 import { NftItem } from "src/types/interfaces";
 
@@ -130,7 +129,6 @@ const Home = ({json}:HomeProps) => {
                        json.main_cluster_ip = meta.cluster_ip;
                     }
                 }
-                console.log(json.main_cluster_ip);
                 setMyDaos(daos);
                 populateDevices(daos);
             } catch(error){
@@ -143,8 +141,8 @@ const Home = ({json}:HomeProps) => {
                 const devices:Device[] = [];
                 const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
 
-
                 var i=1
+                
                 for (const device of available_devices) {
                     const price = ethers.utils.formatEther(device[4]);
                     const meta_hash = device[5];
@@ -396,7 +394,6 @@ const Home = ({json}:HomeProps) => {
     const changePage = (n:number) => {
         setActivePage(n);
     }
-
 
     return(
         <>

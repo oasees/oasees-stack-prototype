@@ -1,10 +1,10 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Modal, Flex, Group, Container, Paper, CardSection} from "@mantine/core";
+import { Card, Center, SimpleGrid, Tabs, Image, Stack, LoadingOverlay, Loader, Text, Flex, Group, CardSection} from "@mantine/core";
 import styles from './Marketplace.module.css'
 import "./ItemPage.css"
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ethers } from "ethers";
-import { useCounter, useDisclosure } from "@mantine/hooks";
+import { useCounter } from "@mantine/hooks";
 import Markdown from "react-markdown";
 import AlgorithmPage from "./AlgorithmPage";
 import DAOPage from "./DAOPage";

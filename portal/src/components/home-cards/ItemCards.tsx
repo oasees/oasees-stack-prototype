@@ -1,4 +1,4 @@
-import { Card, Flex, Group, Image, Paper, ScrollArea, Text } from "@mantine/core";
+import { Card, Flex, Group, Image, ScrollArea, Text } from "@mantine/core";
 import Markdown from "react-markdown";
 import { NftItem } from "src/types/interfaces";
 

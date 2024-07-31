@@ -1,5 +1,4 @@
-import { Button, Card, CardSection, Center, Flex, Image, Paper, Stack, Text } from "@mantine/core";
-import styles from "./DAOCards.module.css"
+import { Button, Card, CardSection, Center, Flex, Image, Stack, Text } from "@mantine/core";
 
 interface DAOCardProps{
     elements: any[];

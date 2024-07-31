@@ -1,15 +1,13 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Flex, CloseButton, Grid, Container, Group, Pill, Modal, UnstyledButton} from "@mantine/core";
-import { useEffect, useState } from "react";
+import { Card, Center, Image, Button, Stack, LoadingOverlay, Loader, Text, Flex, Grid, Container, Group, Pill, Modal, UnstyledButton} from "@mantine/core";
+import { useState } from "react";
 import axios from "axios";
 import Markdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import rehypeHighlight from "rehype-highlight";
 import styles from './ItemPage.module.css'
 import './ItemPage.css'
 import { ethers } from "ethers";
-import { useDisclosure } from "@mantine/hooks";
 import 'katex/dist/katex.min.css';
 import { NftItem } from "src/types/interfaces";
 

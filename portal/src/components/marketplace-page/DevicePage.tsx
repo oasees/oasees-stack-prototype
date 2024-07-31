@@ -1,11 +1,10 @@
-import { Card, Center, SimpleGrid, Tabs, Image, Button, Stack, LoadingOverlay, Loader, Text, Flex, CloseButton, Grid, Container, Group, Pill, Modal, UnstyledButton} from "@mantine/core";
-import { useEffect, useState } from "react";
+import { Card, Center, Image, Button, Stack, LoadingOverlay, Loader, Text, Flex, Grid, Container, Group, Modal, UnstyledButton} from "@mantine/core";
+import { useState } from "react";
 import axios from "axios";
 import Markdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
 import styles from './ItemPage.module.css'
 import { ethers } from "ethers";
-import { useDisclosure } from "@mantine/hooks";
 import { NftItem } from "src/types/interfaces";
 
 interface AlgorithmPageProps{
