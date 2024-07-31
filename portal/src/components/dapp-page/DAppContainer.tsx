@@ -74,7 +74,7 @@ function DAppContainer({json}:DAppProps) {
             const cluster_info = (await ipfs_get(dao.desc_uri)).data;
             const app_name = cluster_info.dao_app_name;
 
-            const endpoint = `http://${ip}/${app_name}`
+            const endpoint = `http://${ip}:32000`
             dapp_pages.push(endpoint);
             dapp_infos.push({name:cluster_info.dao_name, description:cluster_info.dao_desc})
           }
@@ -140,7 +140,7 @@ function DAppContainer({json}:DAppProps) {
       );
     }
     else{
-      return <DApp html_page={dapps[activeDApp]} closeFunction={handleClose} device_endpoint={deviceEndpoint}/>
+      return <DApp dapp_endpoint={dapps[activeDApp]} closeFunction={handleClose} device_endpoint={deviceEndpoint}/>
     }
   }
 

@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 import "./DApp.css"
 
 interface DAppHTML{
-    html_page: string;
+    dapp_endpoint: string;
     closeFunction(): void;
     device_endpoint: string;
 }
 
 
-const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
+const DApp = ({dapp_endpoint, closeFunction,device_endpoint}:DAppHTML) => {
 
     const [wavFiles, setWavFiles] = useState<string[]>([])
     const [fileToPlay, setFileToPlay] = useState(-1);
@@ -93,7 +93,6 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
         }
     };
 
-    
 
     return (
         <>
@@ -127,7 +126,7 @@ const DApp = ({html_page, closeFunction,device_endpoint}:DAppHTML) => {
             {device_endpoint && <Button color="red" onClick={recordFile} loading={loadingRecord}>Record</Button>}
         </Flex> */}
         {/* <div dangerouslySetInnerHTML={{ __html: html_page }} /> */}
-        <iframe title="Application" className="dapp" src={html_page}></iframe>
+            <iframe id="iframe" title="Application" className="dapp" src={dapp_endpoint}></iframe>
         </Stack>
 
 
