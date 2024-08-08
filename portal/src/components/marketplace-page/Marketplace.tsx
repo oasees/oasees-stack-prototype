@@ -286,7 +286,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
             <Tabs defaultValue={currentTab} pt={30}>
                     <Tabs.List grow>
                         <Tabs.Tab className={styles.marketplace_tab} value="algorithms">
-                            Algorithms
+                            Assets
                         </Tabs.Tab>
 
                         <Tabs.Tab className={styles.marketplace_tab} value="daos">

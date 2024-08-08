@@ -9,6 +9,7 @@ import Publish from "../publish-page/Publish";
 import Notebook from "../notebook-page/Notebook";
 import DAppContainer from "../dapp-page/DAppContainer";
 import { useDisclosure } from "@mantine/hooks";
+import WorkManager from "../wmanager-page/WorkManager";
 
 interface PortalProps {
   json:any;
@@ -37,6 +38,8 @@ const Portal = ({json,setIsConnected}:PortalProps) => {
         return <Notebook json={json}/>;
       case 5:
         return <DAppContainer json={json}/>;
+      case 6:
+        return <WorkManager json={json}/>;
       default:
         return <Home json={json}/>;
     }

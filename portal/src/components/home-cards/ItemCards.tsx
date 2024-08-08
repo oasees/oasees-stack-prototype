@@ -19,7 +19,7 @@ const ItemCards = ({algorithms,openAlgorithmPage}:ItemCardProps) => {
     }
     
     const card_algorithms = algorithms.map((item,index) => (
-        <Card key={index} maw={300} radius={0} withBorder className="newCard" h={200} padding={20} py={25} onClick={()=>openAlgorithmPage(index)}>
+        <Card key={index} w={300} radius={0} withBorder className="newCard" h={200} padding={20} py={25} onClick={()=>openAlgorithmPage(index)}>
             <Flex justify="center">
             <Group gap={8} align="center">
                 <Image src="./images/asset.png" w={15} h={15}/>

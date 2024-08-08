@@ -62,7 +62,6 @@ const Home = ({json}:HomeProps) => {
 
     const marketplaceMonitor:ethers.Contract = json.marketplace.connect(json.callProvider);
 
-
     useEffect(()=>{
         const populateAlgorithms = async () => {
             try{

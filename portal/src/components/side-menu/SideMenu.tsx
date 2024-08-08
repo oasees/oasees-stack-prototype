@@ -13,7 +13,8 @@ const menu_items = [
     ['Marketplace', './images/market.png'],
     ['Publish', './images/upload.png'],
     ['Notebook', './images/tweak.png'],
-    ['DApps', './images/chain.png']
+    ['DApps', './images/chain.png'],
+    ['SDK Manager', './images/catalogue.png']
   ];
 
 
@@ -35,8 +36,8 @@ const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
     
 
     const items = menu_items.map((item,index)=> (
-        <List.Item key={index} >
-            <UnstyledButton value={index+1} onClick={handleTabClick}>
+        <List.Item key={index}>
+            <UnstyledButton value={index+1} onClick={handleTabClick} w={160}>
                 <Group gap="xs">
                     <img src={item[1]} alt={item[0] + "icon"}/>
                     {styledTab(item[0],index+1)}

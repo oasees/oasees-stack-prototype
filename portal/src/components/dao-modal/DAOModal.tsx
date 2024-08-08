@@ -16,17 +16,25 @@ interface DAOModalProps{
 }
 
 enum ProposalStatus{
-    Active,
-    Defeated,
     Pending,
-    Succeeded
+    Active,
+    Cancelled,
+    Defeated,
+    Succeeded,
+    Queued,
+    Expired,
+    Executed
 }
 
 const stateToStatus = (state:number) => {
     if(state==0) return ProposalStatus.Pending;
     else if(state==1) return ProposalStatus.Active;
+    else if(state==2) return ProposalStatus.Cancelled;
     else if(state==3) return ProposalStatus.Defeated;
-    else if(state==4) return ProposalStatus.Succeeded
+    else if(state==4) return ProposalStatus.Succeeded;
+    else if(state==5) return ProposalStatus.Queued;
+    else if(state==6) return ProposalStatus.Expired;
+    else return ProposalStatus.Executed;
 }
 
 const supportToVote = (support:number) => {
@@ -38,6 +46,7 @@ interface Proposal{
     description: string,
     state: number,
     proposalId: number,
+    calldatas: any
 }
 
 interface ProposalForm{
@@ -92,6 +101,8 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     currentDAO.box_abi,
                     await signer);
 
+                console.log(await dao_box_contract.retrieve())
+
                 const token_balance = await dao_token_contract.balanceOf(json.account);
 
                 const proposal_filter = dao_contract.filters.ProposalCreated(null);
@@ -113,8 +124,6 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
 
 
-
-
     useEffect(()=>{
         const handleProposalEvent = async () =>{
             try {
@@ -127,10 +136,11 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     const args = result.args;
                     const description = args.description;
                     const proposalId = args.proposalId;
+                    const calldatas = args.calldatas;
 
                     const state = await daoMonitor.state(proposalId);
 
-                    proposals.push({description:description,state:state,proposalId:proposalId});
+                    proposals.push({description:description,state:state,proposalId:proposalId, calldatas});
                     proposal_descriptions[proposalId] = description;
                     // console.log(await json.callProvider.getBlockNumber());
                 }
@@ -298,9 +308,26 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 </>
                 );
             case ProposalStatus.Succeeded:
-                return (<Table.Td colSpan={2} style={{color:'blue'}}>Succeeded</Table.Td>);
+                return (<>
+                    <Table.Td><Button size="xs" bg="green" onClick={()=> execute_proposal(String(proposal.proposalId))}>Execute</Button></Table.Td>
+                    <Table.Td colSpan={2} style={{color:'blue'}}>Succeeded</Table.Td>
+                    </>
+                    );
+                
+            case ProposalStatus.Expired:
+                return (<Table.Td colSpan={2}>Expired</Table.Td>);
+
             case ProposalStatus.Pending:
                 return (<Table.Td colSpan={2}>Pending</Table.Td>);
+
+            case ProposalStatus.Cancelled:
+                return (<Table.Td colSpan={2}>Cancelled</Table.Td>);
+
+            case ProposalStatus.Queued:
+                return (<Table.Td colSpan={2}>Queued</Table.Td>);
+
+            case ProposalStatus.Executed:
+                return (<Table.Td colSpan={2}>Executed</Table.Td>);
         }
     }
 
@@ -311,6 +338,42 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         </Table.Tr>
     ));
 
+    const execute_proposal = async (proposalId: string) => {
+        const proposal_desc = proposalDescriptions![proposalId];
+        const descriptionHash = ethers.utils.id(proposal_desc);
+        const calldatas = proposals![proposals.length-1].calldatas;
+        const transaction_count = await json.provider.getTransactionCount(json.account);
+        await daoContract!.queue(
+            [boxContract?.address],
+            [0],
+            calldatas,
+            descriptionHash,
+            {nonce:transaction_count}
+        );
+
+        await daoContract!.execute(
+            [boxContract?.address],
+            [0],
+            calldatas,
+            descriptionHash,
+            {nonce:transaction_count + 1}
+        );
+    }
+
+    // const cancel_proposal = async (proposalId: string) => {
+    //     const proposal_desc = proposalDescriptions![proposalId];
+    //     const descriptionHash = ethers.utils.id(proposal_desc);
+    //     const calldatas = proposals![proposals.length-1].calldatas;
+    //     const transaction_count = await json.provider.getTransactionCount(json.account);
+    //     await daoContract!.cancel(
+    //         [boxContract?.address],
+    //         [0],
+    //         calldatas,
+    //         descriptionHash,
+    //         {nonce:transaction_count}
+    //     );
+    // }
+
     const mapped_votes = votes.slice(0).reverse().map((vote,index)=> (
         <Table.Tr key={index}>
             <Table.Td>{vote.proposal}</Table.Td>
@@ -318,7 +381,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             <Table.Td>{vote.reason}</Table.Td>
         </Table.Tr>
     ));
-
+    
 
   return (
     <>
@@ -366,7 +429,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     <Grid gutter='md'>
 
                         <Grid.Col className={styles.grid_col} span={{base:12, md:6}}>
-                        <Center pb={10} style={{fontSize:14}}><u><b>Participants</b></u></Center>
+                        <Center pb={10} style={{fontSize:14}}><u><b>Other participants</b></u></Center>
 
                         <ScrollArea h={156}>
                         <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top">
@@ -387,6 +450,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                                 </Table.Tbody>
                             
                         </Table>
+
                         </ScrollArea>
                         </Grid.Col>
 

@@ -36,7 +36,9 @@ const varsResolver: PartialVarsResolver<DropzoneFactory> = (theme,props) =>{
 const Publish = ({json}:PublishProps) => {
     const [loading,setLoading] = useState(false);
     const [showOaseesPublishComplete, setShowOaseesPublishComplete] = useState(false);
+    const [showOaseesPublishFailed, setShowOaseesPublishFailed] = useState(false);
     const [showOceanPublishComplete, setShowOceanPublishComplete] = useState(false);
+    const [showOceanPublishFailed, setShowOceanPublishFailed] = useState(false);
     const [nautilus, setNautilus] = useState<Nautilus>();
 
 
@@ -118,8 +120,6 @@ const Publish = ({json}:PublishProps) => {
             })
 
             await mintThenListAlgorithm(nft_hashes.data.file_hash,nft_hashes.data.meta_hash)
-            oasees_form.reset()
-            setShowOaseesPublishComplete(true);
 
 
         } catch (error) {
@@ -168,10 +168,13 @@ const Publish = ({json}:PublishProps) => {
             const makeItem_transaction = await json.marketplace.makeItem(json.nft.address, id, _price, meta_hash, {value:market_fee, nonce:transaction_count + 1});
             await makeItem_transaction.wait();
 
-
+            oasees_form.reset()
+            setShowOaseesPublishComplete(true);
 
         }catch(error){
             console.error("Metamask error",error)
+            setShowOaseesPublishFailed(true);
+            
         }
     }
     
@@ -274,11 +277,14 @@ const Publish = ({json}:PublishProps) => {
             const service = serviceBuilder.build();
             assetBuilder.addService(service);
             assetBuilder.setOwner(json.account);
-            const asset = assetBuilder.build()
+            const asset = assetBuilder.build();
             const result = await nautilus!.publish(asset);
             console.log(result);
+            setShowOceanPublishComplete(true);
+            ocean_form.reset();
         } catch (error){
             console.error(error);
+            setShowOceanPublishFailed(true);
             setLoading(false);
         }
 
@@ -305,7 +311,19 @@ const Publish = ({json}:PublishProps) => {
         >
             <Stack align="center" gap="xl" my={30}>
                 <Image src="./images/checkmark.png" h={64} w={64}></Image>
-                <Text fw={500} ta="center" mt={10}>The algorithm was published successfully.</Text>
+                <Text fw={500} ta="center" mt={10}>The asset was published successfully.</Text>
+            </Stack>
+        </Modal>
+
+        <Modal 
+        opened={showOaseesPublishFailed}
+        onClose={()=>{setShowOaseesPublishFailed(false);}}
+        centered={true}
+        size="sm"
+        >
+            <Stack align="center" gap="xl" my={30}>
+                <Image src="./images/cross.png" h={64} w={64}></Image>
+                <Text fw={500} ta="center" mt={10}>An error occured during the publication of your asset.</Text>
             </Stack>
         </Modal>
 
@@ -317,7 +335,19 @@ const Publish = ({json}:PublishProps) => {
         >
             <Stack align="center" gap="xl" my={30}>
                 <Image src="./images/checkmark.png" h={64} w={64}></Image>
-                <Text fw={500} ta="center" mt={10}>The algorithm was published successfully.</Text>
+                <Text fw={500} ta="center" mt={10}>The dataset was published on the Ocean Market successfully.</Text>
+            </Stack>
+        </Modal>
+
+        <Modal 
+        opened={showOceanPublishFailed}
+        onClose={()=>{setShowOceanPublishFailed(false);}}
+        centered={true}
+        size="sm"
+        >
+            <Stack align="center" gap="xl" my={30}>
+                <Image src="./images/cross.png" h={64} w={64}></Image>
+                <Text fw={500} ta="center" mt={10}>An error occured during the publication of your asset.</Text>
             </Stack>
         </Modal>
         
