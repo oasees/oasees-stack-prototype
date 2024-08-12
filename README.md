@@ -1,4 +1,4 @@
-# oasees-stack-prototype
+# OASEES-stack-prototype
 ## Requirements
 This current version of the Oasees stack requires the following:
 - Docker version 24.0.5
