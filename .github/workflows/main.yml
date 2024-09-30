@@ -47,4 +47,4 @@ jobs:
           #curl -f http://localhost:6001 || (echo "Flask API service failed!" && exit 1)
 
       - name: Tear down Oasees stack
-        run: bash clean_stack.sh
+        run: docker compose down
