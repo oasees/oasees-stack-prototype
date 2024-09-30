@@ -12,7 +12,6 @@ import 'katex/dist/katex.min.css';
 import { NftItem } from "src/types/interfaces";
 
 
-
 interface AlgorithmPageProps{
     json:any;
     changePage:(n:number)=>void;
@@ -27,6 +26,14 @@ const ipfs_get = async (ipfs_hash:string) => {
     return response; 
   }
 
+const ipfs_download = async (ipfs_hash:string) => {
+    const response = await axios.get(`http://${process.env.REACT_APP_IPFS_HOST?.split(":")[0]}:8080/ipfs/` + ipfs_hash, {
+        responseType: 'blob', // Important for downloading files
+    });
+
+    return response;
+}
+
 
 const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased}:AlgorithmPageProps ) => {
 
@@ -36,11 +43,43 @@ const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased
 
 
     const purchase_algorithm = async (marketplace_id:string, price:string) => {
+        // console.log(`http://${json.main_cluster_ip}:31007`)
+        
+        const master_ip = json.main_cluster_ip;
+        // const master_ip = "10.160.1.209";
+   
+
+
         setLoading(true);
         try{
+            const asset_type = currentAlgorithm.tags?.[0];
             const transaction_count = await json.provider.getTransactionCount(json.account);
             const buyAlg_transaction = await json.marketplace.buyNft(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
             await buyAlg_transaction.wait();
+            const content_cid = await json.nft.tokenURI(currentAlgorithm.id)
+            const data ={
+                cid: content_cid,
+                asset_name: currentAlgorithm.title
+
+            }
+            if(asset_type == 'DT'){        
+                const response = await axios.post(`http://${master_ip}:31007/set_data_marketplace`, data, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }else{
+
+                const response = await axios.post(`http://${master_ip}:31007/set_project_marketplace`, data, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });        
+
+            }
+
+
+
             setShowPurchaseComplete(true);
         } catch(error){
             console.error("Metamask error",error);
@@ -59,7 +98,34 @@ const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased
         }
         return str;
       }
+console.log(currentAlgorithm.desc)
 
+    const downloadAsset = async () => {
+        try{
+            const asset_content_hash = await json.nft.tokenURI(currentAlgorithm.id);
+            console.log(asset_content_hash);
+
+            const response = await ipfs_download(asset_content_hash);
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+
+            const link = document.createElement('a');
+            link.href = url;
+
+            link.setAttribute('download',currentAlgorithm.title);
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup: Remove the link after downloading
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (error){
+            console.error(error);
+        }
+    }
+
+    
     return (
         <>
         <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "lg", blur: 7 }} pos="fixed" loaderProps={{
@@ -114,8 +180,13 @@ const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased
         <Grid gutter="xs" mt={20}>
             <Grid.Col ta="left" span={8}>
                 <Container className={`${styles.container}`} pt={20}>
-                        <Markdown disallowedElements={[]} unwrapDisallowed children={currentAlgorithm.desc} components={{img:({node,...props})=><img style={{maxWidth:'100%'}}{...props}/>}} remarkPlugins={[remarkGfm,remarkMath]} rehypePlugins={[rehypeKatex]}/>
-                    
+                        <Markdown 
+                        disallowedElements={[]}
+                        unwrapDisallowed
+                        children={currentAlgorithm.desc}
+                        components={{img:({node,...props})=><img style={{maxWidth:'100%'}}{...props}/>}}
+                        remarkPlugins={[remarkGfm,remarkMath]}
+                        rehypePlugins={[rehypeKatex]}/>
                 </Container>
             </Grid.Col>
 
@@ -129,7 +200,7 @@ const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased
                                 <Group gap="xs"><Text fw={600}>Tags:</Text>{algorithm_tags}</Group>
                             </Stack>
                             {isPurchased ?
-                                <Center mt={20}><Button color="green" onClick={()=>purchase_algorithm(currentAlgorithm.marketplace_id,(currentAlgorithm.price as string))}>DOWNLOAD</Button></Center>
+                                <Center mt={20}><Button color="green" onClick={downloadAsset}>DOWNLOAD</Button></Center>
                                 :
                                 <Center mt={20}><Button color="orange" onClick={()=>purchase_algorithm(currentAlgorithm.marketplace_id,(currentAlgorithm.price as string))}>PURCHASE</Button></Center>
                             }

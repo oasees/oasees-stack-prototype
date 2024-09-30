@@ -29,7 +29,8 @@ const ItemCards = ({algorithms,openAlgorithmPage}:ItemCardProps) => {
             <Text fw={600} mt={13} c="#00304e" truncate="end">{item.title.replaceAll('_', ' ').replace('.py', '')}</Text>
             {/* <Text fz={13} mt={5}>{truncate_middle(item.seller!)}</Text> */}
             <Flex w="100%" h={110} p={0} direction="column" justify="space-between" mt={15}>
-                    <Markdown disallowedElements={['hr', 'strong','ul','h1','h2']} className="markdown_desc">
+                    <Markdown disallowedElements={['hr', 'strong','ul','h1','h2']} 
+                        className="markdown_desc">
                         {item.desc}
                     </Markdown>
                     {/* {removeMd(item.desc)} */}

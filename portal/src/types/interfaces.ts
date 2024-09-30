@@ -7,4 +7,5 @@ export interface NftItem{
     tags?: string[];
     seller?: string;
     members?: string[];
+    asset_type?: string;
 }

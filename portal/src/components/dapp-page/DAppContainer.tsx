@@ -66,6 +66,11 @@ function DAppContainer({json}:DAppProps) {
 
           // dapp_pages.push(dapp_page);
           // dapp_infos.push({name:name, description:description})
+          const cluster_config_hash = await json.nft.tokenURI(dao[5]);
+          const config = (await ipfs_get(cluster_config_hash)).data;
+          const ip = (config.clusters[0].cluster.server).split(":")[1].substring(2);
+          console.log(ip);
+
           if (dao.hasCluster){
             const cluster_config_hash = await json.nft.tokenURI(dao[5]);
             const config = (await ipfs_get(cluster_config_hash)).data;

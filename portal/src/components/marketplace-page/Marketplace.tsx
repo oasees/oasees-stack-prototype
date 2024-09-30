@@ -51,12 +51,19 @@ const Marketplace = ({json}:MarketplaceProps) => {
                 const available_nfts = await marketplaceMonitor.getListedNfts();
 
                 for (const item of available_nfts) {
+                   
                     const id = item[1];
                     const marketplace_id = item[7];
                     const price = ethers.utils.formatEther(item[4]);
                     const meta_hash = item[5];
                     
                     const content = JSON.parse((await ipfs_get(meta_hash)).data);
+                    var asset_type = content.tags[0];
+                    if(asset_type == 'DT')
+                        asset_type = 'DATASET'
+                    else
+                        asset_type = 'ALGORITHM'
+
 
                     nft_items.push({
                         desc: content.description,
@@ -65,6 +72,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
                         price: price,
                         title: content.title,
                         tags: content.tags,
+                        asset_type: asset_type,
                         seller: item[2],
                     })
                 }
@@ -123,6 +131,7 @@ const Marketplace = ({json}:MarketplaceProps) => {
             try{
                 const devices = [];
                 const available_devices = await marketplaceMonitor.getListedDevices();
+            
 
                 for (const item of available_devices){
                     const id = item[1];
@@ -130,7 +139,9 @@ const Marketplace = ({json}:MarketplaceProps) => {
                     const meta_hash = item[5];
                     const price = ethers.utils.formatEther(item[4]);
 
-                    const content = JSON.parse((await ipfs_get(meta_hash)).data);
+                    
+
+                    const content = (await ipfs_get(meta_hash)).data;
 
                     devices.push({
                         desc: content.description,
@@ -183,10 +194,12 @@ const Marketplace = ({json}:MarketplaceProps) => {
     }
 
     const card_algorithms = algorithms.map((item,index) => (
+        
+
         <Card key={index} radius={0} withBorder className="newCard" padding={30} py={25} onClick={()=> openAlgorithmPage(index)}>
             <Group gap={8} align="center">
                 <Image src="./images/asset.png" w={15} h={15}/>
-                <Text fz={10} mt={0}>ASSET | ALGORITHM</Text>
+                <Text fz={10} mt={0}>ASSET | {item.asset_type}</Text>
             </Group>
             <Text fw={600} mt={13} c="#00304e" truncate="end">{item.title.replaceAll('_', ' ').replace('.py', '')}</Text>
             <Text fz={13} mt={5}>{truncate_middle(item.seller!)}</Text>

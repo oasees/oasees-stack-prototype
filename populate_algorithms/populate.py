@@ -88,7 +88,8 @@ for fc in file_contents.keys():
     metadata={
         "price":price,
         "title":algo_name,
-        "description": description_contents[fc.split(".")[0]+".md"]
+        "description": description_contents[fc.split(".")[0]+".md"],
+        "tags":['ML']
     }
 
     metadata = json.dumps(metadata)

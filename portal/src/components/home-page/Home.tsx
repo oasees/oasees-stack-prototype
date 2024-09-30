@@ -140,6 +140,8 @@ const Home = ({json}:HomeProps) => {
                 const devices:Device[] = [];
                 const available_devices = await marketplaceMonitor.getMyDevices({from: json.account});
 
+                
+
                 var i=1
                 
                 for (const device of available_devices) {
@@ -148,7 +150,9 @@ const Home = ({json}:HomeProps) => {
                     const content_hash = await json.nft.tokenURI(device[1])
                     
                     const content = (await ipfs_get(content_hash)).data;
-                    const metadata = JSON.parse((await ipfs_get(meta_hash)).data);
+
+                    const metadata = (await ipfs_get(meta_hash)).data;
+                    console.log(meta_hash);
                     let device_dao: any;
 
                     for (const dao of daos){
@@ -315,7 +319,7 @@ const Home = ({json}:HomeProps) => {
                 }
 
 
-                deviceX+= links.length==0 ? 50 : 50/links.length;
+                deviceX+= links.length==0 ? 50 : 45/links.length;
                 i+=1;
             }
 
@@ -331,7 +335,7 @@ const Home = ({json}:HomeProps) => {
             const label = node.label;
             const img = new Image();
             if(label=="dao"){
-                img.src = "./images/k8s_master.png";
+                img.src = "./images/master.png";
                 ctx.drawImage(img, node.x!-16/2, node.y!-16/2,16,16);
                 ctx.textAlign= 'center';
                 ctx.textBaseline= 'top';
@@ -340,9 +344,9 @@ const Home = ({json}:HomeProps) => {
                 ctx.fillText(node.name!,node.x!,node.y!+8);
             }else{
                 if(label=="device"){
-                    img.src = "./images/k8s_worker.png";
+                    img.src = "./images/worker.png";
                 }else{
-                    img.src = "./images/edge-compute.png"
+                    img.src = "./images/worker2.png"
                 }
                 ctx.drawImage(img, node.x!-8, node.y!-8,16,16);
 
@@ -455,6 +459,7 @@ const Home = ({json}:HomeProps) => {
                     </ScrollArea>
                 </Paper> */}
                     <ItemCards algorithms={myAlgorithms} openAlgorithmPage={openAlgorithmPage}/>
+                    
                 </Stack>
                 </Paper>
             </Grid.Col>

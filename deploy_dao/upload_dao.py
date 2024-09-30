@@ -225,8 +225,8 @@ tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
 
 dao_content = {
-    "dao_name": "K3S Cluster DAO",
-    "dao_description": "This is a DAO associated with a K3S Cluster's nodes.",
+    "dao_name": "Demo DAO 2",
+    "dao_description": "A demo DAO",
     "governance_address": governance_address,
     "governance_abi": governance_abi,
     "token_provider_address": token_provider_contract_address,

@@ -27,12 +27,12 @@ PORTAL_PORT = os.getenv('PORTAL_PORT')
 BLOCK_CHAIN_IP = os.getenv('BLOCK_CHAIN_IP')
 
 
-# PORTAL_URL = '10.150.0.151'
-# INFRA_HOST = '10.150.0.151'
-# IPFS_HOST = '10.150.0.151'
-# PORTAL_PORT = '10.150.0.151'
-# BLOCK_CHAIN_IP = '10.150.0.151'
-# PORTAL_PORT = 3000
+# PORTAL_URL = '10.160.3.190'
+# INFRA_HOST = '10.160.3.190'
+# IPFS_HOST = '10.160.3.190'
+# PORTAL_PORT = '10.160.3.190'
+# BLOCK_CHAIN_IP = '10.160.3.190'
+PORTAL_PORT = 3000
 
 
 @retry(stop_max_attempt_number=10, wait_fixed=2000)
@@ -91,7 +91,7 @@ def new_user():
     _port=8888+c
 
     container = docker_client.containers.run(
-        "oasees_notebook_image",
+        "andreasoikonomakis/oasees-notebook:latest",
         detach=True,
         name=CONTAINER_PREFIX+"-"+user,  
         ports={"8888/tcp": _port}, 
@@ -116,6 +116,11 @@ def new_user():
             'Access-Control-Allow-Origin':'http://{}:{}'.format(PORTAL_URL,PORTAL_PORT)
             }
     }
+
+    exec_log = container.exec_run("pip install oasees-sdk")
+
+    print(exec_log.output.decode())
+
 
     settings_str=str(tornado_settings).replace("replace","\\'self\\'")
 
@@ -166,10 +171,18 @@ def new_user():
 
 @app.route('/ipfs_upload',methods=['POST','PUT'])
 def ipfs_upload():
-    file = request.files['asset']
-    meta = json.loads(request.form['meta'])
+    file = None
     client = ipfshttpclient.connect("/ip4/{}/tcp/5001".format(IPFS_HOST))
-    file_hash = client.add_bytes(file)
+    try:
+        file = request.files['asset']
+        file_hash = client.add_bytes(file)
+    except:
+        file = json.loads(request.form['asset'])
+        file_hash = client.add_json(json.dumps(file))
+
+    meta = json.loads(request.form['meta'])
+    
+    
 
 
 
@@ -221,6 +234,19 @@ def ipfs_upload_device():
         "meta_hash":meta_hash
     }
 
+
+
+@app.route('/ipfs_check',methods=['GET'])
+def ipfs_check():
+    ipfs_hash = request.args.get("ipfs_hash")
+    print(ipfs_hash)
+    resp = requests.post(f"http://{IPFS_HOST}:5001/api/v0/ls?arg={ipfs_hash}")
+    content = resp.json()
+    print(content)
+    if ('Objects' not in content):
+        return {"asset":0}
+    else:
+        return {"asset":1}
 
 
 @app.route('/ipfs_fetch',methods=['GET'])
@@ -346,13 +372,13 @@ def oasees_genesis():
     print(ipfs_hash)
     insert("portal",ipfs_hash)
 
-    docker_client.images.build(
-        path = './notebook',
-        dockerfile = './Dockerfile',
-        tag='oasees_notebook_image',
-        nocache=True,
-        rm=True
-    )
+    # docker_client.images.build(
+    #     path = './notebook',
+    #     dockerfile = './Dockerfile',
+    #     tag='oasees_notebook_image',
+    #     nocache=True,
+    #     rm=True
+    # )
 
 
 
@@ -360,4 +386,4 @@ def oasees_genesis():
 
 if __name__ == '__main__':
     oasees_genesis()
-    app.run(host='0.0.0.0', port=6001)
+    app.run(host='0.0.0.0', port=6001,debug=True)

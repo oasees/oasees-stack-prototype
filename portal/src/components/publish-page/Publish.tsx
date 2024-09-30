@@ -1,4 +1,4 @@
-import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, LoadingOverlay, Loader, Tooltip, TagsInput, Modal } from "@mantine/core";
+import {TextInput, Center, Button, NumberInput, Paper, Textarea, Flex, CloseButton,Text, PartialVarsResolver, Group, Image, Stack, Tabs, LoadingOverlay, Loader, Tooltip, TagsInput, Modal ,Select} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import './Publish.css'
 import {Dropzone, DropzoneFactory} from "@mantine/dropzone";
@@ -6,13 +6,16 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { useState } from "react";
 import { AssetBuilder, FileTypes, Nautilus, ServiceBuilder, ServiceTypes, UrlFile } from "@deltadao/nautilus";
+import { arrayBuffer } from "stream/consumers";
 
 interface OaseesFormValues {
     title:string,
     description:string,
     price:number,
     tags:string[],
-    file: File[]
+    file: File[],
+    ipfsHash: string,
+    asset_type: string
 }
 
 interface OceanFormValues {
@@ -40,6 +43,7 @@ const Publish = ({json}:PublishProps) => {
     const [showOceanPublishComplete, setShowOceanPublishComplete] = useState(false);
     const [showOceanPublishFailed, setShowOceanPublishFailed] = useState(false);
     const [nautilus, setNautilus] = useState<Nautilus>();
+    const [uploadMethod, setUploadMethod] = useState<'file' | 'ipfs'>('file');
 
 
     const oasees_form = useForm<OaseesFormValues>({
@@ -49,13 +53,26 @@ const Publish = ({json}:PublishProps) => {
             price: 0,
             tags:[],
             file: [],
+            ipfsHash: '',
+            asset_type: ''
         },
 
         validate: {
             title: (value) => ((value)? null: 'Title field cannot be blank.'),
             description: (value) => ((value)? null: 'Description field cannot be blank.'),
             price: (value) => ((value>=1e-6)? null: 'Item price cannot be lower than 0.000001 ETH .'),
-            file: (value) => ((value[0])? null: 'No file chosen.')
+            file: (value) => {
+                if (uploadMethod === 'file' && !value[0] && !oasees_form.values.ipfsHash) 
+                    return 'No file chosen or IPFS CID provided.';
+                return null;
+            },
+            asset_type: (value) => ((value)? null: 'Asset type field cannot be blank.'),
+            ipfsHash: (value) =>{
+                if (uploadMethod === 'ipfs' && !value && oasees_form.values.file.length === 0) 
+                    return 'IPFS CID cannot be blank or no file uploaded.';
+                return null;
+            }    
+
         }
     });
 
@@ -77,8 +94,35 @@ const Publish = ({json}:PublishProps) => {
         }
     });
 
+
+    const selectedCID =() => {
+        const ipfs_cid = oasees_form.values.ipfsHash;
+        if (ipfs_cid){
+            
+            return (
+                <Text key={ipfs_cid} pt={5}>
+                    <u>IPFS CID:</u> <b>{ipfs_cid}</b>
+                    <CloseButton
+                        size="xs"
+                        onClick={() => oasees_form.setFieldValue('ipfsHash', '')}
+                    />
+                </Text>
+            );
+
+
+        }
+        else{
+            return(
+                <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}><Text>{oasees_form.errors.file}</Text></Flex>
+            );
+        }   
+
+    }
+
+
     const selectedFile = () => {
         const file = oasees_form.values.file[0];
+        
         if(file){
             return(
             <Text key={file.name} pt={5}>
@@ -91,7 +135,10 @@ const Publish = ({json}:PublishProps) => {
                 />
             </Text>
             );
-        }else{
+
+        }
+     
+        else{
             return(
                 <Flex className="m-8f816625 mantine-InputWrapper-error" justify="center" mt={5}><Text>{oasees_form.errors.file}</Text></Flex>
             );
@@ -101,30 +148,75 @@ const Publish = ({json}:PublishProps) => {
 
     const handleAlgorithmSubmit = async (values:OaseesFormValues) => {
         setLoading(true);
+        
+
+        const price = values.price;
+        const title = values.title;
+        const description = values.description
+        var tags = values.tags;
+        const asset_type = values.asset_type;
+        if(asset_type == 'Algorithm')
+            tags.unshift('ML');
+        else
+            tags.unshift('DT')
+
+        var ifs_data = new FormData();
+        
         try {
-            const price = values.price;
-            const title = values.title;
-            const description = values.description
-            const tags = values.tags;
-
-            var ifs_data = new FormData();
             
-            ifs_data.append("asset", values.file[0]);
-            ifs_data.append("meta",JSON.stringify({price,title,description,tags}));
-            
+            if(values.file.length){
+                   
+                ifs_data.append("asset", values.file[0]);
+                ifs_data.append("meta",JSON.stringify({price,title,description,tags}));
 
-            const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
-                headers: {
-                'Content-Type': 'multipart/form-data'
+                const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
+                    headers: {
+                    'Content-Type': 'multipart/form-data'
+                    }
+                })
+                await mintThenListAlgorithm(nft_hashes.data.file_hash,nft_hashes.data.meta_hash)
+
+            }
+            else{
+                
+
+                const response = await axios.get(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_check`, {
+                    params: {
+                      ipfs_hash: values.ipfsHash,
+                    },
+                });
+
+               
+
+                if(! response.data.asset)
+                    console.error("Submit error: ", "IPFS CID not found! Check if Asset is Published")
+                else{
+
+                    console.log(JSON.stringify(
+                        {cid: values.ipfsHash}
+                        ));
+                    ifs_data.append("asset", JSON.stringify({cid: values.ipfsHash}));
+                    ifs_data.append("meta",JSON.stringify({price,title,description,tags}));
+
+                    const nft_hashes = await axios.post(`http://${process.env.REACT_APP_INFRA_HOST}/ipfs_upload`, ifs_data, {
+                        headers: {
+                        'Content-Type': 'multipart/form-data'
+                        }
+                    })
+                    await mintThenListAlgorithm(values.ipfsHash,nft_hashes.data.meta_hash)
+                    
+
                 }
-            })
 
-            await mintThenListAlgorithm(nft_hashes.data.file_hash,nft_hashes.data.meta_hash)
+ 
+            }
+            
 
 
-        } catch (error) {
+        } catch (error){
             console.error("Submit error: ", error)
-        }
+
+        } 
 
         setLoading(false);
     }
@@ -368,8 +460,24 @@ const Publish = ({json}:PublishProps) => {
         <Paper bg='var(--mantine-color-gray-1)' p={10} shadow='xl' radius='lg' w="100%">
             <form onSubmit={oasees_form.onSubmit((values)=>handleAlgorithmSubmit(values))}>
 
-                <TextInput className="form_field" size="md" label="Algorithm Title" withAsterisk {...oasees_form.getInputProps('title')}/>
 
+                <Group grow>
+                    <TextInput className="form_field" size="md" label="Asset Name" withAsterisk {...oasees_form.getInputProps('title')}/>
+
+                    <Select
+                        className="form_field"
+                        size="md"
+                        label="Asset Type"
+                        withAsterisk
+                        placeholder="Select asset type"
+                        data={[
+                            { value: 'Algorithm', label: 'Algorithm' },
+                            { value: 'Dataset', label: 'Dataset' },
+                        ]}
+                        {...oasees_form.getInputProps('asset_type')}
+                    />
+
+                </Group>
                 <TagsInput className="form_field" size="md" label={
                     <Group gap={5} >
                         <Text fw="500">Tags</Text>
@@ -391,28 +499,89 @@ const Publish = ({json}:PublishProps) => {
 
                 <NumberInput className="form_field" size="md" label="Price (eth)" placeholder="Insert a price." withAsterisk hideControls {...oasees_form.getInputProps('price')} allowNegative={false}/>
 
-                <Dropzone
-                    vars = {varsResolver}
-                    h={120}
-                    p={0}
-                    multiple={false}
-                    onDrop={(file) => {
-                        oasees_form.setFieldValue('file', file)}}
-                    onReject={() => oasees_form.setFieldError('file', 'Please choose a valid file.')}
-                >
-                    <Center h={120}>
-                    <Dropzone.Idle>
-                        <Group>
-                            <Image src='./images/upload_image.png' mah={80} w="auto"/>
-                            Drop file here <br/>or<br/>Click to browse
-                        </Group>
-                    </Dropzone.Idle>
-                    <Dropzone.Accept>Drop file here</Dropzone.Accept>
-                    <Dropzone.Reject>Files are invalid</Dropzone.Reject>
-                    </Center>
-                </Dropzone>
 
-                {selectedFile()}
+                    <Tabs 
+                    defaultValue="ipfs"
+                     
+                    onChange={(value) => {
+                        if (value === 'file' || value === 'ipfs') {
+                        setUploadMethod(value);
+                        }
+                    }} 
+                    mt={20}
+                    >
+                    <Tabs.List style={{ display: 'flex' }}>
+                        
+                            <Tabs.Tab 
+                                fz={17} 
+                                fw="500" 
+                                value="ipfs"
+                                style={{ flex: 1, textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                                >
+                                <Group gap={10}>
+                                    <Text fz={17} fw="500">Upload with Ipfs Cid</Text>
+                                    <img src="./images/ipfs_logo.png" alt="IPFS" style={{ width: 30, height: 30 }} />                                
+                                </Group>
+                            </Tabs.Tab>
+                            <Tabs.Tab 
+                                fz={17} 
+                                fw="500" 
+                                value="file"
+                                style={{ flex: 1, textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                                >
+                                <Group gap={10}>
+                                    <Text fz={17} fw="500">Upload From Local</Text>
+                                    <img src="./images/upl.png" alt="UPLOAD" style={{ width: 30, height: 30 }} />                                
+                                </Group>                        
+                            
+                            </Tabs.Tab>
+                    </Tabs.List>
+
+
+                    <Tabs.Panel value="ipfs">
+                        <TextInput
+                            
+                            placeholder="Enter Ipfs Cid"
+                            onKeyUp={(event) => {
+                                const cid = event.currentTarget.value;
+                                oasees_form.setFieldValue('ipfsHash', cid); 
+                            }}
+
+                            {...oasees_form.getInputProps('ipfsHash')}
+                        />
+                        {selectedCID()}
+                    </Tabs.Panel>
+
+
+
+                    <Tabs.Panel value="file">
+                        <Dropzone
+                            vars={varsResolver}
+                            h={120}
+                            p={0}
+                            multiple={false}
+                            onDrop={(file) => {
+                                oasees_form.setFieldValue('file', file)
+                            }}
+                            onReject={() => oasees_form.setFieldError('file', 'Please choose a valid file.')}
+                        >
+                            <Center h={120}>
+                                <Dropzone.Idle>
+                                    <Group>
+                                        <Image src='./images/upload_image.png' mah={80} w="auto" />
+                                        Drop file here <br />or<br />Click to browse
+                                    </Group>
+                                </Dropzone.Idle>
+                                <Dropzone.Accept>Drop file here</Dropzone.Accept>
+                                <Dropzone.Reject>Files are invalid</Dropzone.Reject>
+                            </Center>
+                        </Dropzone>
+
+                        {selectedFile()}
+                    </Tabs.Panel>
+
+
+                </Tabs>
 
                 <Center pt={30}><Button type='submit' color='green' w={260}>Upload to OASEES Marketplace</Button></Center>
 
@@ -420,6 +589,8 @@ const Publish = ({json}:PublishProps) => {
         </Paper>
 
         
+
+
         </Stack>
         </Center>
         </Tabs.Panel>

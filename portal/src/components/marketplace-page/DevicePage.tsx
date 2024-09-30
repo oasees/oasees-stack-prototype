@@ -27,29 +27,35 @@ const DevicePage = ({json,changePage,currentDevice,devHandlers}:AlgorithmPagePro
     const [showPurchaseComplete, setShowPurchaseComplete] = useState(false);
     const [showPurchaseFailed, setShowPurchaseFailed] = useState(false);
 
-
+ 
     const purchase_device = async (marketplace_id:string, price:string) => {
         setLoading(true);
+
         try{
+            
+   
+            
+
+
             const transaction_count = await json.provider.getTransactionCount(json.account);
             const buyDevice_transaction = await json.marketplace.buyDevice(json.nft.address,marketplace_id,{value: ethers.utils.parseEther(price), nonce:transaction_count});
             await buyDevice_transaction.wait();
 
-            const myDevices = await json.marketplace.getMyDevices({from: json.account});
-            const lastBoughtDevice = myDevices[myDevices.length-1];
+            // const myDevices = await json.marketplace.getMyDevices({from: json.account});
+            // const lastBoughtDevice = myDevices[myDevices.length-1];
 
-            if (lastBoughtDevice[8]){
-                const config_hash = await json.nft.tokenURI(lastBoughtDevice[1]);
-                
-                try{
-                    const res = await axios.post(`http://${json.main_cluster_ip}:30000/new_cluster`,{
-                        "config_hash": config_hash,
-                    });
-                    console.log(res);
-                } catch (error){
-                    console.error('Error:', error);
+            // if (lastBoughtDevice[8]){
+            const config_hash = await json.nft.tokenURI(currentDevice.id);
+            
+            try{
+                const res = await axios.post(`http://${json.main_cluster_ip}:31007/new_cluster`,{
+                    "config_hash": config_hash,
+                });
+                console.log(res);
+            } catch (error){
+                console.error('Error:', error);
                 }
-            }
+            // }
 
             setShowPurchaseComplete(true);
         } catch(error){
