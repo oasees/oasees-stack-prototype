@@ -1,0 +1,48 @@
+name: CI for Oasees Stack
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-compose-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
+
+      - name: Set up .env file
+        run: |
+          sed -i "s/{YOUR_HOST_IP}/localhost/g"
+      
+
+      - name: Build and start services using Docker Compose
+        run: |
+          bash install_stack.sh
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be up..."
+          sleep 30
+
+      - name: Run tests
+        run: |
+          # Check the portal
+          curl -f http://localhost:3000 || (echo "Portal service failed!" && exit 1)
+          # Check the blockchain node
+          curl -f http://localhost:8545 || (echo "Blockchain service failed!" && exit 1)
+          # Check the IPFS node
+          curl -f http://localhost:5001 || (echo "IPFS service failed!" && exit 1)
+          # Check the Flask Notebooks API
+          curl -f http://localhost:6001 || (echo "Flask API service failed!" && exit 1)
+
+      - name: Tear down Oasees stack
+        run: bash clean_stack.sh
