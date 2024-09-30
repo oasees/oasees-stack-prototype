@@ -38,7 +38,9 @@ jobs:
           # Check the portal
           curl -f http://localhost:3000 || (echo "Portal service failed!" && exit 1)
           # Check the blockchain node
-          curl -f http://localhost:8545 || (echo "Blockchain service failed!" && exit 1)
+           curl -X POS curl -X POST -H 'Content-Type: application/json' \
+              --data '{"jsonrpc":"2.0", "id": "1", "method":"eth_blockNumber", "params":[]}' \
+               http://localhost:8545/ || (echo "Blockchain service failed!" && exit 1)
           # Check the IPFS node
           curl -f http://localhost:5001 || (echo "IPFS service failed!" && exit 1)
           # Check the Flask Notebooks API
