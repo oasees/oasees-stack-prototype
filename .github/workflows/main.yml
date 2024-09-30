@@ -42,7 +42,7 @@ jobs:
               --data '{"jsonrpc":"2.0", "id": "1", "method":"eth_blockNumber", "params":[]}' \
                http://localhost:8545/ || (echo "Blockchain service failed!" && exit 1)
           # Check the IPFS node
-          curl -f http://localhost:5001 || (echo "IPFS service failed!" && exit 1)
+          curl -f http://localhost:5001/webui || (echo "IPFS service failed!" && exit 1)
           # Check the Flask Notebooks API
           curl -f http://localhost:6001 || (echo "Flask API service failed!" && exit 1)
 
