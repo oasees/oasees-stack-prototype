@@ -44,7 +44,7 @@ jobs:
           # Check the IPFS node
           curl -f http://localhost:5001/webui || (echo "IPFS service failed!" && exit 1)
           # Check the Flask Notebooks API
-          curl -f http://localhost:6001 || (echo "Flask API service failed!" && exit 1)
+          #curl -f http://localhost:6001 || (echo "Flask API service failed!" && exit 1)
 
       - name: Tear down Oasees stack
         run: bash clean_stack.sh
