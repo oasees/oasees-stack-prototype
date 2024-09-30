@@ -21,7 +21,7 @@ jobs:
 
       - name: Set up .env file
         run: |
-          sed -i "s/{YOUR_HOST_IP}/localhost/g"
+          sed -i "s/{YOUR_HOST_IP}/localhost/g" .env
       
 
       - name: Build and start services using Docker Compose
