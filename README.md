@@ -10,7 +10,7 @@ This current version of the Oasees stack requires the following:
 cd oasses-stack-prototype
 nano .env (change every ip to your host's ip)
 nano .devices_env (change ip to your host's ip)
-docker compose up -d --build
+./install_stack.sh
 ```
 The initial building procedure can take a while depending your hardware
 ## Check Installation
