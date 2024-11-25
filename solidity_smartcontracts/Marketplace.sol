@@ -182,10 +182,11 @@ contract OaseesMarketplace is ReentrancyGuard {
 
     DaoMembers members = new DaoMembers();
 
-    if(_hasCluster){
-      members.addMember(msg.sender);
-      emit ClusterJoined(msg.sender);
-    }
+    members.addMember(msg.sender);
+    // if(_hasCluster){
+    //   members.addMember(msg.sender);
+    //   emit ClusterJoined(msg.sender);
+    // }
     
     _idToDao[_daoCount.current()] = DAO(
         _nftContract,
@@ -229,7 +230,9 @@ contract OaseesMarketplace is ReentrancyGuard {
 
 
   function joinDao(uint256 _tokenId) public payable nonReentrant {
+
     _idToDao[_tokenId].members.addMember(msg.sender);
+    
     emit DaoJoined(msg.sender, _idToDao[_tokenId].tokenId);
   }
 
@@ -356,23 +359,21 @@ contract OaseesMarketplace is ReentrancyGuard {
     _nftsSold.increment();
     emit NFTSold(_nftContract, nft.tokenId, nft.seller, buyer, msg.value);
   }
-
-
-  function getListedNfts() public view returns (NFT[] memory) {
+function getListedNfts() public view returns (NFT[] memory) {
     uint256 nftCount = _nftCount.current();
     uint256 unsoldNftsCount = nftCount - _nftsSold.current();
 
     NFT[] memory nfts = new NFT[](unsoldNftsCount);
     uint nftsIndex = 0;
-    for (uint i = 0; i < nftCount; i++) {
-      if (_idToNFT[i + 1].listed) {
-        nfts[nftsIndex] = _idToNFT[i + 1];
-        nftsIndex++;
-      }
+
+    for (uint i = 1; i <= nftCount; i++) {
+        NFT storage nft = _idToNFT[i];
+        if (nft.listed) {
+            nfts[nftsIndex++] = nft;
+        }
     }
     return nfts;
-  }
-
+}
   function getMyNfts() public view returns (NFT[] memory) {
     uint nftCount = _nftCount.current();
     uint myNftCount = 0;
@@ -393,23 +394,23 @@ contract OaseesMarketplace is ReentrancyGuard {
     return nfts;
   }
 
-  function getMyListedNfts() public view returns (NFT[] memory) {
-    uint nftCount = _nftCount.current();
-    uint myListedNftCount = 0;
-    for (uint i = 0; i < nftCount; i++) {
-      if (_idToNFT[i + 1].seller == msg.sender && _idToNFT[i + 1].listed) {
-        myListedNftCount++;
-      }
-    }
+  // function getMyListedNfts() public view returns (NFT[] memory) {
+  //   uint nftCount = _nftCount.current();
+  //   uint myListedNftCount = 0;
+  //   for (uint i = 0; i < nftCount; i++) {
+  //     if (_idToNFT[i + 1].seller == msg.sender && _idToNFT[i + 1].listed) {
+  //       myListedNftCount++;
+  //     }
+  //   }
 
-    NFT[] memory nfts = new NFT[](myListedNftCount);
-    uint nftsIndex = 0;
-    for (uint i = 0; i < nftCount; i++) {
-      if (_idToNFT[i + 1].seller == msg.sender && _idToNFT[i + 1].listed) {
-        nfts[nftsIndex] = _idToNFT[i + 1];
-        nftsIndex++;
-      }
-    }
-    return nfts;
-  }
+  //   NFT[] memory nfts = new NFT[](myListedNftCount);
+  //   uint nftsIndex = 0;
+  //   for (uint i = 0; i < nftCount; i++) {
+  //     if (_idToNFT[i + 1].seller == msg.sender && _idToNFT[i + 1].listed) {
+  //       nfts[nftsIndex] = _idToNFT[i + 1];
+  //       nftsIndex++;
+  //     }
+  //   }
+  //   return nfts;
+  // }
 }

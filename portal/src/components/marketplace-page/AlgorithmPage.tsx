@@ -62,21 +62,21 @@ const AlgorithmPage = ({json,changePage,currentAlgorithm,algHandlers,isPurchased
                 asset_name: currentAlgorithm.title
 
             }
-            if(asset_type == 'DT'){        
-                const response = await axios.post(`http://${master_ip}:31007/set_data_marketplace`, data, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }else{
+            // if(asset_type == 'DT'){        
+            //     const response = await axios.post(`http://${master_ip}:31007/set_data_marketplace`, data, {
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         }
+            //     });
+            // }else{
 
-                const response = await axios.post(`http://${master_ip}:31007/set_project_marketplace`, data, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });        
+            //     const response = await axios.post(`http://${master_ip}:31007/set_project_marketplace`, data, {
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         }
+            //     });        
 
-            }
+            // }
 
 
 

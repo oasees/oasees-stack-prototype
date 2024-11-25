@@ -1,0 +1,57 @@
+name: CI for Smart Contracts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - solidity_smartcontracts/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - solidity_smartcontracts/**
+
+jobs:
+  compile-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('tests/smartcontracts/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache Brownie dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.brownie
+          key: ${{ runner.os }}-brownie-${{ hashFiles('brownie-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-brownie-
+
+      - name: Setup hardhat node
+        working-directory: ./hardhat_node
+        run: docker compose up --build -d
+    
+      - name: Setup brownie
+        run: |
+          pip install -r tests/smartcontracts/requirements.txt
+          brownie init oasees_contracts
+          cd oasees_contracts
+          cp ../solidity_smartcontracts/Marketplace.sol contracts/
+          cp ../solidity_smartcontracts/NFT.sol contracts/
+          cp ../brownie-config.yaml .
+          cp -r ../tests/smartcontracts/* tests/
+          brownie test --coverage
+
+      - name: Remove hardhat node
+        if: always()
+        working-directory: ./hardhat_node
+        run: docker compose down -v
