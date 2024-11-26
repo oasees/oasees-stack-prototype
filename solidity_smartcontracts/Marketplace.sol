@@ -187,6 +187,8 @@ contract OaseesMarketplace is ReentrancyGuard {
     //   members.addMember(msg.sender);
     //   emit ClusterJoined(msg.sender);
     // }
+
+    emit ClusterJoined(msg.sender);
     
     _idToDao[_daoCount.current()] = DAO(
         _nftContract,
