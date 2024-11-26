@@ -1,10 +1,16 @@
 name: Smart Contract Tests
 
 on:
-  workflow_run:
-    workflows: ["End-To-End Tests"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+    paths:
+      - solidity_smartcontracts/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - solidity_smartcontracts/**
 
 jobs:
   compile-and-test:
