@@ -1,0 +1,54 @@
+name: End-To-End Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  end-to-end-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .env file
+        run: |
+          sed -i "s/{YOUR_HOST_IP}/127.0.0.1/g" .env
+      
+
+      - name: Build and start services using Docker Compose
+        run: |
+          bash install_stack.sh
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be up..."
+          sleep 10
+
+
+      ## PLAYWRIGHT E2E TESTS WITH METAMASK
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Playwright package installation
+        working-directory: ./playwright
+        run: npm ci
+      - name: Install Playwright Browsers
+        working-directory: ./playwright
+        run: npx playwright install chromium --with-deps
+      - name: Create metamask cache
+        working-directory: ./playwright
+        run: xvfb-run npx synpress
+      - name: Run Playwright tests
+        working-directory: ./playwright
+        run: xvfb-run npx playwright test
+
+      - name: Tear down Oasees stack
+        if: always()
+        run: |
+          docker compose down

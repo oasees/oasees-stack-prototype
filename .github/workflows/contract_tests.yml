@@ -1,16 +1,10 @@
-name: CI for Smart Contracts
+name: Smart Contract Tests
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - solidity_smartcontracts/**
-  pull_request:
-    branches:
-      - main
-    paths:
-      - solidity_smartcontracts/**
+  workflow_run:
+    workflows: ["End-To-End Tests"]
+    types:
+      - completed
 
 jobs:
   compile-and-test:
