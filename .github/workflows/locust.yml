@@ -1,0 +1,73 @@
+name: Locust
+
+on:
+  push:
+      branches:
+      - main
+  pull_request:
+      branches:
+      - main
+
+
+jobs:
+  stack-setup:
+    runs-on: stack-runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
+
+      - name: Set up .env file
+        run: |
+          sed -i "s/{YOUR_HOST_IP}/10.160.3.193/g" .env
+      
+
+      - name: Build and start services using Docker Compose
+        run: |
+          bash install_stack.sh
+
+      - name: Set up Locust
+        run: |
+          pip install locust
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be up..."
+          sleep 10
+
+
+
+
+  locust-tests:
+    runs-on: tests-runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Locust
+        run: pip install locust
+
+      - name: Run stress tests
+        working-directory: ./tests/locust
+        run: |
+          locust --config locust.conf
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: locust-report
+          path: ./tests/locust/report.html
+
+
+  uninstall-stack:
+    runs-on: stack-runner
+
+    steps:
+      - name: Tear down Oasees stack
+        run: docker compose down
+
+
