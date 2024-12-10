@@ -45,6 +45,7 @@ jobs:
 
   locust-tests:
     runs-on: tests-runner
+    needs: stack-setup
 
     steps:
       - name: Checkout repository
@@ -67,6 +68,7 @@ jobs:
 
   uninstall-stack:
     runs-on: stack-runner
+    needs: locust-tests
 
     steps:
       - name: Tear down Oasees stack
