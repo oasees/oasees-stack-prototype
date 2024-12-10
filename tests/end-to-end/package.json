@@ -1,0 +1,17 @@
+{
+  "name": "synpress",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@synthetixio/synpress": "^4.0.3",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  },
+  "type": "module"
+}
