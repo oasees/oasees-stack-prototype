@@ -1,9 +1,6 @@
-version: '3'
 services:
-
   oasees_blockchain:
-    image: ethereumoptimism/hardhat
-    container_name: hardhat
-    ports:
-      - "8545:8545"
-
+      build: .
+      container_name: hardhat
+      ports:
+        - "8545:8545"
