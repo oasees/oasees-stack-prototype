@@ -31,14 +31,10 @@ jobs:
         run: |
           bash install_stack.sh
 
-      - name: Set up Locust
-        run: |
-          pip install locust
-
       - name: Wait for services to be ready
         run: |
           echo "Waiting for services to be up..."
-          sleep 10
+          sleep 30
 
 
 
