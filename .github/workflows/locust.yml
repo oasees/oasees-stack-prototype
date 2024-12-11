@@ -34,7 +34,7 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Waiting for services to be up..."
-          sleep 30
+          sleep 40
 
 
 
