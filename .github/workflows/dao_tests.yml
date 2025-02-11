@@ -31,19 +31,10 @@ jobs:
         pip install pytest
 
     - name: Start Hardhat node
-      run: npx hardhat node &
-
-    - name: Wait for Hardhat node
       run: |
-        timeout=30
-        until nc -z localhost 8545 || [ $timeout -eq 0 ]; do
-          sleep 1
-          ((timeout--))
-        done
-        if [ $timeout -eq 0 ]; then
-          echo "Hardhat node failed to start"
-          exit 1
-        fi
+        npx hardhat node &
+        sleep 2
+
 
     - name: DAO Functionality tests
       run: |
