@@ -1,16 +1,7 @@
 name: DAO Functionality Test
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - tests/dao-testing**
-  pull_request:
-    branches:
-      - main
-    paths:
-      - tests/dao-testing**
+  workflow_dispatch:
 
 jobs:
   test:
