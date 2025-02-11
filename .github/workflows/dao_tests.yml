@@ -2,8 +2,11 @@ name: DAO Functionality Test
 on:
   workflow_dispatch:
 jobs:
-  test:
+  dao_functionality_test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/dao-testing
     
     steps:
     - uses: actions/checkout@v2
