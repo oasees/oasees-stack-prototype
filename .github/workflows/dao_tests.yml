@@ -41,4 +41,4 @@ jobs:
 
     - name: DAO Functionality tests
       run: |
-        brownie test -s
+        brownie test -s | awk '!/Transaction sent|Gas price|Gas limit|Gas used|confirmed/' | sed '/^[[:space:]]*$/d'
