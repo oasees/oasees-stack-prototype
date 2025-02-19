@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipfs-kubo-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipfs-kubo
+  template:
+    metadata:
+      labels:
+        app: ipfs-kubo
+    spec:
+      containers:
+      - name: ipfs-kubo
+        image: ipfs/kubo:latest
+        ports:
+        - containerPort: 30401
+        - containerPort: 30880
+        - containerPort: 30501
+        command:
+        - sh
+        - -c
+        - |
+          ipfs init
+          ipfs config Addresses.API "/ip4/0.0.0.0/tcp/30501"
+          ipfs config Addresses.Gateway "/ip4/0.0.0.0/tcp/30880"
+          ipfs config --json Addresses.Swarm '[
+            "/ip4/0.0.0.0/tcp/30401",
+            "/ip6/::/tcp/30401",
+            "/ip4/0.0.0.0/udp/30401/webrtc-direct",
+            "/ip4/0.0.0.0/udp/30401/quic-v1",
+            "/ip4/0.0.0.0/udp/30401/quic-v1/webtransport",
+            "/ip6/::/udp/30401/webrtc-direct",
+            "/ip6/::/udp/30401/quic-v1",
+            "/ip6/::/udp/30401/quic-v1/webtransport"
+          ]'
+          ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
+          ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST", "GET"]'
+          ipfs config --json Gateway.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
+          ipfs config --json Gateway.HTTPHeaders.Access-Control-Allow-Methods '["GET"]'
+          ipfs daemon --migrate=true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-kubo-service
+spec:
+  type: NodePort
+  selector:
+    app: ipfs-kubo
+  ports:
+    - name: swarm
+      port: 30401
+      targetPort: 30401
+      nodePort: 31401 
+    - name: gateway
+      port: 30880
+      targetPort: 30880
+      nodePort: 31880
+    - name: api
+      port: 30501
+      targetPort: 30501
+      nodePort: 31501
