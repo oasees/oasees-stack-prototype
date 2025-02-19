@@ -1,2 +1,4 @@
 tests/end-to-end/playwright-report/
 tests/end-to-end/test-results/
+portal/node_modules/
+__pycache__/
