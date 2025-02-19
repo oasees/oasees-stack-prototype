@@ -19,7 +19,8 @@ module.exports = {
       });
       webpackConfig.resolve.fallback = {
         ...webpackConfig.resolve.fallback, // Preserve any existing fallbacks
-        fs: false // Disable the `fs` module
+        fs: false, // Disable the `fs` module
+        crypto: false,
       };
         webpackConfig.ignoreWarnings = webpackConfig.ignoreWarnings || [];
         webpackConfig.ignoreWarnings.push((warning) => {
