@@ -1,0 +1,27 @@
+name: Hardware Accelerator Tests
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    hardwareSetup-and-test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+            
+            # - name: Check avialable python version
+            #   run: ls /opt/hostedtoolcache/Python
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: '3.10.12'
+
+            - name: Install Dependencies
+              run: |
+                python -m ensurepip --upgrade
+                pip3 install -r tests/accelerator-testing/requirements.txt
+                cd tests/accelerator-testing
+                python3 -m unittest -v
