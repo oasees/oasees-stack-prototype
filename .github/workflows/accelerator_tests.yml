@@ -1,9 +1,7 @@
 name: Hardware Accelerator Tests
 
 on:
-    push:
-        branches:
-            - main
+  workflow_dispatch:
 
 jobs:
     hardwareSetup-and-test:
