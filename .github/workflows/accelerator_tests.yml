@@ -5,7 +5,7 @@ on:
 
 jobs:
     hardwareSetup-and-test:
-        runs-on: gpu-runner
+        runs-on: gpu
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
