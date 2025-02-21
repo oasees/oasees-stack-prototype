@@ -4,6 +4,7 @@ import numpy as np
 try:
     import torch
     import torchvision.models as models
+    from torchvision.models import ResNet50_Weights
     import tensorrt as trt
 except ImportError as err:
     raise Exception(f"{err}")
@@ -15,7 +16,7 @@ import os
 def load_pytorch_model():
     """Loads a Pytorch model from a given path"""
     # Toy example of ResNet50
-    model = models.resnet50(pretrained=True)
+    model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
     model.eval() # set that to inference mode
     return model
 
