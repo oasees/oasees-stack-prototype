@@ -1,0 +1,35 @@
+name: Network Provisioning Test
+on:
+  workflow_dispatch:
+
+jobs:
+  ipfs_functionality_test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/networking_test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d version
+
+      - name: Make test script executable
+        run: chmod +x network_test.sh
+
+      - name: Run IPFS tests
+        run: ./network_test.sh
