@@ -31,5 +31,5 @@ jobs:
       - name: Make test script executable
         run: chmod +x network_test.sh
 
-      - name: Run IPFS tests
+      - name: Run Network tests
         run: ./network_test.sh
