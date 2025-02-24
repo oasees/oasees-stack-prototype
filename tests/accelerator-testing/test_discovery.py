@@ -1,7 +1,6 @@
 # imports
 import unittest
 from unittest.mock import patch
-
 import subprocess
 import shutil
 import os
@@ -52,6 +51,24 @@ def discover_hardware():
         devices.append("Google TPU")
 
     return devices if devices else ["CPU"]
+
+def discover_hardware_framework():
+    """Returns list of available hardware accelerators"""
+    available_devices = []
+    try:
+        # check for GPU (NVIDIA)
+        import torch
+        if torch.cuda.is_available():
+            available_devices.append("GPU")
+        
+        # check for TPU
+        import tensorflow as tf
+        if len(tf.config.list_logical_devices('TPU'))>0:
+            available_devices.append("TPU")
+    except Exception as err:
+        print(f"Error during hardware detection: {err}")
+    return available_devices if available_devices else ["CPU"]
+
 
 class TestHardwareDiscovery(unittest.TestCase):
 
@@ -108,6 +125,33 @@ class TestHardwareDiscovery(unittest.TestCase):
         """Fail if Intel GPU is incorrectly detected when not available"""
         result = discover_hardware()
         self.assertNotIn("Intel GPU", result, "Intel GPU was detected incorrectly.")
+
+class TestHardwareDiscoveryFramework(unittest.TestCase):
+    @patch("torch.cuda.is_available", return_value=True)
+    def test_gpu_detection_framework(self, mock_cuda):
+        """Test if GPU is detected when available"""
+        result = discover_hardware_framework()
+        self.assertIn("GPU", result)
+    
+    @patch("tensorflow.config.list_logical_devices", return_value=['TPU'])
+    def test_tpu_detection_framework(self,mock_tpu):
+        """Test if TPU is system gracefully handles errors in hardware detection"""
+        result = discover_hardware_framework()
+        # print(result)
+        self.assertIn("TPU",result)
+    
+    @patch("torch.cuda.is_available", return_value=False)
+    @patch("tensorflow.config.list_logical_devices", return_value=[])
+    def test_cpu_fallback(self, mock_cuda, mock_tpu):
+        """Test of CPU is selected when no accelerator is found"""
+        result = discover_hardware_framework()
+        self.assertEqual(result, ["CPU"])
+
+    @patch("torch.cuda.is_available", side_effect=Exception("CUDA Error"))
+    @patch("tensorflow.config.list_logical_devices", side_effect=Exception("TPU Error"))
+    def test_error_handling(self, mock_cuda, mock_tpu):
+        result = discover_hardware_framework()
+        self.assertEqual(result, ["CPU"])
 
 if __name__=="__main__":
     unittest.main()
