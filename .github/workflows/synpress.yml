@@ -48,7 +48,7 @@ jobs:
         run: xvfb-run npx synpress
       - name: Run Playwright tests
         working-directory: ./tests/end-to-end
-        run: xvfb-run npx playwright test --debug
+        run: xvfb-run npx playwright test
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
