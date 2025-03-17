@@ -14,7 +14,7 @@ export default defineWalletSetup(PASSWORD, async (context, walletPage) => {
 
   const customNetwork = {
     name: 'oasees',
-    rpcUrl: 'http://10.160.1.205:8545',
+    rpcUrl: 'http://10.160.3.193:8545',
     chainId: 31337,
     symbol: 'ETH'
   }

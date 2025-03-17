@@ -10,7 +10,7 @@ on:
 
 jobs:
   end-to-end-tests:
-    runs-on: ubuntu-latest
+    runs-on: stack-runner
 
     steps:
       - name: Checkout repository
@@ -18,11 +18,11 @@ jobs:
 
       - name: Set up .env file
         run: |
-          sed -i "s/{YOUR_HOST_IP}/127.0.0.1/g" .env
-      
+          sed -i "s/{YOUR_HOST_IP}/10.160.3.193/g" .env
 
-      - name: Build and start services using Docker Compose
+      - name: Run install_stack.sh with env export
         run: |
+          export $(grep -v '^#' .env | xargs)
           bash install_stack.sh
 
       - name: Wait for services to be ready
@@ -46,7 +46,7 @@ jobs:
         run: xvfb-run npx synpress
       - name: Run Playwright tests
         working-directory: ./tests/end-to-end
-        run: xvfb-run npx playwright test
+        run: xvfb-run npx playwright test --debug
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
