@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: "html",
   use: {
     // Set base URL for tests
-    baseURL: "http://10.160.1.205:3000",
+    baseURL: "http://10.160.3.193:3000",
     trace: "on-first-retry",
     
   },
