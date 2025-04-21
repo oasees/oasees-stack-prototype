@@ -269,3 +269,13 @@ A sample output would be:
 ```
 
 ## More detailed instructions and demos will follow
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KMLJHTY7WN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-KMLJHTY7WN');
+</script>
