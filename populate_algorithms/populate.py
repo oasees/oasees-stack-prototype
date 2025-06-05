@@ -9,9 +9,12 @@ from dotenv import load_dotenv
 
 env_file_path = '../.env'
 load_dotenv(dotenv_path=env_file_path)
-JUPYTER_API_IP=os.getenv("JUPYTER_API_IP")
+BLOCK_EXPLORER_API=os.getenv("BLOCK_EXPLORER_API")
 IPFS_HOST=os.getenv("IPFS_HOST")
 BLOCK_CHAIN_IP=os.getenv("BLOCK_CHAIN_IP")
+
+marketplace_address= "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+nft_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 
 
 def read_samples(folder_path):
@@ -48,30 +51,37 @@ def read_samples(folder_path):
 
 
 portal_account = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
-portal_account = web3.Web3.toChecksumAddress(portal_account)
+portal_account = web3.Web3.to_checksum_address(portal_account)
 portal_key = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 
 
-w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format(BLOCK_CHAIN_IP)))
+w3 = web3.Web3(web3.HTTPProvider("http://{}:8545".format('10.160.3.172')))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
+contract_info_endpoint = f"http://{BLOCK_EXPLORER_API}/smart-contracts"
 
-api_endpoint="http://{}:{}/ipfs_portal_contracts".format(JUPYTER_API_IP,6001)
-print(api_endpoint)
+response = requests.get(f'{contract_info_endpoint}/{marketplace_address}')
+marketplace_abi = response.json()['abi']
 
-response = requests.get(api_endpoint)
+response = requests.get(f'{contract_info_endpoint}/{nft_address}')
+nft_abi = response.json()['abi']
 
-contracts_info=response.json()
-contracts_info=contracts_info['portal_contracts']
+# api_endpoint="http://{}:{}/ipfs_portal_contracts".format(BLOCK,6001)
+# print(api_endpoint)
+
+# response = requests.get(api_endpoint)
+
+# contracts_info=response.json()
+# contracts_info=contracts_info['portal_contracts']
 
 
-market_address=contracts_info['marketplace_address']
-market_abi=contracts_info['marketplace_abi']
+# market_address=contracts_info['marketplace_address']
+# market_abi=contracts_info['marketplace_abi']
 
-nft_address=contracts_info['nft_address']
-nft_abi=contracts_info['nft_abi']
+# nft_address=contracts_info['nft_address']
+# nft_abi=contracts_info['nft_abi']
 
-market_contract = w3.eth.contract(address=market_address, abi=market_abi)
+market_contract = w3.eth.contract(address=marketplace_address, abi=marketplace_abi)
 nft_contract = w3.eth.contract(address=nft_address, abi=nft_abi)
 
 folders=read_samples('samples')
@@ -101,32 +111,32 @@ for fc in file_contents.keys():
     client.close()
 
 
-    transaction = nft_contract.functions.mint(content_hash).buildTransaction({
+    transaction = nft_contract.functions.mint(content_hash).build_transaction({
         'chainId': 31337,
         'gas': 2000000,
         'gasPrice': w3.eth.gas_price,
-        'nonce': w3.eth.getTransactionCount(portal_account) + i
+        'nonce': w3.eth.get_transaction_count(portal_account) + i
     })
 
 
-    signed_transaction = w3.eth.account.signTransaction(transaction, private_key=portal_key)
-    transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+    signed_transaction = w3.eth.account.sign_transaction(transaction, private_key=portal_key)
+    transaction_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
     txn_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
-    tx_json = json.loads(w3.toJSON(txn_receipt))
+    tx_json = json.loads(w3.to_json(txn_receipt))
 
-    token_id=int(tx_json['logs'][2]['data'],16)
+    token_id=int(tx_json['logs'][1]['data'],16)
     print(token_id)
 
 
-    transaction = market_contract.functions.makeItem(nft_address,token_id,w3.toWei(price, 'ether'),meta_hash).buildTransaction({
+    transaction = market_contract.functions.makeItem(nft_address,token_id,w3.to_wei(price, 'ether'),meta_hash).build_transaction({
         'value':market_fee,
         'chainId': 31337,
         'gas': 2000000,
         'gasPrice': w3.eth.gas_price,
-        'nonce': w3.eth.getTransactionCount(portal_account)
+        'nonce': w3.eth.get_transaction_count(portal_account)
     })
 
 
-    signed_transaction = w3.eth.account.signTransaction(transaction, private_key=portal_key)
-    transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+    signed_transaction = w3.eth.account.sign_transaction(transaction, private_key=portal_key)
+    transaction_hash = w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
     # i = 1

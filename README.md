@@ -1,4 +1,28 @@
 # OASEES-stack-prototype
+
+## New deployment method
+
+In order to get the latest versions of the OASEES components, deploy the stack throught the SDK.
+
+1. Make sure you have the latest version of the [OASEES SDK](https://pypi.org/project/oasees-sdk/#history)
+```
+pip install -U oasees-sdk
+```
+
+2. Run the following command to quickly setup a kubernetes cluster with the oasees components installed. 
+```
+oasees-sdk init --expose-ip <host-ip>
+```
+
+>**Note 1:** The new deployment relies on a "public", shared instance of the blockchain. Make sure the host you're installing the stack on is connected to the VPN.
+
+>**Note 2:** Deployment now relies on publicly available container images and helm charts. Check out the [container-images](https://github.com/oasees/container-images) and [helm-charts](https://github.com/oasees/helm-charts) repositories for source code.
+
+
+<br><br>
+
+# Legacy
+
 ## Requirements
 This current version of the Oasees stack requires the following:
 - Docker version 24.0.5
