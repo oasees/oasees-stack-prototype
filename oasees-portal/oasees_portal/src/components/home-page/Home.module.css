@@ -1,0 +1,14 @@
+.grid_col{
+    /* border-style: solid;
+    border-color: rgb(131, 130, 130, 0.1);
+    border-radius: 50px; */
+
+    /* box-shadow: 5px 5px 8px 2px #888888 */  
+}
+
+.graph{
+    display: flex;
+    justify-content: center;
+    overflow-x: hidden;
+    width: 100%;
+}

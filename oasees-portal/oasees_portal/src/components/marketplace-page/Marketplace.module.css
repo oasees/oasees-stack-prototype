@@ -1,0 +1,94 @@
+.marketplace_tab {
+    font-size: 18px;
+}
+
+
+
+.card {
+  position: relative;
+  width: auto;
+  height: 300px;
+  background: #ffdc80;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px 0 rgba(#999, .25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #01baff;
+  clip-path: circle(150px at 80% 20%);
+  transition: 0.5s ease-in-out;
+}
+
+.card:hover:before {
+  clip-path: circle(300px at 80% -20%);
+}
+
+
+
+.card .imgBx {
+  position:relative;
+  display:flex;
+  z-index: 10;
+  width: 100%;
+  height: 140px;
+  transition: 0.5s;
+  max-width: 140px;
+  max-height: 140px;
+  background-color: #f9aa5d;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  top:0;
+  left:0;
+  transition: 0.5s;
+}
+
+.card:hover .imgBx {
+  top:-30%;
+  left:-35%;
+  
+}
+
+
+.card .contentBx {
+  position: absolute;
+  bottom: 0;
+  height: 100px;
+  text-align: center;
+  transition: 0.5s;
+  z-index: 10;
+}
+
+.card:hover .contentBx {
+  height: 210px;
+}
+
+.card .contentBx h2 {
+  position: relative;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #111;
+  margin: 0;
+}
+
+
+.card:hover .contentBx button {
+  opacity: 1;
+  transform: translateY(0px);
+  transition-delay: 0.5s;
+}
+
+.h4 {
+  color: #40908d;
+}
+

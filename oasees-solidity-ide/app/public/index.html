@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DAO Creation Wizard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <h2>DAO Creation Steps</h2>
+            <div class="steps-list">
+                <div class="step-item" data-step="governance">
+                    <div class="step-header">
+                        <span class="step-icon">
+                            <i class="fas fa-circle-check"></i>
+                        </span>
+                        <span class="step-name">Governance</span>
+                    </div>
+                    <div class="step-details">
+                        <div class="compilation-status">Not compiled</div>
+                        <!-- <div class="contract-data">
+                            <div class="data-preview abi-preview">
+                                <span class="preview-label">ABI</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                            <div class="data-preview bytecode-preview">
+                                <span class="preview-label">Bytecode</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+                <div class="step-item" data-step="votetoken">
+                    <div class="step-header">
+                        <span class="step-icon">
+                            <i class="fas fa-circle-check"></i>
+                        </span>
+                        <span class="step-name">Vote Token</span>
+                    </div>
+                    <div class="step-details">
+                        <div class="compilation-status">Not compiled</div>
+                        <!-- <div class="contract-data">
+                            <div class="data-preview abi-preview">
+                                <span class="preview-label">ABI</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                            <div class="data-preview bytecode-preview">
+                                <span class="preview-label">Bytecode</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+                <div class="step-item" data-step="timelock">
+                    <div class="step-header">
+                        <span class="step-icon">
+                            <i class="fas fa-circle-check"></i>
+                        </span>
+                        <span class="step-name">Time Lock</span>
+                    </div>
+                    <div class="step-details">
+                        <div class="compilation-status">Not compiled</div>
+                        <!-- <div class="contract-data">
+                            <div class="data-preview abi-preview">
+                                <span class="preview-label">ABI</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                            <div class="data-preview bytecode-preview">
+                                <span class="preview-label">Bytecode</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+                <div class="step-item" data-step="box">
+                    <div class="step-header">
+                        <span class="step-icon">
+                            <i class="fas fa-circle-check"></i>
+                        </span>
+                        <span class="step-name">Action</span>
+                    </div>
+                    <div class="step-details">
+                        <div class="compilation-status">Not compiled</div>
+                        <!-- <div class="contract-data">
+                            <div class="data-preview abi-preview">
+                                <span class="preview-label">ABI</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                            <div class="data-preview bytecode-preview">
+                                <span class="preview-label">Bytecode</span>
+                                <pre class="preview-content"></pre>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+
+
+                <div class="deployment-panel" id="deploymentPanel" style="display: block;">
+                    <h3>Deploy DAO</h3>
+                    <form id="deploymentForm" class="deployment-form">
+                        <div class="form-group">
+                            <label>DAO Name:</label>
+                            <input type="text" name="daoName" value="My DAO" required>
+                        </div>
+                        <div class="form-group">
+                            <label>DAO Description:</label>
+                            <textarea name="daoDesc" required>A decentralized autonomous organization.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Delay (blocks):</label>
+                            <input type="number" name="minDelay" value="1" required min="1">
+                            <small class="help-text">Time between proposal passing and execution</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Quorum Percentage:</label>
+                            <input type="number" name="quorumPercentage" value="4" required min="1" max="100">
+                            <small class="help-text">Percentage of total supply needed for quorum</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Voting Period (blocks):</label>
+                            <input type="number" name="votingPeriod" value="50400" required min="1">
+                            <small class="help-text">~7 days in blocks</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Voting Delay (blocks):</label>
+                            <input type="number" name="votingDelay" value="1" required min="0">
+                            <small class="help-text">Delay before voting starts</small>
+                        </div>
+                        <button type="button" id="connectWallet" class="connect-btn">
+                            <i class="fas fa-wallet"></i> Connect Wallet
+                        </button>
+                        
+                        <button type="submit" class="deploy-btn" disabled>
+                            <div id="deploy-btn-loading-text" style="display: none; align-items: center; justify-content: center; gap: 10px;">Deployment in progress...<div id="loader"></div></div>
+                            <div id="deploy-btn-text" style="display: block;"><i class="fas fa-rocket"></i> Deploy DAO</div>
+                        </button>
+                    </form>
+                </div>
+
+
+
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="editor-container">
+                <div id="editor"></div>
+
+            <div id="hiddenContainer" class="hidden-container" style="display: none;">
+                <div class="hidden-content">
+                    <h3>DAO Creation Guide</h3>
+                    <p>Welcome to the DAO Creation Wizard! This tool helps you build and deploy your own Decentralized Autonomous Organization on the blockchain.</p>
+                    <p>A DAO (Decentralized Autonomous Organization) is an organization represented by rules encoded as a computer program that is transparent, controlled by the organization members rather than a central authority.</p>
+                    <h4>Key Components:</h4>
+                    <ul>
+                        <li><strong>Governance:</strong> Defines how proposals and voting work in your DAO</li>
+                        <li><strong>Vote Token:</strong> The token used for voting rights in your organization</li>
+                        <li><strong>Time Lock:</strong> Enforces a delay between proposal approval and execution</li>
+                        <li><strong>Box:</strong> A sample contract that your DAO will control</li>
+                    </ul>
+                    <p>Follow each step in the sidebar to configure and deploy your complete DAO infrastructure. Make sure to connect your wallet before deployment.</p>
+                </div>
+            </div>
+                <div class="control-panel">
+                    <button onclick="compile()" class="compile-btn">
+                        <i class="fas fa-code"></i> Compile
+                    </button>
+                    <button onclick="nextStep()" id="nextBtn" class="next-btn" disabled>
+                        <i class="fas fa-arrow-right"></i> Next Step
+                    </button>
+                        <button id="toggleHiddenContent" class="toggle-btn">
+                            <i class="fas fa-eye"></i> Show Additional Information
+                        </button>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs/loader.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script> -->
+    <script src="/js/deployment.js" defer></script>
+    <script src="/js/wizard.js" defer></script>
+    <script>
+        // Script to toggle the hidden container
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButton = document.getElementById('toggleHiddenContent');
+            const hiddenContainer = document.getElementById('hiddenContainer');
+            
+            toggleButton.addEventListener('click', function() {
+                if (hiddenContainer.style.display === 'none') {
+                    hiddenContainer.style.display = 'block';
+                    toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Additional Information';
+                } else {
+                    hiddenContainer.style.display = 'none';
+                    toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show Additional Information';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

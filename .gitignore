@@ -1,4 +1,7 @@
 tests/end-to-end/playwright-report/
 tests/end-to-end/test-results/
 portal/node_modules/
+oasees-portal/oasees_portal/node_modules/
+oasees-solidity-ide/app/node_modules/
 __pycache__/
+

@@ -1,0 +1,12 @@
+.mantine-Stepper-root .mantine-Image-root{
+  height: 30vh;
+  width: auto;
+}
+
+html, body {
+  margin:0;
+  padding:0;
+}
+h1 {
+  margin:0;
+}

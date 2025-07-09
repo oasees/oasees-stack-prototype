@@ -1,0 +1,9 @@
+.mantine-List-root img{
+    width: 30px;
+    height: 30px;
+}
+
+.mantine-List-root button:hover{
+    color:orange;
+}
+

@@ -1,0 +1,4 @@
+Flask==2.3.3
+prometheus-client==0.17.1
+requests==2.31.0
+flask-socketio==5.5.1
