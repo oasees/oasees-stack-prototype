@@ -1,4 +1,4 @@
-name: Build and Push OASEES core images to DockerHub
+name: Build and Push OASEES Images for Edge Devices
 
 on:
   push:
@@ -15,11 +15,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - name: solidity-ide
-          - name: oasees-portal
-          - name: cluster-backend
-          - name: oasees-notebook
-          - name: ml-base-image
+          - name: oasees-agent
 
     steps:
       - name: Checkout repository
@@ -31,10 +27,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build the Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
           context: ./${{ matrix.image.name }}
+          platforms: linux/amd64, linux/arm64
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image.name }}:latest
