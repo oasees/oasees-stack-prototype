@@ -16,16 +16,31 @@ RUN pip install --no-cache-dir --user -r /tmp/requirements.txt \
 # Final stage - minimal runtime image
 FROM python:3.10-slim
 
+ENV PYTHONUNBUFFERED=1
+
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 
-# Install only runtime dependencies
+# Install runtime dependencies, kubectl, and IPFS with architecture detection
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     curl \
-    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    tar \
+    && rm -rf /var/lib/apt/lists/* \
+    && ARCH=$(uname -m) \
+    && case "$ARCH" in \
+        x86_64|amd64) KUBECTL_ARCH="linux/amd64"; KUBO_ARCH="linux-amd64" ;; \
+        aarch64|arm64) KUBECTL_ARCH="linux/arm64"; KUBO_ARCH="linux-arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac \
+    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${KUBECTL_ARCH}/kubectl" \
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/ \
+    && KUBO_URL="https://dist.ipfs.tech/kubo/v0.30.0/kubo_v0.30.0_${KUBO_ARCH}.tar.gz" \
+    && curl -L "$KUBO_URL" | tar -xzf - \
+    && chmod +x kubo/ipfs \
+    && cp kubo/ipfs /usr/local/bin/ \
+    && rm -rf kubo \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

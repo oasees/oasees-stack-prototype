@@ -1,4 +1,5 @@
 FROM node:21-alpine
+RUN apk add --no-cache python3 make g++
 WORKDIR /oasees-portal
 COPY ./oasees_portal/public/ /oasees-portal/public
 COPY ./oasees_portal/src/ /oasees-portal/src
