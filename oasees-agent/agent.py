@@ -1,19 +1,19 @@
 import threading
 from flask import Flask, request, jsonify
-import tempfile
-import subprocess
-import os
-import sys
-from io import StringIO
-import queue
 import time
 from dotenv import load_dotenv
-import web3
 from dao_event_watcher import event_watcher
 from contract_loader import load_contracts 
-
+import requests
+from utils import validate_json_format,Agent
+from time import sleep
 
 app = Flask(__name__)
+
+
+print("Agent booting up...")
+
+agent = None
 
 dao_info = {
     'governance' : None,
@@ -21,147 +21,132 @@ dao_info = {
     'box': None
 }
 
-# Info structure
-current_execution = {
-    'running': False,
-    'output': [],
-    'status': 'idle',  # idle, running, completed, failed
-    'process': None,
-    'start_time': None
+config = {
+    "metric_index": '',
+    "propose_on": {
+        "events" : [],
+        'proposal_contents': []
+    },
+    "actions_map": []
 }
 
-load_dotenv()
-BLOCKCHAIN_URL = os.environ['BLOCKCHAIN_URL']
-BLOCKSCOUT_API_URL = os.environ['BLOCKSCOUT_API']
+# Info structure
+# current_execution = {
+#     'running': False,
+#     'output': [],
+#     'status': 'idle',  # idle, running, completed, failed
+#     'process': None,
+#     'start_time': None
+# }
 
-w3, account, pkey, marketplace_contract, nft_contract = load_contracts(BLOCKCHAIN_URL,BLOCKSCOUT_API_URL)
+# device_name = socket.gethostname()
+device_name = "oasees-master"
+
+status_code = 500
+
+while status_code != (201 or 200):
+    try:
+        response = requests.post("http://localhost:30021/register-device", json={'device_id': device_name})
+        status_code = response.status_code
+        data = response.json()
+
+        message = data['message']
+        account = data['account']
+        private_key = data['private_key']
+    except:
+        print("Failed to register device. Retrying...")
+        time.sleep(5)
+        continue
 
 
-event_watcher_info = {
+print(f"Account retrieved: {account,private_key}")
+
+# sys.exit(0)
+
+
+
+BLOCKCHAIN_URL = "http://10.160.3.172:8545"
+BLOCKSCOUT_API_URL = "http://10.160.3.172:8082/api/v2"
+
+# load_dotenv()
+# BLOCKCHAIN_URL = os.environ['BLOCKCHAIN_URL']
+# BLOCKSCOUT_API_URL = os.environ['BLOCKSCOUT_API']
+
+w3, marketplace_contract, nft_contract = load_contracts(BLOCKCHAIN_URL,BLOCKSCOUT_API_URL)
+
+
+
+agent_info = {
+    'device_name': device_name,
     'w3': w3,
     'account': account,
-    'pkey': pkey,
+    'private_key': private_key,
     'marketplace_contract': marketplace_contract,
     'nft_contract': nft_contract,
     'dao_info': dao_info,
-    'BLOCSCOUT_API_URL': BLOCKSCOUT_API_URL
+    'config': config,
+    'BLOCKSCOUT_API_URL': BLOCKSCOUT_API_URL
     }
 
 
-join_event_thread = threading.Thread(target=event_watcher, args=(event_watcher_info,))
+join_event_thread = threading.Thread(target=event_watcher, args=(agent_info,))
 join_event_thread.start()
 
 
 
 
-def execute_code_sync(code):
-    global current_execution
-
-    try:
-        # "Initialize" process info
-        current_execution['running'] = True
-        current_execution['status'] = 'running'
-        current_execution['output'] = []
-        current_execution['start_time'] = time.time()
-
-        # Create temporary file to execute in a subprocess
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
-            temp_file.write(code)
-            temp_file_path = temp_file.name
-        
-        
-        # Execute temp file
-        process = subprocess.Popen(
-            [sys.executable, '-u', temp_file_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,  # Line buffered
-            universal_newlines=True
-        )
-        
-        # Process tracking
-        current_execution['process'] = process
-
-        # Process output storing
-        for line in iter(process.stdout.readline, ''):
-            if line:
-                current_execution['output'].append({
-                    'timestamp': time.time(),
-                    'text': line.rstrip()
-                })
-
-        return_code = process.wait()
-    
-        if return_code == 0:
-            current_execution['status'] = 'completed'
-        else:
-            current_execution['status'] = 'failed'
-        
-    except Exception as e:
-        current_execution['status'] = 'failed'
-        current_execution['output'].append({
-            'timestamp': time.time(),
-            'text': f'ERROR: {str(e)}'
-        })
-    finally:
-        current_execution['running'] = False
-        current_execution['process'] = None
-        try:
-            os.unlink(temp_file_path)
-        except:
-            pass
+# configuration_event_thread = threading.Thread(target=configure_agent, args=(agent_info,))
+# configure_event_thread.start()
 
 
-@app.route('/execute', methods=['POST'])
-def execute_code():
-
-    if(dao_info['governance']):
-        try:
-            # Get the uploaded file BEFORE starting thread
-            if 'file' not in request.files:
-                return jsonify({'error': 'No file uploaded'}), 400
-            
-            file = request.files['file']
-            if file.filename == '':
-                return jsonify({'error': 'No file selected'}), 400
-            
-            # Read the Python code BEFORE starting thread
-            code = file.read().decode('utf-8')
-            
-            # Start execution in thread - pass code as parameter
-            thread = threading.Thread(
-                target=execute_code_sync,
-                args=(code,)  # Pass code directly
-            )
-            thread.daemon = True
-            thread.start()
-
-            return jsonify({'status': 'success', 'message': 'Code execution started'})
-                
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify({'status': 'error', 'message': 'Not registered to any DAO yet.'})
-
-@app.route('/output', methods=['GET'])
-def get_output():
-    """Get execution output"""
-    since = int(request.args.get('since', 0))  # Get lines since this index
-    return jsonify({
-        'status': current_execution['status'],
-        'running': current_execution['running'],
-        'output': current_execution['output'][since:],
-        'total_lines': len(current_execution['output'])
-    })
+# @app.route('/output', methods=['GET'])
+# def get_output():
+#     """Get execution output"""
+#     since = int(request.args.get('since', 0))  # Get lines since this index
+#     return jsonify({
+#         'status': current_execution['status'],
+#         'running': current_execution['running'],
+#         'output': current_execution['output'][since:],
+#         'total_lines': len(current_execution['output'])
+#     })
 
 @app.route('/status', methods=['GET'])
 def status():
-    if join_event_thread.is_alive():
-        return jsonify({'account': account, 'status': 'Not registered to any DAO yet.'})
+    str_dao_info = {}
+
+    for name, contract in dao_info.items():
+        if contract:
+            str_dao_info[name] = contract.address
+
+    return jsonify({'account':agent_info['account'], 'dao_info': str_dao_info, 'config': agent_info['config']})
+    # if join_event_thread.is_alive():
+    #     return jsonify({'account': account, 'status': 'Not registered to any DAO yet.'})
+    # else:
+    #     return jsonify({'account': account, 'status': f'Registered to DAO: {dao_info}'})
+
+@app.route('/configure', methods=['POST'])
+def configure():
+    if not agent_info['dao_info']['governance']:
+        return jsonify({'message': 'Agent is not member of a DAO yet. Please register first.'}), 400
     else:
-        return jsonify({'account': account, 'status': f'Registered to DAO: {dao_info}'})
+        config = request.get_json()
+
+        is_valid, message = validate_json_format(config)
+        if not is_valid:
+            return jsonify({'message': message}), 400
+
+        agent_info['config'] = config
+
+        global agent
+        if not agent:
+            agent = Agent(agent_info)
+        else:
+            agent.update_config(config)
+
+
+        return jsonify({'message': 'Configuration updated successfully'})
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, threaded=True)
-    

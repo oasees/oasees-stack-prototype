@@ -1,4 +1,4 @@
-import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader, Group, ActionIcon,} from "@mantine/core";
+import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader, Group, ActionIcon, NumberInput} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
@@ -69,6 +69,8 @@ const truncate_middle = (str:string) => {
     return str;
 }
 
+// const backend_port = 30022
+const backend_enpoint = `http://${process.env.REACT_APP_EXPOSED_IP}:30021`;
 
 const actions = [ '0', '1', '2', '3'];
 
@@ -88,6 +90,38 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
     const [loading,setLoading] = useState(false);
     const [opened, {close}] = useDisclosure(true);
+
+
+    const [avDevTemp, setAvDevTemp] = useState<any[]>([]);
+    const [tokens, setTokens] = useState<Number>(0)
+
+
+
+    useEffect(()=>{
+        const avDevs:any[] = [];
+        const loadTemptDev = async ()=> {
+            try{
+                const response = await axios.get(`${backend_enpoint}/devices`);
+                const avDevices = response.data;
+                console.log(avDevices)
+
+                for (const device in avDevices){
+                    const id = device
+                    const account = avDevices[device]
+
+                    avDevs.push({name:device,account:account});
+                }
+
+                setAvDevTemp(avDevs);
+            }
+            catch(error){
+                console.error("An error occured while fetching available devices: ", error);
+            }
+        }
+
+        loadTemptDev();
+    },[])
+
 
     useEffect(()=>{
         const loadContracts = async ()=>{
@@ -226,13 +260,14 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         event.preventDefault();
         setLoading(true);
         const button: HTMLButtonElement = event.currentTarget;
-        const device = availableDevices[Number(button.value)];
+        // const device = availableDevices[Number(button.value)];
+        const device = avDevTemp[Number(button.value)];
 
         try{
             const signer = await json.provider.getSigner()
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const transfer_eth = await signer.sendTransaction({to: device.account, value: ethers.utils.parseEther("0.01"), nonce:transaction_count});
-            const transfer_tokens_to_device = await tokenContract!.transfer(device.account,20,{nonce:transaction_count+1});
+            const transfer_eth = await signer.sendTransaction({to: device.account, value: ethers.utils.parseEther("0.1"), nonce:transaction_count});
+            const transfer_tokens_to_device = await tokenContract!.transfer(device.account,tokens,{nonce:transaction_count+1});
             const register_device_to_dao = await json.marketplace.registerDeviceToDao(device.account,currentDAO.marketplace_dao_id,{nonce:transaction_count+2});
 
             await Promise.all([
@@ -285,11 +320,32 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         setLoading(false);
     }
 
-    const manageDevices = availableDevices.map((device,index) => (
+    // const manageDevices = availableDevices.map((device,index) => (
+    //     <Table.Tr key={index}>
+    //         <Table.Td>{device.name}</Table.Td>
+    //         <Table.Td>{device.ip_address}</Table.Td>
+    //         <Table.Td>{truncate_middle(device.account)}</Table.Td>
+    //         <Table.Td><Button color='orange' onClick={handleJoining} value={index}>Join</Button></Table.Td>
+    //     </Table.Tr>
+    // ));
+
+    const manageDevices = avDevTemp.map((device,index) => (
         <Table.Tr key={index}>
             <Table.Td>{device.name}</Table.Td>
-            <Table.Td>{device.ip_address}</Table.Td>
+            {/* <Table.Td>{device.account}</Table.Td> */}
             <Table.Td>{truncate_middle(device.account)}</Table.Td>
+            <Table.Td align="center">
+                <NumberInput
+                    // label = "Tokens"
+                    // description = "Amount of Tokens to give."
+                    placeholder = {0}
+                    min = {0}
+                    max = {100}
+                    value = {tokens}
+                    onChange={setTokens}
+                    w = {70}
+                    />
+            </Table.Td>
             <Table.Td><Button color='orange' onClick={handleJoining} value={index}>Join</Button></Table.Td>
         </Table.Tr>
     ));
@@ -298,7 +354,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         <Table.Tr key={index}>
             <Table.Td>{device.name}</Table.Td>
             <Table.Td>{truncate_middle(device.account)}</Table.Td>
-            <Table.Td>{device.ip_address}</Table.Td>
+            {/* <Table.Td>{device.ip_address}</Table.Td> */}
         </Table.Tr>
     ));
 
@@ -498,8 +554,9 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                         <Table.Thead>
                             <Table.Tr>
                                 <Table.Th>Device Name</Table.Th>
-                                <Table.Th>IP</Table.Th>
+                                {/* <Table.Th>IP</Table.Th> */}
                                 <Table.Th>Account</Table.Th>
+                                <Table.Th>Tokens</Table.Th>
                                 <Table.Th/>
                             </Table.Tr>
                         </Table.Thead>

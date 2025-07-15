@@ -11,10 +11,7 @@ def load_contracts(BLOCKCHAIN_URL, BLOCKSCOUT_API_URL):
 
     w3 = web3.Web3(web3.HTTPProvider(BLOCKCHAIN_URL))
 
-    acc = w3.eth.account.create()
-
-    account={acc.address}
-    pkey={w3.to_hex(acc.key)}
+    
 
     marketplace_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     nft_address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
@@ -29,4 +26,4 @@ def load_contracts(BLOCKCHAIN_URL, BLOCKSCOUT_API_URL):
     marketplace_contract = w3.eth.contract(address=marketplace_address, abi=marketplace_abi)
     nft_contract = w3.eth.contract(address=nft_address, abi=nft_abi)
 
-    return w3, account, pkey, marketplace_contract, nft_contract
+    return w3, marketplace_contract, nft_contract
