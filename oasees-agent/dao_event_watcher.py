@@ -1,9 +1,5 @@
-import web3
 from web3.middleware import geth_poa_middleware
-import ipfshttpclient
-import json
 import time
-import sys
 import requests
 
 
@@ -20,14 +16,15 @@ def event_watcher(info_dict):
     dao_id = None
 
     while (not dao_id):
+        membership = []
         try:
             daoJoin_filter = marketplace_contract.events.DaoJoined.create_filter(fromBlock='0x0', toBlock='latest', argument_filters={})
             results = daoJoin_filter.get_new_entries()
-            for r in results[::-1]:
+            for r in results:
                 event = r['args']
                 if(event['member_address']==account):
-                    dao_id = event['tokenId']
-                    break
+                    membership.append(event['tokenId'])
+            dao_id = membership[-1]
 
         except Exception as e:
             print(f"Error: {e}")

@@ -1,15 +1,14 @@
 import threading
 from flask import Flask, request, jsonify
 import time
-from dotenv import load_dotenv
-from dao_event_watcher import event_watcher
-from contract_loader import load_contracts 
 import requests
-from utils import validate_json_format,Agent
-from time import sleep
+import time
+from dao_event_watcher import event_watcher
+from utils import validate_json_format,load_contracts
+from agent_class import Agent
+import os
 
 app = Flask(__name__)
-
 
 print("Agent booting up...")
 
@@ -30,23 +29,16 @@ config = {
     "actions_map": []
 }
 
-# Info structure
-# current_execution = {
-#     'running': False,
-#     'output': [],
-#     'status': 'idle',  # idle, running, completed, failed
-#     'process': None,
-#     'start_time': None
-# }
 
-# device_name = socket.gethostname()
-device_name = "oasees-master"
+device_name = os.environ.get('NODE_NAME')
+print(device_name)
+# device_name = "oasees-master"
 
 status_code = 500
 
 while status_code != (201 or 200):
     try:
-        response = requests.post("http://localhost:30021/register-device", json={'device_id': device_name})
+        response = requests.post("http://cluster-backend.default.svc.cluster.local:4000/register-device", json={'device_id': device_name})
         status_code = response.status_code
         data = response.json()
 
@@ -61,14 +53,10 @@ while status_code != (201 or 200):
 
 print(f"Account retrieved: {account,private_key}")
 
-# sys.exit(0)
-
-
 
 BLOCKCHAIN_URL = "http://10.160.3.172:8545"
 BLOCKSCOUT_API_URL = "http://10.160.3.172:8082/api/v2"
 
-# load_dotenv()
 # BLOCKCHAIN_URL = os.environ['BLOCKCHAIN_URL']
 # BLOCKSCOUT_API_URL = os.environ['BLOCKSCOUT_API']
 
@@ -93,23 +81,6 @@ join_event_thread = threading.Thread(target=event_watcher, args=(agent_info,))
 join_event_thread.start()
 
 
-
-
-# configuration_event_thread = threading.Thread(target=configure_agent, args=(agent_info,))
-# configure_event_thread.start()
-
-
-# @app.route('/output', methods=['GET'])
-# def get_output():
-#     """Get execution output"""
-#     since = int(request.args.get('since', 0))  # Get lines since this index
-#     return jsonify({
-#         'status': current_execution['status'],
-#         'running': current_execution['running'],
-#         'output': current_execution['output'][since:],
-#         'total_lines': len(current_execution['output'])
-#     })
-
 @app.route('/status', methods=['GET'])
 def status():
     str_dao_info = {}
@@ -119,10 +90,7 @@ def status():
             str_dao_info[name] = contract.address
 
     return jsonify({'account':agent_info['account'], 'dao_info': str_dao_info, 'config': agent_info['config']})
-    # if join_event_thread.is_alive():
-    #     return jsonify({'account': account, 'status': 'Not registered to any DAO yet.'})
-    # else:
-    #     return jsonify({'account': account, 'status': f'Registered to DAO: {dao_info}'})
+
 
 @app.route('/configure', methods=['POST'])
 def configure():

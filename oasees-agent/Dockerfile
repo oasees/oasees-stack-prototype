@@ -10,6 +10,9 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+COPY agent_class.py /app
+COPY agent.py /app
+COPY dao_event_watcher.py /app
+COPY utils.py /app
 
 CMD ["python", "agent.py"]
