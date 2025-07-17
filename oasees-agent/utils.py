@@ -1,6 +1,9 @@
 import re
 import web3
 import requests
+import os
+
+device_name = os.environ.get('NODE_NAME')
 
 def validate_json_format(data):
     '''Validate the JSON format of the data.'''
@@ -54,9 +57,10 @@ def validate_json_format(data):
     return True, "JSON format is valid"
 
 
-def query_construct(events, proposal_contents, metric_prefix="oasees_"):
-    '''Construct PromQL queries from event expressions'''
-    
+def query_construct(events, proposal_contents, positive_vote, metric_prefix="oasees_"):
+    """
+    Construct PromQL queries from event expressions
+    """
     queries = []
     
     for i, expr in enumerate(events):
@@ -70,7 +74,7 @@ def query_construct(events, proposal_contents, metric_prefix="oasees_"):
         for metric, operator, threshold in conditions:
             full_metric = f"{metric_prefix}{metric}"
             metrics.add(full_metric)
-            promql_conditions.append(f'({{__name__="{full_metric}"}} {operator} {threshold})')
+            promql_conditions.append(f'({{__name__="{full_metric}",source="replace"}} {operator} {threshold})')
         
         # Determine operator and build query
         metric_names = "|".join(metrics)
@@ -80,7 +84,7 @@ def query_construct(events, proposal_contents, metric_prefix="oasees_"):
             min_conditions = []
             for metric, operator, threshold in conditions:
                 full_metric = f"{metric_prefix}{metric}"
-                min_conditions.append(f'min({{__name__="{full_metric}"}} {operator} bool {threshold}) by (metric_index)')
+                min_conditions.append(f'min({{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}) by (metric_index)')
             
             query = f'''(
   {' * '.join(min_conditions)}
@@ -91,21 +95,58 @@ def query_construct(events, proposal_contents, metric_prefix="oasees_"):
                 # Single condition with bool
                 metric, operator, threshold = conditions[0]
                 full_metric = f"{metric_prefix}{metric}"
-                query = f'{{__name__="{full_metric}"}} {operator} bool {threshold}'
+                query = f'{{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}'
             else:
                 # Multiple OR conditions
                 operator = 'or' if 'or' in expr.lower() else 'or'
                 combined_conditions = f" {operator} ".join(promql_conditions)
-                query = f'''{{__name__=~"{metric_names}"}} 
+                query = f'''{{__name__=~"{metric_names}",source="replace"}} 
 and 
 (
   {combined_conditions}
+)'''
+        
+        vote_query = None
+        if i < len(positive_vote):
+            vote_expr = positive_vote[i]
+            vote_conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', vote_expr)
+            
+            if vote_conditions:
+                if len(vote_conditions) == 1:
+                    metric, operator, threshold = vote_conditions[0]
+                    full_metric = f"{metric_prefix}{metric}"
+                    vote_query = f'{{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}'
+                else:
+                    vote_promql_conditions = []
+                    vote_metrics = set()
+                    for metric, operator, threshold in vote_conditions:
+                        full_metric = f"{metric_prefix}{metric}"
+                        vote_metrics.add(full_metric)
+                        vote_promql_conditions.append(f'({{__name__="{full_metric}",source="replace"}} {operator} {threshold})')
+                    
+                    vote_metric_names = "|".join(vote_metrics)
+                    if 'and' in vote_expr.lower():
+                        min_conditions = []
+                        for metric, operator, threshold in vote_conditions:
+                            full_metric = f"{metric_prefix}{metric}"
+                            min_conditions.append(f'min({{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}) by (metric_index)')
+                        vote_query = f'''(
+  {' * '.join(min_conditions)}
+) == bool 1'''
+                    else:
+                        vote_operator = 'or' if 'or' in vote_expr.lower() else 'or'
+                        combined_vote_conditions = f" {vote_operator} ".join(vote_promql_conditions)
+                        vote_query = f'''{{__name__=~"{vote_metric_names}",source="replace"}} 
+and 
+(
+  {combined_vote_conditions}
 )'''
         
         queries.append({
             'expression': expr,
             'query': query,
             'proposal': proposal_contents[i] if i < len(proposal_contents) else None,
+            'vote_query': vote_query
         })
     
     return queries

@@ -1,4 +1,5 @@
 FROM python:3.10-slim as builder
+# FROM jupyter/base-notebook:python-3.10
 
 # Install build dependencies in builder stage
 RUN apt-get update && \

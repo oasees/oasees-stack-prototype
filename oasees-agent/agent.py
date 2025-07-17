@@ -31,14 +31,16 @@ config = {
 
 
 device_name = os.environ.get('NODE_NAME')
+# device_name = "labpc"
 print(device_name)
-# device_name = "oasees-master"
+
 
 status_code = 500
 
 while status_code != (201 or 200):
     try:
         response = requests.post("http://cluster-backend.default.svc.cluster.local:4000/register-device", json={'device_id': device_name})
+        # response = requests.post("http://10.160.1.209:30021/register-device", json={'device_id': device_name})
         status_code = response.status_code
         data = response.json()
 

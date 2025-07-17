@@ -5,7 +5,9 @@ import time
 from typing import List, Dict
 import requests
 from utils import query_construct
+import os
 
+device_name = os.environ.get('NODE_NAME')
 
 proposal_states = {
 	0:"Pending",
@@ -38,6 +40,8 @@ class Agent:
         self.box_contract = self.dao_info['box']
         
         self.config_lock = threading.Lock()
+        self.vote_decision_lock = threading.Lock()
+        self.current_vote_decision = 1
 
         self.proposal_cooldowns = []
         self.pending_proposals = []
@@ -151,8 +155,8 @@ class Agent:
 
     def decide_vote(self,proposal_id):
         '''Function that decides what vote to cast for a given proposal.'''
-        # TODO
-        return 1
+        with self.vote_decision_lock:
+            return self.current_vote_decision
     
 
     def monitor_metrics(self):
@@ -161,8 +165,10 @@ class Agent:
             metric_index = self.config['metric_index']
             events = self.config['propose_on']['events']
             proposal_contents = self.config['propose_on']['proposal_contents']
+            positive_vote = self.config['propose_on']['positive_vote_on']
 
-            sequence = query_construct(events,proposal_contents)
+
+            sequence = query_construct(events,proposal_contents,positive_vote)
 
             if not sequence:
                 print("Error: No valid metrics found in event expressions")
@@ -174,14 +180,12 @@ class Agent:
                 query = f'{act_metric}{{metric_index="{metric_index}"}}'
                 metrics.append((metric_name, act_metric, query))
 
-            try:
-                cluster_ip = "thanos-query.default.svc.cluster.local"
-            except:
-                print("Error: Failed to get cluster IP")
-                sys.exit(1)
+            cluster_ip = "thanos-query.default.svc.cluster.local"
+            # cluster_ip = "10.43.131.134"
+
 
             for q in sequence:
-                query = q['query']
+                query = q['query'].replace("replace",device_name)
 
                 response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
                     params={"query": query}, timeout=5).json()
@@ -206,6 +210,27 @@ class Agent:
                                     res = "No proposal needed."
                                 print(res)
 
+                if q['vote_query']:
+
+                    vq = q['vote_query'].replace("replace",device_name)
+
+                    vote_response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
+                        params={"query": vq}, timeout=5).json()
+                    
+                    vote_data = vote_response.get("data", {})
+
+
+                    if vote_data:
+                        vote_results = vote_data.get("result", {})
+                        for vr in vote_results:
+                            vote_trigger = int(vr.get("value")[1])
+                            if vote_trigger:
+                                self.current_vote_decision = 1
+                                print(f"  ✓ VOTE YES: Condition met")
+                            else:
+                                self.current_vote_decision = 0
+                                print(f"  ✗ VOTE NO: Condition not met")
+
             time.sleep(5)
 
     def monitor_proposals(self):
@@ -225,12 +250,14 @@ class Agent:
                 
                 if(state == 'Active'):
                     decided_vote = self.decide_vote(proposal_id) # TODO
+                    print("DEE",decided_vote)
                     desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 2-Against
 
             for proposal_id in self.pending_proposals:
                 state = proposal_states[self.governance_contract.functions.state(proposal_id).call()]
                 if(state == 'Active'):
                     decided_vote = self.decide_vote(proposal_id) # TODO
+                    print("DEE",decided_vote)
                     desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 2-Against
                     self.pending_proposals.remove(proposal_id)
 
