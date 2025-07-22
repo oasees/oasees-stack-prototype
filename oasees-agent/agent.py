@@ -31,6 +31,9 @@ config = {
 
 
 device_name = os.environ.get('NODE_NAME')
+
+env_port = os.environ.get('AGENT_PORT')
+port = int(env_port) if env_port else 5100
 # device_name = "labpc"
 print(device_name)
 
@@ -119,4 +122,4 @@ def configure():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    app.run(host="0.0.0.0", port=port, threaded=True)
