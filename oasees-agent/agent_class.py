@@ -276,9 +276,10 @@ class Agent:
             if(old_box_value != new_box_value):
                 print(f"BOX value changed from {old_box_value} to {new_box_value}!")
 
-                endpoint = self.config['actions_map'][str(new_box_value)]
+                endpoint = self.config['actions_map'][str(new_box_value)]['action_endpoint']
+                args = self.config['actions_map'][str(new_box_value)]['args']
 
-                result = requests.get(endpoint)
+                result = requests.post(endpoint,json=args)
 
                 print(result)
                 old_box_value=new_box_value

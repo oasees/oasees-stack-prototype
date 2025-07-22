@@ -24,7 +24,8 @@ def event_watcher(info_dict):
                 event = r['args']
                 if(event['member_address']==account):
                     membership.append(event['tokenId'])
-            dao_id = membership[-1]
+            if(membership):
+                dao_id = membership[-1]
 
         except Exception as e:
             print(f"Error: {e}")
