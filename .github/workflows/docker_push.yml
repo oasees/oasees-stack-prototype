@@ -1,8 +1,7 @@
 name: Build and Push OASEES core images to DockerHub
 
 on:
-  push:
-    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   publish-docker-image:
@@ -15,7 +14,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - name: solidity-ide
+          - name: oasees-solidity-ide
           - name: oasees-portal
           - name: cluster-backend
           - name: oasees-notebook

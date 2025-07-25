@@ -1,8 +1,6 @@
 name: Build and Push OASEES Images for Edge Devices
-
 on:
-  push:
-    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   publish-docker-image:
