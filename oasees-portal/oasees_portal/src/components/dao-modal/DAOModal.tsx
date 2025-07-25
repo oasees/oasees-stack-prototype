@@ -266,7 +266,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
         try{
             const signer = await json.provider.getSigner()
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const transfer_eth = await signer.sendTransaction({to: device.account, value: ethers.utils.parseEther("0.1"), nonce:transaction_count});
+            const transfer_eth = await signer.sendTransaction({to: device.account, value: ethers.utils.parseEther("10"), nonce:transaction_count});
             const transfer_tokens_to_device = await tokenContract!.transfer(device.account,tokens,{nonce:transaction_count+1});
             const register_device_to_dao = await json.marketplace.registerDeviceToDao(device.account,currentDAO.marketplace_dao_id,{nonce:transaction_count+2});
 
