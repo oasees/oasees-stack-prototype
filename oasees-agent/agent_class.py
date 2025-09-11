@@ -32,12 +32,11 @@ class Agent:
         self.config = agent_info['config']
         self.dao_info = agent_info['dao_info']
 
+
         self.monitor_threads: List[threading.Thread] = []
         self.stop_event = threading.Event()
 
-        self.governance_contract = self.dao_info['governance']
-        self.token_contract = self.dao_info['token']
-        self.box_contract = self.dao_info['box']
+        # Contract references removed - using dao_info directly
         
         self.config_lock = threading.Lock()
         self.vote_decision_lock = threading.Lock()
@@ -47,27 +46,33 @@ class Agent:
         self.pending_proposals = []
         self.voted_proposals = []
 
+        self.dao_info['restart'] = False
         self._start_workers()
+
+        restart_thread = threading.Thread(target=self.restart_thread, name="Current DAO monitor")
+        restart_thread.start()
     
     def update_config(self, new_config: Dict) -> bool:
         '''Update configuration'''
         with self.config_lock:
-            if new_config == self.config:
-                return False  # No changes
             
             self.config = new_config
-            # self._restart_workers()
+            self.proposal_cooldowns.clear()
+
+            # Re-check latest DAO joined (contracts accessed via dao_info)
+            
+            # self.restart_workers()
             return True
         
-    def update_contracts(self, new_dao_info: Dict) -> bool:
-        '''Update DAO contracts and restart workers if contracts changed'''
-        with self.config_lock:
-            if new_dao_info == self.dao_contracts:
-                return False  # No changes
+    # def update_contracts(self, new_dao_info: Dict) -> bool:
+    #     '''Update DAO contracts and restart workers if contracts changed'''
+    #     with self.config_lock:
+    #         if new_dao_info == self.dao_contracts:
+    #             return False  # No changes
 
-            self.dao_contracts = new_dao_info
-            self._restart_workers()
-            return True
+    #         self.dao_contracts = new_dao_info
+    #         self.restart_workers()
+    #         return True
         
     
     def _start_workers(self):
@@ -83,8 +88,31 @@ class Agent:
 
         exec_thread = threading.Thread(target=self.monitor_value, name="Box Value Monitor")
         exec_thread.start()
+
         
+
         self.monitor_threads += [metrics_thread,proposal_thread,exec_thread]
+    
+    def restart_thread(self):
+        '''Restart all monitoring threads by setting kill flag, joining threads, and restarting.'''
+        # Set kill flag to stop all workers
+        while True:
+
+            if self.dao_info['restart']:
+                
+                # Join all existing threads
+                for thread in self.monitor_threads:
+                    if thread.is_alive():
+                        thread.join()
+                
+                # Clear the monitor threads list
+                self.monitor_threads.clear()
+                
+                # Reset kill flag
+                self.dao_info['restart'] = False
+                
+                # Start workers again
+                self._start_workers()
     
     def create_proposal(self, action, msg, function_name='store'):
         '''API function that abstracts the web3 calls needed for creating a proposal.'''
@@ -92,7 +120,7 @@ class Agent:
         w3 = self.w3
 
         args = (action,)
-        function_signature = self.box_contract.encode_abi(fn_name=function_name, args=args)
+        function_signature = self.dao_info['box'].encode_abi(fn_name=function_name, args=args)
 
 
         # Checks if the proposal is currently redundant
@@ -105,8 +133,8 @@ class Agent:
 
         proposal_description = f"{msg}-{time.time()}"
 
-        transaction = self.governance_contract.functions.propose(
-            [self.box_contract.address],
+        transaction = self.dao_info['governance'].functions.propose(
+            [self.dao_info['box'].address],
             [0],
             [function_signature],
             "{} {}".format(self.device_name,proposal_description)
@@ -129,7 +157,7 @@ class Agent:
         w3 = self.w3
         try:
             # desc = r['args']['description']
-            vote_function = self.governance_contract.functions.castVoteWithReason(proposal_id, _vote,"{} {}".format(self.device_name,reason))
+            vote_function = self.dao_info['governance'].functions.castVoteWithReason(proposal_id, _vote,"{} {}".format(self.device_name,reason))
 
 
             transaction = vote_function.build_transaction({
@@ -157,11 +185,13 @@ class Agent:
         '''Function that decides what vote to cast for a given proposal.'''
         with self.vote_decision_lock:
             return self.current_vote_decision
+        
+
     
 
     def monitor_metrics(self):
 
-        while True:
+        while not self.dao_info['restart']:
             metric_index = self.config['metric_index']
             events = self.config['propose_on']['events']
             proposal_contents = self.config['propose_on']['proposal_contents']
@@ -187,10 +217,19 @@ class Agent:
             for q in sequence:
                 query = q['query'].replace("replace",device_name)
 
-                response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
-                    params={"query": query}, timeout=5).json()
+                try:
+                    response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
+                        params={"query": query}, timeout=5)
+                    response.raise_for_status()
+                    response_data = response.json()
+                except requests.exceptions.RequestException as e:
+                    print(f"Error querying metrics for {query}: {e}")
+                    continue
+                except ValueError as e:
+                    print(f"Error parsing JSON response for metric query: {e}")
+                    continue
 
-                data = response.get("data",{})
+                data = response_data.get("data",{})
 
                 # trigger = False
 
@@ -214,10 +253,19 @@ class Agent:
 
                     vq = q['vote_query'].replace("replace",device_name)
 
-                    vote_response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
-                        params={"query": vq}, timeout=5).json()
+                    try:
+                        vote_response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
+                            params={"query": vq}, timeout=5)
+                        vote_response.raise_for_status()
+                        vote_response_data = vote_response.json()
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error querying vote metrics for {vq}: {e}")
+                        continue
+                    except ValueError as e:
+                        print(f"Error parsing JSON response for vote query: {e}")
+                        continue
                     
-                    vote_data = vote_response.get("data", {})
+                    vote_data = vote_response_data.get("data", {})
 
 
                     if vote_data:
@@ -232,18 +280,20 @@ class Agent:
                                 print(f"  ✗ VOTE NO: Condition not met")
 
             time.sleep(5)
+        
+        print("Exiting monitor_metrics thread.")
 
     def monitor_proposals(self):
         '''Responsible for monitoring the DAO's Active proposals and voting on them'''
 
-        _filter = self.governance_contract.events.ProposalCreated.create_filter(fromBlock="0x0", argument_filters={})
+        self._filter = self.dao_info['governance'].events.ProposalCreated.create_filter(fromBlock="0x0", argument_filters={})
 
-        while True:
-            results = _filter.get_new_entries()
+        while not self.dao_info['restart']:
+            results = self._filter.get_new_entries()
             desc = "No Active Proposals"
             for r in results:
                 proposal_id = int(r['args']['proposalId'])
-                state = proposal_states[self.governance_contract.functions.state(proposal_id).call()]
+                state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
 
                 if(state == 'Pending'):
                     self.pending_proposals.append(proposal_id)
@@ -254,7 +304,7 @@ class Agent:
                     desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 2-Against
 
             for proposal_id in self.pending_proposals:
-                state = proposal_states[self.governance_contract.functions.state(proposal_id).call()]
+                state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
                 if(state == 'Active'):
                     decided_vote = self.decide_vote(proposal_id) # TODO
                     print("DEE",decided_vote)
@@ -264,35 +314,46 @@ class Agent:
             
             print(desc)
             time.sleep(5)
+        
+        print("Exiting monitor_proposals thread.")
 
     def monitor_value(self):
         '''Responsible for monitoring the DAO's values and request behavioral changes.'''
 
-        old_box_value = self.box_contract.functions.retrieve().call()
-        while True:
+        old_box_value = self.dao_info['box'].functions.retrieve().call()
+        while not self.dao_info['restart']:
 
-            new_box_value = self.box_contract.functions.retrieve().call()
+            new_box_value = self.dao_info['box'].functions.retrieve().call()
             
             if(old_box_value != new_box_value):
                 print(f"BOX value changed from {old_box_value} to {new_box_value}!")
 
-                endpoint = self.config['actions_map'][str(new_box_value)]['action_endpoint']
-                args = self.config['actions_map'][str(new_box_value)]['args']
+                try:
+                    endpoint = self.config['actions_map'][str(new_box_value)]['action_endpoint']
+                    args = self.config['actions_map'][str(new_box_value)]['args']
 
-                result = requests.post(endpoint,json=args)
-
-                print(result)
+                    result = requests.post(endpoint, json=args, timeout=10)
+                    result.raise_for_status()
+                    print(f"Action endpoint response: {result.status_code}")
+                except KeyError:
+                    print(f"Current Action value is not defined in the configuration. No Action taken.")
+                except requests.exceptions.RequestException as e:
+                    print(f"Error posting to action endpoint {endpoint}: {e}")
+                except Exception as e:
+                    print(f"Unexpected error with action endpoint: {e}")
                 old_box_value=new_box_value
                 self.proposal_cooldowns.clear()
             else:
                 print(f"No new metrics detected.")
 
             time.sleep(5)
+        
+        print("Exiting monitor_value thread.")
 
     def change_detected(self,proposed_action):
         '''Helper function to decide if a proposal is needed or not.'''
 
-        current_action = self.box_contract.functions.retrieve().call()
+        current_action = self.dao_info['box'].functions.retrieve().call()
 
         return current_action != proposed_action
     
@@ -301,14 +362,14 @@ class Agent:
 
         states_to_check = ['Pending','Active']
 
-        _filter = self.governance_contract.events.ProposalCreated.create_filter(fromBlock="0x0", argument_filters={})
+        _filter = self.dao_info['governance'].events.ProposalCreated.create_filter(fromBlock="0x0", argument_filters={})
         results = _filter.get_new_entries()
 
         results.reverse()
 
         for r in results:
             proposal_id = int(r['args']['proposalId'])
-            state = proposal_states[self.governance_contract.functions.state(proposal_id).call()]
+            state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
             if (state in states_to_check):
                 calldatas = "0x" + r['args']['calldatas'][0].hex()
                 if function_signature == calldatas:

@@ -76,6 +76,7 @@ def event_watcher(info_dict):
             dao_info['governance'] = governance_contract
             dao_info['token'] = vote_token_contract
             dao_info['box'] = box_contract
+            dao_info['restart'] = True
 
             print(f"Joined DAO found: {dao_info}")
 
