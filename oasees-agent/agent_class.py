@@ -6,6 +6,7 @@ from typing import List, Dict
 import requests
 from utils import query_construct
 import os
+import ast
 
 device_name = os.environ.get('NODE_NAME')
 
@@ -271,7 +272,7 @@ class Agent:
                     if vote_data:
                         vote_results = vote_data.get("result", {})
                         for vr in vote_results:
-                            vote_trigger = int(vr.get("value")[1])
+                            vote_trigger = ast.literal_eval(vr.get("value")[1])
                             if vote_trigger:
                                 self.current_vote_decision = 1
                                 print(f"  ✓ VOTE YES: Condition met")
