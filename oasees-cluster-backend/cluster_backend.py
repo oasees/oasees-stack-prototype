@@ -4,6 +4,10 @@ import subprocess
 import shlex
 import json
 import web3
+import sqlite3
+import os
+import threading
+from contextlib import contextmanager
 
 app = Flask(__name__)
 
@@ -14,7 +18,36 @@ BLOCKCHAIN_URL = "http://10.160.3.172:8545"
 
 w3 = web3.Web3(web3.HTTPProvider(BLOCKCHAIN_URL))
 
-registered_devices = {}
+# SQLite configuration
+DB_PATH = os.getenv('DB_PATH', '/data/devices.db')
+db_lock = threading.Lock()
+
+# Database initialization
+def init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS devices (
+                device_id TEXT PRIMARY KEY,
+                account TEXT NOT NULL,
+                private_key TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        print(f"Database initialized at {DB_PATH}")
+
+@contextmanager
+def get_db_connection():
+    with db_lock:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+# Initialize database on startup
+init_db()
 
 @app.route('/k8s_api', methods=['POST'])
 def execute_kubectl():
@@ -71,19 +104,31 @@ def register_device():
         account = ''
         pkey = ''
 
-        if device_id in registered_devices:
-            account = registered_devices[device_id]['account']
-            pkey = registered_devices[device_id]['private_key']
+        # Check if device exists in database
+        with get_db_connection() as conn:
+            cursor = conn.execute(
+                'SELECT account, private_key FROM devices WHERE device_id = ?',
+                (device_id,)
+            )
+            row = cursor.fetchone()
+            
+            if row:
+                account = row['account']
+                pkey = row['private_key']
+                message = f"Device {device_id} is already registered with account {account}."
+            else:
+                account_pair = w3.eth.account.create()
+                account = account_pair.address
+                pkey = w3.to_hex(account_pair.key)
 
-            message = f"Device {device_id} is already registered with account {account}."
-        else:
-            account_pair = w3.eth.account.create()
-            account = account_pair.address
-            pkey = w3.to_hex(account_pair.key)
-
-
-            registered_devices[device_id] = {'account': account, 'private_key': pkey}
-            message = f"Device {device_id} registered with account {account}."
+                # Store in database
+                conn.execute(
+                    'INSERT INTO devices (device_id, account, private_key) VALUES (?, ?, ?)',
+                    (device_id, account, pkey)
+                )
+                conn.commit()
+                
+                message = f"Device {device_id} registered with account {account}."
 
         return jsonify({'message': message, 'account': account, 'private_key': pkey}), 201
 
@@ -99,8 +144,12 @@ def get_devices():
         print(f"Raw data: {request.get_data()}")
     
         device_accounts = {}
-        for device_id, device_info in registered_devices.items():
-            device_accounts[device_id] = device_info['account']
+        
+        with get_db_connection() as conn:
+            cursor = conn.execute('SELECT device_id, account FROM devices')
+            for row in cursor.fetchall():
+                device_accounts[row['device_id']] = row['account']
+        
         return jsonify(device_accounts), 200
     except Exception as e:
         print("ERROR:", str(e))
