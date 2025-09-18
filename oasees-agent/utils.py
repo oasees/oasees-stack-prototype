@@ -57,98 +57,116 @@ def validate_json_format(data):
     return True, "JSON format is valid"
 
 
+def _parse_logical_expression(expr):
+    """
+    Parse logical expressions with proper operator precedence.
+    Returns parsed structure with operators and conditions.
+    """
+    # Split on logical operators while preserving them
+    import re
+
+    # First, handle parentheses by recursion (simplified for now)
+    # For this fix, we'll focus on proper AND/OR detection without parentheses support
+
+    # Tokenize the expression
+    tokens = re.split(r'\s+(and|or)\s+', expr.strip(), flags=re.IGNORECASE)
+
+    if len(tokens) == 1:
+        return {'type': 'condition', 'condition': tokens[0].strip()}
+
+    # Build expression tree (simplified - left-associative)
+    result = {'type': 'condition', 'condition': tokens[0].strip()}
+
+    for i in range(1, len(tokens), 2):
+        if i + 1 < len(tokens):
+            operator = tokens[i].lower()
+            right_condition = tokens[i + 1].strip()
+
+            result = {
+                'type': 'operation',
+                'operator': operator,
+                'left': result,
+                'right': {'type': 'condition', 'condition': right_condition}
+            }
+
+    return result
+
+def _build_promql_from_parsed(parsed_expr, metric_prefix="oasees_"):
+    """
+    Build PromQL query from parsed expression tree.
+    """
+    if parsed_expr['type'] == 'condition':
+        # Single condition
+        condition = parsed_expr['condition']
+        conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', condition)
+
+        if len(conditions) == 1:
+            metric, operator, threshold = conditions[0]
+            full_metric = f"{metric_prefix}{metric}"
+            return f'{{__name__="{full_metric}",source="replace"}} {operator} {threshold}'
+        else:
+            # Multiple conditions in single expression - shouldn't happen with proper parsing
+            return None
+
+    elif parsed_expr['type'] == 'operation':
+        left_query = _build_promql_from_parsed(parsed_expr['left'], metric_prefix)
+        right_query = _build_promql_from_parsed(parsed_expr['right'], metric_prefix)
+
+        if left_query is None or right_query is None:
+            return None
+
+        if parsed_expr['operator'] == 'and':
+            # For AND operations, use PromQL and operator for proper boolean evaluation
+            return f'({left_query}) and ({right_query})'
+        else:  # 'or'
+            # For OR operations, use PromQL or operator
+            return f'({left_query}) or ({right_query})'
+
+    return None
+
 def query_construct(events, proposal_contents, positive_vote, metric_prefix="oasees_"):
     """
-    Construct PromQL queries from event expressions
+    Construct PromQL queries from event expressions with proper AND/OR parsing
     """
     queries = []
-    
+
     for i, expr in enumerate(events):
-        # Parse metric conditions: metric_name operator threshold
-        conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', expr)
-        
-        # Build PromQL conditions
-        promql_conditions = []
-        metrics = set()
-        
-        for metric, operator, threshold in conditions:
-            full_metric = f"{metric_prefix}{metric}"
-            metrics.add(full_metric)
-            promql_conditions.append(f'({{__name__="{full_metric}",source="replace"}} {operator} {threshold})')
-        
-        # Determine operator and build query
-        metric_names = "|".join(metrics)
-        
-        if 'and' in expr.lower() and len(promql_conditions) > 1:
-            # AND logic - multiply min aggregations
-            min_conditions = []
-            for metric, operator, threshold in conditions:
-                full_metric = f"{metric_prefix}{metric}"
-                min_conditions.append(f'min({{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}) by (metric_index)')
-            
-            query = f'''(
-  {' * '.join(min_conditions)}
-) == bool 1'''
-        else:
-            # OR logic or single condition
-            if len(promql_conditions) == 1:
-                # Single condition with bool
+        # Parse the logical expression properly
+        parsed_expr = _parse_logical_expression(expr)
+
+        # Build PromQL query from parsed expression
+        query = _build_promql_from_parsed(parsed_expr, metric_prefix)
+
+        if query is None:
+            # Fallback for unparseable expressions
+            conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', expr)
+            if conditions:
                 metric, operator, threshold = conditions[0]
                 full_metric = f"{metric_prefix}{metric}"
-                query = f'{{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}'
-            else:
-                # Multiple OR conditions
-                operator = 'or' if 'or' in expr.lower() else 'or'
-                combined_conditions = f" {operator} ".join(promql_conditions)
-                query = f'''{{__name__=~"{metric_names}",source="replace"}} 
-and 
-(
-  {combined_conditions}
-)'''
-        
+                query = f'{{__name__="{full_metric}",source="replace"}} {operator}  {threshold}'
+
+        # Handle vote query with same logic
         vote_query = None
         if i < len(positive_vote):
             vote_expr = positive_vote[i]
-            vote_conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', vote_expr)
-            
-            if vote_conditions:
-                if len(vote_conditions) == 1:
+            parsed_vote_expr = _parse_logical_expression(vote_expr)
+            vote_query = _build_promql_from_parsed(parsed_vote_expr, metric_prefix)
+
+            if vote_query is None:
+                # Fallback for unparseable vote expressions
+                vote_conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', vote_expr)
+                if vote_conditions:
                     metric, operator, threshold = vote_conditions[0]
                     full_metric = f"{metric_prefix}{metric}"
-                    vote_query = f'{{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}'
-                else:
-                    vote_promql_conditions = []
-                    vote_metrics = set()
-                    for metric, operator, threshold in vote_conditions:
-                        full_metric = f"{metric_prefix}{metric}"
-                        vote_metrics.add(full_metric)
-                        vote_promql_conditions.append(f'({{__name__="{full_metric}",source="replace"}} {operator} {threshold})')
-                    
-                    vote_metric_names = "|".join(vote_metrics)
-                    if 'and' in vote_expr.lower():
-                        min_conditions = []
-                        for metric, operator, threshold in vote_conditions:
-                            full_metric = f"{metric_prefix}{metric}"
-                            min_conditions.append(f'min({{__name__="{full_metric}",source="replace"}} {operator} bool {threshold}) by (metric_index)')
-                        vote_query = f'''(
-  {' * '.join(min_conditions)}
-) == bool 1'''
-                    else:
-                        vote_operator = 'or' if 'or' in vote_expr.lower() else 'or'
-                        combined_vote_conditions = f" {vote_operator} ".join(vote_promql_conditions)
-                        vote_query = f'''{{__name__=~"{vote_metric_names}",source="replace"}} 
-and 
-(
-  {combined_vote_conditions}
-)'''
-        
+                    vote_query = f'{{__name__="{full_metric}",source="replace"}} {operator}  {threshold}'
+
         queries.append({
             'expression': expr,
             'query': query,
             'proposal': proposal_contents[i] if i < len(proposal_contents) else None,
             'vote_query': vote_query
         })
-    
+
     return queries
 
 

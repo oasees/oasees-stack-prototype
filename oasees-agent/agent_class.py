@@ -41,7 +41,7 @@ class Agent:
         
         self.config_lock = threading.Lock()
         self.vote_decision_lock = threading.Lock()
-        self.current_vote_decision = 1
+        self.current_vote_decision = 0
 
         self.proposal_cooldowns = []
         self.pending_proposals = []
@@ -114,6 +114,8 @@ class Agent:
                 
                 # Start workers again
                 self._start_workers()
+
+            time.sleep(10)
     
     def create_proposal(self, action, msg, function_name='store'):
         '''API function that abstracts the web3 calls needed for creating a proposal.'''
@@ -128,7 +130,7 @@ class Agent:
         similar_exists = self.similar_active(function_signature)
 
         if (similar_exists):
-            self.proposal_cooldowns.append(msg)
+            # self.proposal_cooldowns.append(msg)
             return "Similar Pending / Active proposal already exists."
 
 
@@ -238,7 +240,7 @@ class Agent:
                     results = data.get("result",{})
                     
                     for r in results:
-                        trigger = int(r.get("value")[1])
+                        trigger = ast.literal_eval(r.get("value")[1])
                         if(trigger):
                             proposal = q['proposal']['msg']
                             action_value = q['proposal']['action_value']
@@ -267,18 +269,24 @@ class Agent:
                         continue
                     
                     vote_data = vote_response_data.get("data", {})
+                    print(vq)
+                    print(vote_data)
 
-
-                    if vote_data:
-                        vote_results = vote_data.get("result", {})
-                        for vr in vote_results:
-                            vote_trigger = ast.literal_eval(vr.get("value")[1])
-                            if vote_trigger:
-                                self.current_vote_decision = 1
-                                print(f"  ✓ VOTE YES: Condition met")
-                            else:
-                                self.current_vote_decision = 0
-                                print(f"  ✗ VOTE NO: Condition not met")
+                    if vote_data.get("result",{}):
+                        self.current_vote_decision = 1
+                        print(f"  ✓ VOTE YES: Condition met")
+                    else:
+                        self.current_vote_decision = 0
+                        print(f"  ✗ VOTE NO: Condition not met")
+                        # vote_results = vote_data.get("result", {})
+                        # for vr in vote_results:
+                        #     vote_trigger = ast.literal_eval(vr.get("value")[1])
+                        #     if vote_trigger:
+                        #         self.current_vote_decision = 1
+                        #         print(f"  ✓ VOTE YES: Condition met")
+                        #     else:
+                        #         self.current_vote_decision = 0
+                        #         print(f"  ✗ VOTE NO: Condition not met")
 
             time.sleep(5)
         
@@ -333,9 +341,17 @@ class Agent:
                     endpoint = self.config['actions_map'][str(new_box_value)]['action_endpoint']
                     args = self.config['actions_map'][str(new_box_value)]['args']
 
-                    result = requests.post(endpoint, json=args, timeout=10)
-                    result.raise_for_status()
-                    print(f"Action endpoint response: {result.status_code}")
+                    leader = None
+
+                    if 'leader' in self.config.keys():
+                        leader = self.config['leader']
+
+                    if (not leader) or leader == self.device_name:
+                        result = requests.post(endpoint, json=args, timeout=10)
+                        result.raise_for_status()
+                        print(f"Action endpoint response: {result.status_code}")
+                    else:
+                        print("Another device has been assigned as leader -- No Action taken")
                 except KeyError:
                     print(f"Current Action value is not defined in the configuration. No Action taken.")
                 except requests.exceptions.RequestException as e:
