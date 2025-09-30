@@ -1,4 +1,4 @@
-import {Grid, Paper, Stack } from "@mantine/core";
+import {Grid, Paper, Stack, Loader } from "@mantine/core";
 import DAOModal from "../dao-modal/DAOModal";
 import { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
@@ -18,11 +18,9 @@ interface HomeProps{
 }
 
 interface DAO{
-    cluster_name:string,
     dao_name:string,
     members: string[],
-    hasCluster: boolean,
-    hasDaoLogic: boolean,
+    dao_id: number,
 }
 
 interface Device{
@@ -119,11 +117,16 @@ const Home = ({json}:HomeProps) => {
 
     const [myNodes,setMyNodes] = useState<Node[]>([]);
 
+    const [loadingDaos, setLoadingDaos] = useState(true);
+    const [loadingNodes, setLoadingNodes] = useState(true);
+    const [loadingItems, setLoadingItems] = useState(true);
+
 
     const marketplaceMonitor:ethers.Contract = json.marketplace.connect(json.callProvider);
 
     useEffect(()=>{
-        const populateAlgorithms = async () => {
+        const populateItems = async () => {
+            setLoadingItems(true);
             try{
                 const nft_items = [];
                 const available_nfts = await marketplaceMonitor.getMyNfts({from:json.account});
@@ -133,7 +136,7 @@ const Home = ({json}:HomeProps) => {
                     const marketplace_id = item[7];
                     const price = ethers.utils.formatEther(item[4]);
                     const meta_hash = item[5];
-                    
+
                     const content = JSON.parse((await ipfs_get(meta_hash)).data);
 
                     nft_items.push({
@@ -150,20 +153,23 @@ const Home = ({json}:HomeProps) => {
                 setMyAlgorithms(nft_items);
             } catch(error){
                 console.error('Error loading contracts: ', error);
+            } finally {
+                setLoadingItems(false);
             }
         }
-        
-        populateAlgorithms();
+
+        populateItems();
     },[counter])
 
 
     useEffect(()=>{
         const populateDaos = async() => {
+            setLoadingDaos(true);
             try{
                 const daos = [];
                 const available_daos = await marketplaceMonitor.getJoinedDaos({from: json.account});
 
-                console.log(available_daos);
+                // console.log(available_daos);
 
                 for (const dao of available_daos){
                     const tokenId = dao[0];
@@ -206,13 +212,13 @@ const Home = ({json}:HomeProps) => {
                         
                     }
 
-                    daos.push({...content,"cluster_name": meta.dao_name, "marketplace_dao_id": dao[0],"members":m,"hasCluster":false, "hasDaoLogic":true})
+                    daos.push({...content,"dao_name": meta, "dao_id": dao[0],"members":m})
                 }
                 setMyDaos(daos);
-                // populateDevices(daos);
-                populateNodes(daos);
             } catch(error){
                 console.error('Error loading contracts: ', error);
+            } finally {
+                setLoadingDaos(false);
             }
         }
 
@@ -260,12 +266,19 @@ const Home = ({json}:HomeProps) => {
         //     }
         // }
 
-        const populateNodes = async (daos:DAO[]) => {
+        populateDaos();
+    },[modalUpdate,counter])
+
+    useEffect(()=>{
+        const populateNodes = async () => {
+            setLoadingNodes(true);
             var nodes:Node[] = [];
             try{
                 const result = await kube_get();
 
                 const data = result;
+
+                console.log(data)
                 // console.log(data[0]);
                 for (const node of data){
                     var joined_daos: never[] = [];
@@ -275,7 +288,7 @@ const Home = ({json}:HomeProps) => {
                     //     account = account_request.data.account
 
 
-                    //     for (const dao of daos){
+                    //     for (const dao of myDaos){
                     //         if(dao.members.includes(account)){
                     //             joined_daos.push(dao);
                     //         }
@@ -300,10 +313,12 @@ const Home = ({json}:HomeProps) => {
                 // console.log(nodes);
             } catch(error){
                 console.error('Error loading contracts: ', error);
+            } finally {
+                setLoadingNodes(false);
             }
         }
 
-        populateDaos();
+        populateNodes();
     },[modalUpdate,counter])
 
     // useEffect(()=>{
@@ -358,22 +373,23 @@ const Home = ({json}:HomeProps) => {
         let avNodes:Node[] = [];
         const selectedDao = myDaos[activeModal - 1]
         for (var node of myNodes){
-            if(node.status  && node.role!='control-plane' && !node.daos.includes(selectedDao))
+            if(node.status)
                 avNodes.push(node);
         }
 
         return avNodes;
     };
     
-    const modalDevices = () => {
-        let mNodes: Node[] = [];
-        const selectedDao = myDaos[activeModal-1]
-        for (var node of myNodes){
-            if(node.status  && node.role!='control-plane' && node.daos.includes(selectedDao))
-                mNodes.push(node);
-        }
-        return mNodes;
-    };
+    // const modalDevices = () => {
+    //     let mNodes: Node[] = [];
+    //     const selectedDao = myDaos[activeModal-1]
+        
+    //     for (var node of myNodes){
+    //         if(node.status  && node.role!='control-plane' && node.daos.includes(selectedDao))
+    //             mNodes.push(node);
+    //     }
+    //     return mNodes;
+    // };
 
 
     
@@ -584,7 +600,6 @@ const Home = ({json}:HomeProps) => {
         {activeModal>0 && <DAOModal
         currentDAO={myDaos[activeModal-1]}
         availableDevices={availableDevices()}
-        joinedDevices={modalDevices()}
         closeModal={closeModal}
         updateDevices = {toggle}
         json={json}/>}
@@ -605,7 +620,7 @@ const Home = ({json}:HomeProps) => {
                     {/* <ScrollArea h={208}>
                     <DAOTable elements={myDaos} setActiveModal={setActiveModal}/>
                     </ScrollArea> */}
-                    <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>
+                    {loadingDaos ? <Loader size="md" /> : <DAOCards elements={myDaos} setActiveModal={setActiveModal}/>}
                 </Stack>
             </Paper>
             </Grid.Col>
@@ -623,9 +638,11 @@ const Home = ({json}:HomeProps) => {
 
                     {/* <DeviceCards elements={myDevices}/>
                 </Stack> */}
-                    <div className={styles.graph} id="graph">
-                        <Graph/>
-                    </div>
+                    {loadingNodes ? <Loader size="md" /> : (
+                        <div className={styles.graph} id="graph">
+                            <Graph/>
+                        </div>
+                    )}
                 </Stack>
                 </Paper>
             </Grid.Col>
@@ -639,8 +656,8 @@ const Home = ({json}:HomeProps) => {
                     <ItemTable elements={myAlgorithms}/>
                     </ScrollArea>
                 </Paper> */}
-                    <ItemCards algorithms={myAlgorithms} openAlgorithmPage={openAlgorithmPage}/>
-                    
+                    {loadingItems ? <Loader size="md" /> : <ItemCards algorithms={myAlgorithms} openAlgorithmPage={openAlgorithmPage}/>}
+
                 </Stack>
                 </Paper>
             </Grid.Col>

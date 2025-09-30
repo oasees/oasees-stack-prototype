@@ -10,7 +10,6 @@ import axios from "axios";
 interface DAOModalProps{
     currentDAO: any,
     availableDevices: any[];
-    joinedDevices: any[];
     closeModal(): void;
     updateDevices():void;
     json:any;
@@ -74,7 +73,7 @@ const backend_enpoint = `http://${process.env.REACT_APP_EXPOSED_IP}:30021`;
 
 const actions = [ '0', '1', '2', '3'];
 
-const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, updateDevices, json}:DAOModalProps) => {
+const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json}:DAOModalProps) => {
     // console.log(availableDevices)
     const [daoContract,setDaoContract] = useState<ethers.Contract>();
     const [tokenContract,setTokenContract] = useState<ethers.Contract>();
@@ -93,13 +92,13 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
 
     const [avDevTemp, setAvDevTemp] = useState<any[]>([]);
-    const [tokens, setTokens] = useState<Number>(0)
-
+    const [tokens, setTokens] = useState<number>(0)
+    const [memberVotingPowers, setMemberVotingPowers] = useState<{[key:string]:number}>({});
 
 
     useEffect(()=>{
         const avDevs:any[] = [];
-        const loadTemptDev = async ()=> {
+        const loadTempDev = async ()=> {
             try{
                 const response = await axios.get(`${backend_enpoint}/devices`);
                 const avDevices = response.data;
@@ -119,7 +118,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
             }
         }
 
-        loadTemptDev();
+        loadTempDev();
     },[])
 
 
@@ -163,6 +162,27 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
         loadContracts();
     },[])
+
+    useEffect(()=>{
+        const fetchMemberVotingPowers = async () => {
+            if(!tokenContract) return;
+
+            try{
+                const votingPowers: {[key:string]:number} = {};
+                for(const member of currentDAO.members){
+                    const balance = await tokenContract.balanceOf(member);
+                    votingPowers[member] = Number(balance);
+                }
+                setMemberVotingPowers(votingPowers);
+            } catch(error){
+                console.error("Error fetching voting powers: ", error);
+            }
+        }
+
+        if(tokenContract){
+            fetchMemberVotingPowers();
+        }
+    },[tokenContract, currentDAO.members]);
 
     useEffect(()=>{
         const handleProposalEvent = async () =>{
@@ -338,7 +358,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                 <NumberInput
                     // label = "Tokens"
                     // description = "Amount of Tokens to give."
-                    placeholder = {0}
+                    // placeholder = {0}
                     min = {0}
                     max = {100}
                     value = {tokens}
@@ -346,17 +366,36 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     w = {70}
                     />
             </Table.Td>
-            <Table.Td><Button color='orange' onClick={handleJoining} value={index}>Join</Button></Table.Td>
+            <Table.Td><Button color='orange' onClick={handleJoining} value={index}>{currentDAO.members.includes(device.account) ? 'Re-join' : 'Join'}</Button></Table.Td>
         </Table.Tr>
     ));
 
-    const overviewDevices = joinedDevices.map((device,index) => (
-        <Table.Tr key={index}>
-            <Table.Td>{device.name}</Table.Td>
-            <Table.Td>{truncate_middle(device.account)}</Table.Td>
-            {/* <Table.Td>{device.ip_address}</Table.Td> */}
-        </Table.Tr>
-    ));
+    // console.log(currentDAO.members)
+    const overviewMembers = currentDAO.members.map((address: string, index: number) => {
+        const isUserAddress = address.toLowerCase() === json.account.toLowerCase();
+        const matchedDevice = avDevTemp.find((device:any)=> device.account.toLowerCase() === address.toLowerCase());
+        const votingPower = memberVotingPowers[address] || 0;
+
+        return (
+            <Table.Tr key={index}>
+                    {/* <Table.Td>{device.name}</Table.Td> */}
+                    <Table.Td>
+                        {isUserAddress && <Text fw={500}>You</Text>}
+                        {matchedDevice && <Text fw={500} c="blue">{matchedDevice.name}</Text>}
+                    </Table.Td>
+                    <Table.Td>{(address)}</Table.Td>
+                    <Table.Td>{votingPower}</Table.Td>
+                    {/* <Table.Td>{device.ip_address}</Table.Td> */}
+            </Table.Tr>
+        );
+    })
+    // const overviewDevices = joinedDevices.map((device,index) => (
+    //     <Table.Tr key={index}>
+    //         <Table.Td>{device.name}</Table.Td>
+    //         <Table.Td>{truncate_middle(device.account)}</Table.Td>
+    //         {/* <Table.Td>{device.ip_address}</Table.Td> */}
+    //     </Table.Tr>
+    // ));
 
     const styledStatus= (proposal:Proposal) => {
         const status = stateToStatus(proposal.state);
@@ -452,7 +491,7 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
 
   return (
     <>
-        <Modal opened={opened} onClose={handleClose} size="80%" withCloseButton={false}>
+        <Modal opened={opened} onClose={handleClose} size="100%" withCloseButton={false}>
         <LoadingOverlay visible={loading} zIndex={1000} pos="fixed" overlayProps={{ radius: "lg", blur: 2 }}
         loaderProps={{
             children:<Stack align='center'>
@@ -496,13 +535,13 @@ const DAOModal = ({currentDAO, availableDevices, joinedDevices, closeModal, upda
                     <Grid gutter='md'>
 
                         <Grid.Col className={styles.grid_col} span={{base:12, md:6}}>
-                        <Center pb={10} style={{fontSize:14}}><u><b>Other participants</b></u></Center>
+                        <Center pb={10} style={{fontSize:14}}><u><b>Members</b></u></Center>
 
                         <ScrollArea h={156}>
                         <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top">
                           
                                 <Table.Tbody>
-                                    {overviewDevices}
+                                    {overviewMembers}
                                 </Table.Tbody>
                         </Table>
                         </ScrollArea>

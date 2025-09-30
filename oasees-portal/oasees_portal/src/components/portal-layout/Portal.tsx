@@ -132,7 +132,6 @@ const Portal = ({json,setIsConnected,setInfo}:PortalProps) => {
         <Stack>
 
           <Flex justify='flex-end' visibleFrom="xs" gap={10}>
-            <Button color='red' w={200} h={45} onClick={handleJoining}>Test</Button>
             <Button color='blue' w={200} h={45} component="a" href="http://10.160.3.172:8082" target="_blank" rightSection={<Image src="./images/external-link-white.png" w={12} h={12} alt="External Link icon"/>}>Blockscout</Button>
             <Button color='orange' w={200} h={45} onClick={setIsConnected}>Disconnect</Button>
           </Flex>
