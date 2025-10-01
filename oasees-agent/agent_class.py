@@ -40,8 +40,6 @@ class Agent:
         # Contract references removed - using dao_info directly
         
         self.config_lock = threading.Lock()
-        self.vote_decision_lock = threading.Lock()
-        self.current_vote_decision = 0
 
         self.proposal_cooldowns = []
         self.pending_proposals = []
@@ -52,6 +50,8 @@ class Agent:
 
         restart_thread = threading.Thread(target=self.restart_thread, name="Current DAO monitor")
         restart_thread.start()
+
+        self.sequence = []
     
     def update_config(self, new_config: Dict) -> bool:
         '''Update configuration'''
@@ -157,37 +157,76 @@ class Agent:
     def vote(self,proposal_id,_vote,reason):
         '''API function that abstracts the web3 calls needed for voting.'''
 
-        w3 = self.w3
-        try:
-            # desc = r['args']['description']
-            vote_function = self.dao_info['governance'].functions.castVoteWithReason(proposal_id, _vote,"{} {}".format(self.device_name,reason))
+        if (_vote is not None):
+            w3 = self.w3
+            try:
+                # desc = r['args']['description']
+                vote_function = self.dao_info['governance'].functions.castVoteWithReason(proposal_id, _vote,"{} {}".format(self.device_name,reason))
 
 
-            transaction = vote_function.build_transaction({
-                'chainId': 31337, 
-                'gas': 2000000,  
-                'gasPrice': w3.to_wei('30', 'gwei'),  
-                'nonce': w3.eth.get_transaction_count(self.account)
-            })
+                transaction = vote_function.build_transaction({
+                    'chainId': 31337, 
+                    'gas': 2000000,  
+                    'gasPrice': w3.to_wei('30', 'gwei'),  
+                    'nonce': w3.eth.get_transaction_count(self.account)
+                })
 
 
-            signed_tx = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
-            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            w3.eth.wait_for_transaction_receipt(tx_hash)
+                signed_tx = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
+                tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                w3.eth.wait_for_transaction_receipt(tx_hash)
 
-            tx_receipt = w3.eth.get_transaction_receipt(tx_hash)
+                tx_receipt = w3.eth.get_transaction_receipt(tx_hash)
 
-            self.voted_proposals.append(proposal_id)
-        except ValueError as e:
-            print(str(e))
+                self.voted_proposals.append(proposal_id)
+            except ValueError as e:
+                print(str(e))
 
-        return {"device_name":self.device_name,"voted_for_proposal": proposal_id}
-    
+            result = proposal_id
+        else:
+            result = "abstained"
+        
+        return {"device_name":self.device_name,"voted_for_proposal": result}
 
-    def decide_vote(self,proposal_id):
+    def decide_vote(self,proposal_desc):
         '''Function that decides what vote to cast for a given proposal.'''
-        with self.vote_decision_lock:
-            return self.current_vote_decision
+        
+        for q in self.sequence:
+            if q['proposal']['msg'] in proposal_desc:
+
+                vq = q['vote_query'].replace("replace",device_name)
+
+                try:
+                    vote_response = requests.get(f"http://thanos-query.default.svc.cluster.local:9090/api/v1/query", 
+                        params={"query": vq}, timeout=5)
+                    vote_response.raise_for_status()
+                    vote_response_data = vote_response.json()
+                except requests.exceptions.RequestException as e:
+                    print(f"Error querying vote metrics for {vq}: {e}")
+                    continue
+                except ValueError as e:
+                    print(f"Error parsing JSON response for vote query: {e}")
+                    continue
+                
+                vote_data = vote_response_data.get("data", {})
+                print(vq)
+                print(vote_data)
+
+                if vote_data.get("result",{}):
+                    print(f"  ✓ VOTE YES: Condition met")
+                    return 1
+                else:
+                    print(f"  ✗ VOTE NO: Condition not met")
+                    return 0
+                    # vote_results = vote_data.get("result", {})
+                    # for vr in vote_results:
+                    #     vote_trigger = ast.literal_eval(vr.get("value")[1])
+                    #     if vote_trigger:
+                    #         self.current_vote_decision = 1
+                    #         print(f"  ✓ VOTE YES: Condition met")
+                    #     else:
+                    #         self.current_vote_decision = 0
+                    #         print(f"  ✗ VOTE NO: Condition not met")
         
 
     
@@ -201,14 +240,13 @@ class Agent:
             positive_vote = self.config['propose_on']['positive_vote_on']
 
 
-            sequence = query_construct(events,proposal_contents,positive_vote)
+            self.sequence = query_construct(events,proposal_contents,positive_vote)
 
-            if not sequence:
+            if not self.sequence:
                 print("Error: No valid metrics found in event expressions")
-                sys.exit(1)
 
             metrics = []
-            for metric_name in sequence:
+            for metric_name in self.sequence:
                 act_metric = f"oasees_{metric_name}"
                 query = f'{act_metric}{{metric_index="{metric_index}"}}'
                 metrics.append((metric_name, act_metric, query))
@@ -217,7 +255,7 @@ class Agent:
             # cluster_ip = "10.43.131.134"
 
 
-            for q in sequence:
+            for q in self.sequence:
                 query = q['query'].replace("replace",device_name)
 
                 try:
@@ -232,61 +270,21 @@ class Agent:
                     print(f"Error parsing JSON response for metric query: {e}")
                     continue
 
-                data = response_data.get("data",{})
+                proposal_data = response_data.get("data",{})
 
                 # trigger = False
 
-                if(data):
-                    results = data.get("result",{})
+                if(proposal_data.get("result",{})):
                     
-                    for r in results:
-                        trigger = ast.literal_eval(r.get("value")[1])
-                        if(trigger):
-                            proposal = q['proposal']['msg']
-                            action_value = q['proposal']['action_value']
+                    proposal = q['proposal']['msg']
+                    action_value = q['proposal']['action_value']
 
-                            if not proposal in self.proposal_cooldowns:
-                                if(self.change_detected(action_value)):
-                                    res = self.create_proposal(action_value,proposal)
-                                else:
-                                    res = "No proposal needed."
-                                print(res)
-
-                if q['vote_query']:
-
-                    vq = q['vote_query'].replace("replace",device_name)
-
-                    try:
-                        vote_response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
-                            params={"query": vq}, timeout=5)
-                        vote_response.raise_for_status()
-                        vote_response_data = vote_response.json()
-                    except requests.exceptions.RequestException as e:
-                        print(f"Error querying vote metrics for {vq}: {e}")
-                        continue
-                    except ValueError as e:
-                        print(f"Error parsing JSON response for vote query: {e}")
-                        continue
-                    
-                    vote_data = vote_response_data.get("data", {})
-                    print(vq)
-                    print(vote_data)
-
-                    if vote_data.get("result",{}):
-                        self.current_vote_decision = 1
-                        print(f"  ✓ VOTE YES: Condition met")
-                    else:
-                        self.current_vote_decision = 0
-                        print(f"  ✗ VOTE NO: Condition not met")
-                        # vote_results = vote_data.get("result", {})
-                        # for vr in vote_results:
-                        #     vote_trigger = ast.literal_eval(vr.get("value")[1])
-                        #     if vote_trigger:
-                        #         self.current_vote_decision = 1
-                        #         print(f"  ✓ VOTE YES: Condition met")
-                        #     else:
-                        #         self.current_vote_decision = 0
-                        #         print(f"  ✗ VOTE NO: Condition not met")
+                    if not proposal in self.proposal_cooldowns:
+                        if(self.change_detected(action_value)):
+                            res = self.create_proposal(action_value,proposal)
+                        else:
+                            res = "No proposal needed."
+                        print(res)
 
             time.sleep(5)
         
@@ -308,16 +306,16 @@ class Agent:
                     self.pending_proposals.append(proposal_id)
                 
                 if(state == 'Active'):
-                    decided_vote = self.decide_vote(proposal_id) # TODO
+                    decided_vote = self.decide_vote(r['args']['description']) # TODO
                     print("DEE",decided_vote)
-                    desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 2-Against
+                    desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 0-Against
 
             for proposal_id in self.pending_proposals:
                 state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
                 if(state == 'Active'):
-                    decided_vote = self.decide_vote(proposal_id) # TODO
+                    decided_vote = self.decide_vote(r['args']['description']) # TODO
                     print("DEE",decided_vote)
-                    desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 2-Against
+                    desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 0-Against
                     self.pending_proposals.remove(proposal_id)
 
             

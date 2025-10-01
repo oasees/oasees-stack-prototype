@@ -57,108 +57,48 @@ def validate_json_format(data):
     return True, "JSON format is valid"
 
 
-def _parse_logical_expression(expr):
+def _build_promql_query(expr, metric_prefix="oasees_"):
     """
-    Parse logical expressions with proper operator precedence.
-    Returns parsed structure with operators and conditions.
+    Build PromQL query by replacing commas with 'or' and formatting each metric properly.
     """
-    # Split on logical operators while preserving them
+    # Replace commas with ' or '
+    normalized_expr = expr.replace(',', ' or ')
+
+    # Split by 'and' and 'or' to get individual metric conditions
     import re
+    tokens = re.split(r'\s+(and|or)\s+', normalized_expr.strip(), flags=re.IGNORECASE)
 
-    # First, handle parentheses by recursion (simplified for now)
-    # For this fix, we'll focus on proper AND/OR detection without parentheses support
+    result_parts = []
 
-    # Tokenize the expression
-    tokens = re.split(r'\s+(and|or)\s+', expr.strip(), flags=re.IGNORECASE)
+    for i in range(0, len(tokens)):
+        if i % 2 == 0:  # This is a condition, not an operator
+            condition = tokens[i].strip()
+            match = re.search(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', condition)
+            if match:
+                metric, operator, threshold = match.groups()
+                full_metric = f"{metric_prefix}{metric}"
+                formatted_condition = f'{{__name__="{full_metric}",source="replace"}} {operator} {threshold}'
+                result_parts.append(formatted_condition)
+        else:  # This is an operator
+            result_parts.append(f' {tokens[i].lower()} ')
 
-    if len(tokens) == 1:
-        return {'type': 'condition', 'condition': tokens[0].strip()}
-
-    # Build expression tree (simplified - left-associative)
-    result = {'type': 'condition', 'condition': tokens[0].strip()}
-
-    for i in range(1, len(tokens), 2):
-        if i + 1 < len(tokens):
-            operator = tokens[i].lower()
-            right_condition = tokens[i + 1].strip()
-
-            result = {
-                'type': 'operation',
-                'operator': operator,
-                'left': result,
-                'right': {'type': 'condition', 'condition': right_condition}
-            }
-
-    return result
-
-def _build_promql_from_parsed(parsed_expr, metric_prefix="oasees_"):
-    """
-    Build PromQL query from parsed expression tree.
-    """
-    if parsed_expr['type'] == 'condition':
-        # Single condition
-        condition = parsed_expr['condition']
-        conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', condition)
-
-        if len(conditions) == 1:
-            metric, operator, threshold = conditions[0]
-            full_metric = f"{metric_prefix}{metric}"
-            return f'{{__name__="{full_metric}",source="replace"}} {operator} {threshold}'
-        else:
-            # Multiple conditions in single expression - shouldn't happen with proper parsing
-            return None
-
-    elif parsed_expr['type'] == 'operation':
-        left_query = _build_promql_from_parsed(parsed_expr['left'], metric_prefix)
-        right_query = _build_promql_from_parsed(parsed_expr['right'], metric_prefix)
-
-        if left_query is None or right_query is None:
-            return None
-
-        if parsed_expr['operator'] == 'and':
-            # For AND operations, use PromQL and operator for proper boolean evaluation
-            return f'({left_query}) and ({right_query})'
-        else:  # 'or'
-            # For OR operations, use PromQL or operator
-            return f'({left_query}) or ({right_query})'
-
-    return None
+    return ''.join(result_parts)
 
 def query_construct(events, proposal_contents, positive_vote, metric_prefix="oasees_"):
     """
-    Construct PromQL queries from event expressions with proper AND/OR parsing
+    Construct PromQL queries from event expressions
     """
     queries = []
 
     for i, expr in enumerate(events):
-        # Parse the logical expression properly
-        parsed_expr = _parse_logical_expression(expr)
-
-        # Build PromQL query from parsed expression
-        query = _build_promql_from_parsed(parsed_expr, metric_prefix)
-
-        if query is None:
-            # Fallback for unparseable expressions
-            conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', expr)
-            if conditions:
-                metric, operator, threshold = conditions[0]
-                full_metric = f"{metric_prefix}{metric}"
-                query = f'{{__name__="{full_metric}",source="replace"}} {operator}  {threshold}'
+        # Build PromQL query using the new function
+        query = _build_promql_query(expr, metric_prefix)
 
         # Handle vote query with same logic
         vote_query = None
         if i < len(positive_vote):
             vote_expr = positive_vote[i]
-            parsed_vote_expr = _parse_logical_expression(vote_expr)
-            vote_query = _build_promql_from_parsed(parsed_vote_expr, metric_prefix)
-
-            if vote_query is None:
-                # Fallback for unparseable vote expressions
-                vote_conditions = re.findall(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', vote_expr)
-                if vote_conditions:
-                    metric, operator, threshold = vote_conditions[0]
-                    full_metric = f"{metric_prefix}{metric}"
-                    vote_query = f'{{__name__="{full_metric}",source="replace"}} {operator}  {threshold}'
+            vote_query = _build_promql_query(vote_expr, metric_prefix)
 
         queries.append({
             'expression': expr,
