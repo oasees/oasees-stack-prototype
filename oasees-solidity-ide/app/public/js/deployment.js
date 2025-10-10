@@ -83,6 +83,10 @@ class DAODeployer {
 
     async connectWallet() {
         try {
+            await this.ethereum.request({
+                method: 'wallet_revokePermissions',
+                params: [{eth_accounts: {}}],
+            });
             const accounts = await this.ethereum.request({
                 method: 'eth_requestAccounts'
             });
