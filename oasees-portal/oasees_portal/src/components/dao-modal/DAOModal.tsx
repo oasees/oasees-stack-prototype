@@ -437,7 +437,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
         }
     }
 
-    const mapped_proposals = proposals.slice(0).reverse().map((proposal,index)=> (
+    const mapped_proposals = proposals.slice(-10).reverse().map((proposal,index)=> (
         <Table.Tr key={index}>
             <Table.Td>{proposal.description}</Table.Td>
             {styledStatus(proposal)}
@@ -480,7 +480,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     //     );
     // }
 
-    const mapped_votes = votes.slice(0).reverse().map((vote,index)=> (
+    const mapped_votes = votes.slice(-15).reverse().map((vote,index)=> (
         <Table.Tr key={index}>
             <Table.Td>{vote.proposal}</Table.Td>
             <Table.Td>{supportToVote(vote.support)}</Table.Td>
