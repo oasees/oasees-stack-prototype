@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFractio
 import "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-
-
 contract Governance is
     Governor,
     GovernorCountingSimple,
@@ -20,6 +18,16 @@ contract Governance is
     uint256 public votingDelay_;
     uint256 public votingPeriod_;
 
+    // Define the struct
+    struct DAOData {
+        string dataInfo;
+        string IpfsHash;
+        string Timestamp;
+    }
+
+    DAOData[] private DAOdata;
+
+    event DataAdded(string dataInfo, string IpfsHash, string Timestamp, uint256 index);
 
     constructor(
         ERC20Votes _token,
@@ -35,6 +43,46 @@ contract Governance is
     {
         votingDelay_ = _votingDelay;
         votingPeriod_ = _votingPeriod;
+    }
+
+    // ========== DAO Data Management Functions ==========
+
+    /**
+     * @dev Add data to the DAOdata array
+     */
+    function addData(
+        string memory _dataInfo,
+        string memory _IpfsHash,
+        string memory _Timestamp
+    ) external {
+        DAOData memory newData = DAOData({
+            dataInfo: _dataInfo,
+            IpfsHash: _IpfsHash,
+            Timestamp: _Timestamp
+        });
+        DAOdata.push(newData);
+        emit DataAdded(_dataInfo, _IpfsHash, _Timestamp, DAOdata.length - 1);
+    }
+
+ 
+    function getData(uint256 index) external view returns (
+        string memory dataInfo,
+        string memory IpfsHash,
+        string memory Timestamp
+    ) {
+        require(index < DAOdata.length, "Index out of bounds");
+        DAOData memory data = DAOdata[index];
+        return (data.dataInfo, data.IpfsHash, data.Timestamp);
+    }
+
+
+    function getAllData() external view returns (DAOData[] memory) {
+        return DAOdata;
+    }
+
+
+    function getDataArrayLength() external view returns (uint256) {
+        return DAOdata.length;
     }
 
 

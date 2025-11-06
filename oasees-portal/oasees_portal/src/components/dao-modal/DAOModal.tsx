@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import styles from './DAOModal.module.css'
 import { ethers } from "ethers";
 import axios from "axios";
+// import '@mantine/notifications/styles.css';
 
 
 interface DAOModalProps{
@@ -26,6 +27,10 @@ enum ProposalStatus{
     Executed
 }
 
+
+
+
+
 const stateToStatus = (state:number) => {
     if(state==0) return ProposalStatus.Pending;
     else if(state==1) return ProposalStatus.Active;
@@ -42,12 +47,22 @@ const supportToVote = (support:number) => {
     else return 'For';
 }
 
+// interface Proposal{
+//     description: string,
+//     state: number,
+//     proposalId: number,
+//     calldatas: any
+// }
+
 interface Proposal{
     description: string,
     state: number,
     proposalId: number,
-    calldatas: any
+    targets: string[],
+    values: any[],
+    calldatas: any[]
 }
+
 
 interface ProposalForm{
     title: string,
@@ -59,6 +74,12 @@ interface Vote{
     proposal: string,
     support: number,
     reason: string,
+}
+
+interface DaoData{
+    info: string,
+    hash: string,
+    timestamp: string
 }
 
 const truncate_middle = (str:string) => {
@@ -94,6 +115,43 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     const [avDevTemp, setAvDevTemp] = useState<any[]>([]);
     const [tokens, setTokens] = useState<number>(0)
     const [memberVotingPowers, setMemberVotingPowers] = useState<{[key:string]:number}>({});
+
+
+
+    const [ipfsData, setIpfsData] = useState<DaoData[]>([]);
+
+
+    useEffect(() => {
+        const fetchDaoData = async () => {
+            if (!daoContract) return;
+            
+            try {
+                const data = await daoContract.getAllData();
+                
+                const formattedData = data.map((item: any) => ({
+                    info: item.info || item[0], 
+                    hash: item.hash || item[1],
+                    timestamp: item.timestamp || item[2]
+                }));
+                
+                setIpfsData(formattedData);
+            } catch (error) {
+                console.error("Error fetching DAO data from contract:", error);
+            }
+        };
+    
+        var intervalId: NodeJS.Timer;
+        if (daoContract) {
+            fetchDaoData();
+    
+            intervalId = setInterval(() => {
+                fetchDaoData();
+            }, 3000);
+        }
+    
+        return () => clearInterval(intervalId);
+    }, [daoContract]);
+
 
 
     useEffect(()=>{
@@ -184,6 +242,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
         }
     },[tokenContract, currentDAO.members]);
 
+
     useEffect(()=>{
         const handleProposalEvent = async () =>{
             try {
@@ -191,20 +250,31 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                 const results:any = await daoMonitor.queryFilter(proposalFilter!);
                 const proposals:Proposal[] = [];
                 const proposal_descriptions: {[key:string]:string}= {}
-
+                
                 for (const result of results){
                     const args = result.args;
-                    const description = args.description;
-                    const proposalId = args.proposalId;
-                    const calldatas = args.calldatas;
+                    
+                    const proposalId = args[0];
+                    const targets = args[2];
+                    const values = args[3];     
+                    const calldatas = args[5];
+                    const description = args[8];
+    
+
 
                     const state = await daoMonitor.state(proposalId);
-
-                    proposals.push({description:description,state:state,proposalId:proposalId, calldatas});
+    
+                    proposals.push({
+                        description: description,
+                        state: state,
+                        proposalId: proposalId,
+                        targets: targets,
+                        values: values,
+                        calldatas: calldatas
+                    });
                     proposal_descriptions[proposalId] = description;
-                    // console.log(await json.callProvider.getBlockNumber());
                 }
-
+    
                 setProposals(proposals);
                 setProposalDescriptions(proposal_descriptions);
             } catch (error) {
@@ -214,15 +284,56 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
         var intervalId:NodeJS.Timer;
         if(daoContract){
             handleProposalEvent();
-
+    
             intervalId = setInterval(()=>{
                 handleProposalEvent();
             },3000)
         }
-
+    
         
         return () => clearInterval(intervalId);
     },[daoContract]);
+
+
+    // useEffect(()=>{
+    //     const handleProposalEvent = async () =>{
+    //         try {
+    //             const daoMonitor:any = daoContract!.connect(json.callProvider);
+    //             const results:any = await daoMonitor.queryFilter(proposalFilter!);
+    //             const proposals:Proposal[] = [];
+    //             const proposal_descriptions: {[key:string]:string}= {}
+    //             console.log(results);
+    //             for (const result of results){
+    //                 const args = result.args;
+    //                 const description = args.description;
+    //                 const proposalId = args.proposalId;
+    //                 const calldatas = args.calldatas;
+
+    //                 const state = await daoMonitor.state(proposalId);
+
+    //                 proposals.push({description:description,state:state,proposalId:proposalId, calldatas});
+    //                 proposal_descriptions[proposalId] = description;
+    //                 // console.log(await json.callProvider.getBlockNumber());
+    //             }
+
+    //             setProposals(proposals);
+    //             setProposalDescriptions(proposal_descriptions);
+    //         } catch (error) {
+    //             console.error('Error fetching proposals:', error);
+    //         }
+    //     }
+    //     var intervalId:NodeJS.Timer;
+    //     if(daoContract){
+    //         handleProposalEvent();
+
+    //         intervalId = setInterval(()=>{
+    //             handleProposalEvent();
+    //         },3000)
+    //     }
+
+        
+    //     return () => clearInterval(intervalId);
+    // },[daoContract]);
 
     useEffect(()=> {
         const handleVoteEvent = async () => {
@@ -242,7 +353,6 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                         votes.push({proposal:proposal, support:support, reason:reason})
                     }
                 }
-
                 setVotes(votes);
             } catch(error){
                 console.error('Error fetching votes: ', error);
@@ -362,7 +472,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     min = {0}
                     max = {100}
                     value = {tokens}
-                    onChange={setTokens}
+                    onChange={(value) => setTokens(typeof value === 'number' ? value : 0)}
                     w = {70}
                     />
             </Table.Td>
@@ -445,24 +555,31 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     ));
 
     const execute_proposal = async (proposalId: string) => {
-        const proposal_desc = proposalDescriptions![proposalId];
-        const descriptionHash = ethers.utils.id(proposal_desc);
-        const calldatas = proposals![proposals.length-1].calldatas;
+        // Find the specific proposal by ID
+        const proposal = proposals.find(p => String(p.proposalId) === proposalId);
+        
+        if (!proposal) {
+            console.error("Proposal not found!");
+            return;
+        }
+        
+        const descriptionHash = ethers.utils.id(proposal.description);
         const transaction_count = await json.provider.getTransactionCount(json.account);
+        
         await daoContract!.queue(
-            [boxContract?.address],
-            [0],
-            calldatas,
+            proposal.targets,      
+            proposal.values,       
+            proposal.calldatas,
             descriptionHash,
-            {nonce:transaction_count}
+            {nonce: transaction_count}
         );
-
+    
         await daoContract!.execute(
-            [boxContract?.address],
-            [0],
-            calldatas,
+            proposal.targets,      
+            proposal.values,       
+            proposal.calldatas,
             descriptionHash,
-            {nonce:transaction_count + 1}
+            {nonce: transaction_count + 1}
         );
     }
 
@@ -519,6 +636,11 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     <Tabs.Tab value="manage">
                         Manage
                     </Tabs.Tab>
+                    <Tabs.Tab value="data">
+                        Data
+                    </Tabs.Tab>
+
+
                 </Tabs.List>
 
                 <Tabs.List visibleFrom="sm">
@@ -529,6 +651,12 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     <Tabs.Tab value="manage">
                         Manage
                     </Tabs.Tab>
+
+                    <Tabs.Tab value="data">
+                        Data
+                    </Tabs.Tab>
+
+
                 </Tabs.List>
 
                 <Tabs.Panel value="overview" h={585}>
@@ -626,7 +754,60 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
 
                 </Tabs.Panel>
 
+                <Tabs.Panel value="data" h={585}>
+                <Center pb={20} style={{fontSize: 18}}>
+                    <u><b>DAO Data</b></u>
+                </Center>
                 
+                <Center>
+                    <Box style={{width: '90%', maxWidth: 900}}>
+                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
+                        <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th>Data Info</Table.Th>
+                            <Table.Th>IPFS Hash</Table.Th>
+                            <Table.Th>Timestamp</Table.Th>
+                            <Table.Th/>
+                        </Table.Tr>
+                        </Table.Thead>
+                        
+                        <Table.Tbody>
+                        {ipfsData.map((item, index) => (
+                            <Table.Tr key={index}>
+                            <Table.Td>{item.info}</Table.Td>
+                            <Table.Td>
+                            <Table.Td>{item.hash}</Table.Td>
+                            </Table.Td>
+                            <Table.Td>
+                                {item.timestamp}
+                            </Table.Td>
+                            <Table.Td>
+                                <Button 
+                                size="xs" 
+                                variant="light"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(item.hash);
+                                    // Optional: show success notification
+                                }}
+                                >
+                                Copy
+                                </Button>
+                            </Table.Td>
+                            </Table.Tr>
+                        ))}
+                        </Table.Tbody>
+                    </Table>
+                    
+                    {ipfsData.length === 0 && (
+                        <Center p={40}>
+                        <Text c="dimmed">No IPFS data available</Text>
+                        </Center>
+                    )}
+                    </Box>
+                </Center>
+                </Tabs.Panel>
+
+
             </Tabs>
         </Modal>
     </>

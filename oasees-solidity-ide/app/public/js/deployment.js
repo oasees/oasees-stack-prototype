@@ -136,6 +136,73 @@ class DAODeployer {
 
     }
 
+    async delegationDAO(voteToken_address){
+        const web3 = new Web3(window.ethereum)
+        const blockscout_api = "http://10.160.3.172:8082/api/v2"
+        try {
+            const response = await fetch(`${blockscout_api}/smart-contracts/${voteToken_address}`);
+            const count = await web3.eth.getTransactionCount(this.userAccount)
+            const data = await response.json();
+            const vote_token = new web3.eth.Contract(data.abi, voteToken_address);
+            const tx = vote_token.methods.delegate(this.userAccount);
+            await tx.send({'from': this.userAccount,'nonce': count})
+        } catch (e){
+            console.error(e)
+        }
+
+
+    }
+
+
+    async fundTimelock(governanceAddress, amount = 15) {
+        const web3 = new Web3(window.ethereum);
+        const blockscout_api = "http://10.160.3.172:8082/api/v2";
+        
+        try {
+            // Get governance contract ABI from Blockscout
+            const response = await fetch(`${blockscout_api}/smart-contracts/${governanceAddress}`);
+            const data = await response.json();
+            const governance = new web3.eth.Contract(data.abi, governanceAddress);
+            
+            // Get timelock address from governance contract
+            const timelockAddress = await governance.methods.timelock().call();
+            console.log('Timelock address:', timelockAddress);
+            
+            const nonce = await web3.eth.getTransactionCount(this.userAccount);
+            
+            const tx = {
+                from: this.userAccount,
+                to: timelockAddress,
+                value: web3.utils.toWei(amount.toString(), 'ether'),
+                gas: 2000000,
+                gasPrice: web3.utils.toWei('30', 'gwei'),
+                nonce: nonce
+            };
+            
+            const txHash = await web3.eth.sendTransaction(tx);
+            console.log('Transaction hash:', txHash.transactionHash);
+            
+            const treasuryBalance = await web3.eth.getBalance(timelockAddress);
+            console.log(`Treasury funded! Balance: ${web3.utils.fromWei(treasuryBalance, 'ether')} ETH`);
+            
+            return {
+                txHash: txHash.transactionHash,
+                timelockAddress: timelockAddress,
+                balance: web3.utils.fromWei(treasuryBalance, 'ether')
+            };
+            
+        } catch (e) {
+            console.error('Error funding timelock:', e);
+            throw e;
+        }
+    }
+
+
+
+
+
+
+
     updateConnectedUI() {
         const connectBtn = document.getElementById('connectWallet');
         if (connectBtn) {
@@ -225,6 +292,8 @@ class DAODeployer {
                 deploymentOutputContainer.innerHTML = inner;
 
                 await this.registerDAO(governance,timelock,votetoken,box,params.daoName);
+                await this.fundTimelock(governance,15);
+                await this.delegationDAO(votetoken);
 
                 btnNormalText.style.display = 'block';
                 btnLoadTxt.style.display = 'none';

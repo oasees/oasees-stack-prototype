@@ -9,6 +9,9 @@ def validate_json_format(data):
     '''Validate the JSON format of the data.'''
 
     errors = []
+    if('ipfs_data' in data):
+        return True, "JSON format is valid"
+
 
     # Check top-level keys
     required_keys = {"metric_index", "propose_on", "actions_map"}

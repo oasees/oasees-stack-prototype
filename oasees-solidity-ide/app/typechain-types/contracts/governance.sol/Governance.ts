@@ -23,6 +23,20 @@ import type {
   TypedContractMethod,
 } from "../../common";
 
+export declare namespace Governance {
+  export type DAODataStruct = {
+    dataInfo: string;
+    IpfsHash: string;
+    Timestamp: string;
+  };
+
+  export type DAODataStructOutput = [
+    dataInfo: string,
+    IpfsHash: string,
+    Timestamp: string
+  ] & { dataInfo: string; IpfsHash: string; Timestamp: string };
+}
+
 export interface GovernanceInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -30,6 +44,7 @@ export interface GovernanceInterface extends Interface {
       | "CLOCK_MODE"
       | "COUNTING_MODE"
       | "EXTENDED_BALLOT_TYPEHASH"
+      | "addData"
       | "cancel"
       | "castVote"
       | "castVoteBySig"
@@ -39,6 +54,9 @@ export interface GovernanceInterface extends Interface {
       | "clock"
       | "eip712Domain"
       | "execute"
+      | "getAllData"
+      | "getData"
+      | "getDataArrayLength"
       | "getVotes"
       | "getVotesWithParams"
       | "hasVoted"
@@ -75,6 +93,7 @@ export interface GovernanceInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "DataAdded"
       | "EIP712DomainChanged"
       | "ProposalCanceled"
       | "ProposalCreated"
@@ -101,6 +120,10 @@ export interface GovernanceInterface extends Interface {
   encodeFunctionData(
     functionFragment: "EXTENDED_BALLOT_TYPEHASH",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "addData",
+    values: [string, string, string]
   ): string;
   encodeFunctionData(
     functionFragment: "cancel",
@@ -142,6 +165,18 @@ export interface GovernanceInterface extends Interface {
   encodeFunctionData(
     functionFragment: "execute",
     values: [AddressLike[], BigNumberish[], BytesLike[], BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getAllData",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getData",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getDataArrayLength",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getVotes",
@@ -276,6 +311,7 @@ export interface GovernanceInterface extends Interface {
     functionFragment: "EXTENDED_BALLOT_TYPEHASH",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "addData", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "cancel", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "castVote", data: BytesLike): Result;
   decodeFunctionResult(
@@ -300,6 +336,12 @@ export interface GovernanceInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "execute", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getAllData", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getData", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getDataArrayLength",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "getVotes", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getVotesWithParams",
@@ -395,6 +437,31 @@ export interface GovernanceInterface extends Interface {
     functionFragment: "votingPeriod_",
     data: BytesLike
   ): Result;
+}
+
+export namespace DataAddedEvent {
+  export type InputTuple = [
+    dataInfo: string,
+    IpfsHash: string,
+    Timestamp: string,
+    index: BigNumberish
+  ];
+  export type OutputTuple = [
+    dataInfo: string,
+    IpfsHash: string,
+    Timestamp: string,
+    index: bigint
+  ];
+  export interface OutputObject {
+    dataInfo: string;
+    IpfsHash: string;
+    Timestamp: string;
+    index: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace EIP712DomainChangedEvent {
@@ -626,6 +693,12 @@ export interface Governance extends BaseContract {
 
   EXTENDED_BALLOT_TYPEHASH: TypedContractMethod<[], [string], "view">;
 
+  addData: TypedContractMethod<
+    [_dataInfo: string, _IpfsHash: string, _Timestamp: string],
+    [void],
+    "nonpayable"
+  >;
+
   cancel: TypedContractMethod<
     [
       targets: AddressLike[],
@@ -714,6 +787,26 @@ export interface Governance extends BaseContract {
     [bigint],
     "payable"
   >;
+
+  getAllData: TypedContractMethod<
+    [],
+    [Governance.DAODataStructOutput[]],
+    "view"
+  >;
+
+  getData: TypedContractMethod<
+    [index: BigNumberish],
+    [
+      [string, string, string] & {
+        dataInfo: string;
+        IpfsHash: string;
+        Timestamp: string;
+      }
+    ],
+    "view"
+  >;
+
+  getDataArrayLength: TypedContractMethod<[], [bigint], "view">;
 
   getVotes: TypedContractMethod<
     [account: AddressLike, blockNumber: BigNumberish],
@@ -905,6 +998,13 @@ export interface Governance extends BaseContract {
     nameOrSignature: "EXTENDED_BALLOT_TYPEHASH"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "addData"
+  ): TypedContractMethod<
+    [_dataInfo: string, _IpfsHash: string, _Timestamp: string],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "cancel"
   ): TypedContractMethod<
     [
@@ -1002,6 +1102,25 @@ export interface Governance extends BaseContract {
     [bigint],
     "payable"
   >;
+  getFunction(
+    nameOrSignature: "getAllData"
+  ): TypedContractMethod<[], [Governance.DAODataStructOutput[]], "view">;
+  getFunction(
+    nameOrSignature: "getData"
+  ): TypedContractMethod<
+    [index: BigNumberish],
+    [
+      [string, string, string] & {
+        dataInfo: string;
+        IpfsHash: string;
+        Timestamp: string;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getDataArrayLength"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "getVotes"
   ): TypedContractMethod<
@@ -1181,6 +1300,13 @@ export interface Governance extends BaseContract {
   ): TypedContractMethod<[], [bigint], "view">;
 
   getEvent(
+    key: "DataAdded"
+  ): TypedContractEvent<
+    DataAddedEvent.InputTuple,
+    DataAddedEvent.OutputTuple,
+    DataAddedEvent.OutputObject
+  >;
+  getEvent(
     key: "EIP712DomainChanged"
   ): TypedContractEvent<
     EIP712DomainChangedEvent.InputTuple,
@@ -1245,6 +1371,17 @@ export interface Governance extends BaseContract {
   >;
 
   filters: {
+    "DataAdded(string,string,string,uint256)": TypedContractEvent<
+      DataAddedEvent.InputTuple,
+      DataAddedEvent.OutputTuple,
+      DataAddedEvent.OutputObject
+    >;
+    DataAdded: TypedContractEvent<
+      DataAddedEvent.InputTuple,
+      DataAddedEvent.OutputTuple,
+      DataAddedEvent.OutputObject
+    >;
+
     "EIP712DomainChanged()": TypedContractEvent<
       EIP712DomainChangedEvent.InputTuple,
       EIP712DomainChangedEvent.OutputTuple,

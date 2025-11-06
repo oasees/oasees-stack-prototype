@@ -17,10 +17,21 @@ declare global {
 }
 
 
+
+interface ConnectionInfo {
+  account: string;
+  provider: ethers.providers.Web3Provider;
+  marketplace: ethers.Contract;
+  nft: ethers.Contract;
+  callProvider: ethers.providers.JsonRpcProvider;
+}
+
+
+
 function App() {
 
   const [isConnected,setIsConnected] = useState(false);
-  const [info, setInfo]=useState({});
+  const [info, setInfo]=useState<ConnectionInfo | null>(null);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -74,7 +85,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (isConnected && info.account) {
+    if (isConnected && info?.account) {
       const connectionData = {
         account: info.account,
         marketplace_address: info.marketplace.address,

@@ -172,6 +172,51 @@ def health():
 def metrics_endpoint():
     return Response(prom.generate_latest(), mimetype='text/plain')
 
+
+@app.route('/remove_metric', methods=['POST'])
+def remove_metric():
+    """Remove a specific metric by metric_index"""
+    try:
+        data = request.get_json()
+        metric_index = data.get('metric_index')
+        
+        if not metric_index:
+            return jsonify({
+                "status": "error",
+                "message": "metric_index is required"
+            }), 400
+        
+        if metric_index in metrics:
+            unregister_metric(metric_index)
+            
+            # Also remove from timestamp tracking
+            if metric_index in global_metric_timestamps:
+                del global_metric_timestamps[metric_index]
+            
+            # Notify WebSocket clients
+            socketio.emit('metric_removed', {
+                'metric_index': metric_index,
+                'reason': 'manual_removal'
+            })
+            
+            return jsonify({
+                "status": "success",
+                "message": f"Metric {metric_index} removed"
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Metric {metric_index} not found"
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+
 if __name__ == '__main__':
     prom_thread = threading.Thread(target=run_prometheus, daemon=True)
     prom_thread.start()

@@ -7,6 +7,8 @@ import requests
 from utils import query_construct
 import os
 import ast
+from datetime import datetime
+
 
 device_name = os.environ.get('NODE_NAME')
 
@@ -32,6 +34,7 @@ class Agent:
 
         self.config = agent_info['config']
         self.dao_info = agent_info['dao_info']
+        self.dao_info['timelock_address'] = agent_info['dao_info']['governance'].functions.timelock().call() 
 
 
         self.monitor_threads: List[threading.Thread] = []
@@ -154,6 +157,44 @@ class Agent:
 
         return {"device_name":self.device_name,"created_proposal":proposal_description}
 
+
+    def create_fund_proposal(self,recipient,amount_eth,desc):
+
+        w3 = self.w3
+
+
+        try:
+            recipient = w3.to_checksum_address(recipient)
+            amount_wei = w3.to_wei(amount_eth, 'ether')
+            targets = [recipient]
+            values = [amount_wei]
+            calldatas = ['0x']
+            description = f"Transfer {amount_eth} ETH to {recipient} / {desc}"
+            propose_function = self.dao_info['governance'].functions.propose(
+                targets,
+                values,
+                calldatas,
+                f"{description}-{time.time()}"
+            )
+
+            transaction = propose_function.build_transaction({
+                'chainId': 31337,
+                'gas': 2000000,
+                'gasPrice': w3.to_wei('30', 'gwei'),
+                'nonce': w3.eth.get_transaction_count(self.account)
+            })
+
+            signed_tx = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+
+            proposal_created_event = self.dao_info['governance'].events.ProposalCreated().process_receipt(receipt)
+            proposal_id = proposal_created_event[0]['args']['proposalId']
+        except ValueError as e:
+            print(str(e))
+
+
     def vote(self,proposal_id,_vote,reason):
         '''API function that abstracts the web3 calls needed for voting.'''
 
@@ -240,6 +281,7 @@ class Agent:
             positive_vote = self.config['propose_on']['positive_vote_on']
 
 
+
             self.sequence = query_construct(events,proposal_contents,positive_vote)
 
             if not self.sequence:
@@ -252,39 +294,101 @@ class Agent:
                 metrics.append((metric_name, act_metric, query))
 
             cluster_ip = "thanos-query.default.svc.cluster.local"
-            # cluster_ip = "10.43.131.134"
+            telemetry_ip = "telemetry-api-svc.default.svc.cluster.local"
+            # cluster_ip = "10.43.213.25"
+            # telemetry_ip = "10.43.27.222"
 
 
-            for q in self.sequence:
-                query = q['query'].replace("replace",device_name)
+            if "ipfs_data" in self.config:
 
-                try:
-                    response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
-                        params={"query": query}, timeout=5)
-                    response.raise_for_status()
-                    response_data = response.json()
-                except requests.exceptions.RequestException as e:
-                    print(f"Error querying metrics for {query}: {e}")
-                    continue
-                except ValueError as e:
-                    print(f"Error parsing JSON response for metric query: {e}")
-                    continue
+                
 
-                proposal_data = response_data.get("data",{})
+                for q in self.sequence:
+                    query = q['query'].replace("replace",device_name)
 
-                # trigger = False
+                    try:
+                        response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
+                            params={"query": query}, timeout=5)
+                        response.raise_for_status()
+                        response_data = response.json()
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error querying metrics for {query}: {e}")
+                        continue
+                    except ValueError as e:
+                        print(f"Error parsing JSON response for metric query: {e}")
+                        continue
 
-                if(proposal_data.get("result",{})):
-                    
-                    proposal = q['proposal']['msg']
-                    action_value = q['proposal']['action_value']
+                    proposal_data = response_data.get("data",{})
+                    print(proposal_data)
+                    print(query)
+                    if(len(proposal_data['result'])):
 
-                    if not proposal in self.proposal_cooldowns:
-                        if(self.change_detected(action_value)):
-                            res = self.create_proposal(action_value,proposal)
-                        else:
-                            res = "No proposal needed."
-                        print(res)
+                        if('ipfs_hash' in proposal_data['result'][0]['metric']):
+                            ipfs_hash = proposal_data['result'][0]['metric']['ipfs_hash']
+                            data_info = proposal_data['result'][0]['metric']['data_info']
+                            m_name = proposal_data['result'][0]['metric']['__name__'].replace('oasees_','')
+
+                            if(ipfs_hash != 'null'):
+                                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                self.add_dao_data(data_info,ipfs_hash,now)
+                                response = requests.post(
+                                    f"http://{telemetry_ip}:5005/remove_metric",
+                                    json={"metric_index": m_name}
+                                )
+
+
+                        if('account' in proposal_data['result'][0]['metric']):
+
+
+                            recipient = proposal_data['result'][0]['metric']['account']
+                            m_name = proposal_data['result'][0]['metric']['__name__'].replace('oasees_','')
+                            
+                            desc = q['proposal']['msg']
+                            amount_eth = q['proposal']['action_value']
+
+                            print(recipient,amount_eth,desc)
+
+                            self.create_fund_proposal(recipient,amount_eth,desc)
+                            response = requests.post(
+                                f"http://{telemetry_ip}:5005/remove_metric",
+                                json={"metric_index": m_name}
+                            )
+
+
+
+            else:
+
+                for q in self.sequence:
+                    query = q['query'].replace("replace",device_name)
+
+                    try:
+                        response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
+                            params={"query": query}, timeout=5)
+                        response.raise_for_status()
+                        response_data = response.json()
+                    except requests.exceptions.RequestException as e:
+                        print(f"Error querying metrics for {query}: {e}")
+                        continue
+                    except ValueError as e:
+                        print(f"Error parsing JSON response for metric query: {e}")
+                        continue
+
+                    proposal_data = response_data.get("data",{})
+
+                    # trigger = False
+
+
+                    if(len(self.config['propose_on']) and proposal_data.get("result",{})):
+                        
+                        proposal = q['proposal']['msg']
+                        action_value = q['proposal']['action_value']
+
+                        if not proposal in self.proposal_cooldowns:
+                            if(self.change_detected(action_value)):
+                                res = self.create_proposal(action_value,proposal)
+                            else:
+                                res = "No proposal needed."
+                            print(res)
 
             time.sleep(5)
         
@@ -364,6 +468,34 @@ class Agent:
             time.sleep(5)
         
         print("Exiting monitor_value thread.")
+
+
+    def add_dao_data(self,data_info,hash,timestamp):
+
+
+        w3 = self.w3
+
+        add_function = self.dao_info['governance'].functions.addData(
+            data_info,
+            hash,
+            timestamp
+        )
+
+        transaction = add_function.build_transaction({
+            'chainId': 31337, 
+            'gas': 2000000,  
+            'gasPrice': w3.to_wei('30', 'gwei'),  
+            'nonce': w3.eth.get_transaction_count(self.account)
+        })
+
+        signed_tx = w3.eth.account.sign_transaction(transaction, private_key=self.private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        tx_receipt = w3.eth.get_transaction_receipt(tx_hash)
+        print("Data added to DAO")
+
+
 
     def change_detected(self,proposed_action):
         '''Helper function to decide if a proposal is needed or not.'''

@@ -74,6 +74,7 @@ def event_watcher(info_dict):
             tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
             dao_info['governance'] = governance_contract
+            dao_info['timelock_address'] = dao_info['governance'].functions.timelock().call() 
             dao_info['token'] = vote_token_contract
             dao_info['box'] = box_contract
             dao_info['restart'] = True
