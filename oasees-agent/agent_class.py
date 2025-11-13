@@ -12,6 +12,17 @@ from datetime import datetime
 
 device_name = os.environ.get('NODE_NAME')
 
+cluster_ip = os.environ.get('CLUSTER_IP')
+telemetry_ip = os.environ.get('TELEMETRY_IP')
+
+# cluster_ip = "thanos-query.default.svc.cluster.local"
+# telemetry_ip = "telemetry-api-svc.default.svc.cluster.local"
+# cluster_ip = "10.43.213.25"
+# telemetry_ip = "10.43.27.222"
+
+
+
+
 proposal_states = {
 	0:"Pending",
 	1:"Active",
@@ -238,7 +249,7 @@ class Agent:
                 vq = q['vote_query'].replace("replace",device_name)
 
                 try:
-                    vote_response = requests.get(f"http://thanos-query.default.svc.cluster.local:9090/api/v1/query", 
+                    vote_response = requests.get(f"http://{cluster_ip}:9090/api/v1/query", 
                         params={"query": vq}, timeout=5)
                     vote_response.raise_for_status()
                     vote_response_data = vote_response.json()
@@ -292,11 +303,6 @@ class Agent:
                 act_metric = f"oasees_{metric_name}"
                 query = f'{act_metric}{{metric_index="{metric_index}"}}'
                 metrics.append((metric_name, act_metric, query))
-
-            cluster_ip = "thanos-query.default.svc.cluster.local"
-            telemetry_ip = "telemetry-api-svc.default.svc.cluster.local"
-            # cluster_ip = "10.43.213.25"
-            # telemetry_ip = "10.43.27.222"
 
 
             if "ipfs_data" in self.config:

@@ -171,27 +171,16 @@ const Home = ({json}:HomeProps) => {
 
                 // console.log(available_daos);
 
+ 
+
                 for (const dao of available_daos){
                     const tokenId = dao[0];
-                    // const clusterTokenId = dao[5];
-                    // const hasDaoLogic = dao[1] == 0 ? false : true;
+
                     let m = [];
                     const members = await marketplaceMonitor.getDaoMembers(dao[0])
                     for (const member of members){
                         m.push(member);
                     }
-
-                    let dao_content_hash;
-                    let cluster_name;
-                    // if(hasDaoLogic){
-                    //     dao_content_hash = await json.nft.tokenURI(tokenId);
-                    // }else{
-                    //     dao_content_hash = dao[2];
-                    // }
-
-                    // const meta = (await ipfs_get(dao[2])).data;
-                    // const content = (await ipfs_get(dao_content_hash)).data;
-                    
 
                     const governance_address = dao[1]
                     const governance_abi = await get_abi(dao[1])

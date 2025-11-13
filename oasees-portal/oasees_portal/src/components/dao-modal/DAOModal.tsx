@@ -782,16 +782,42 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                                 {item.timestamp}
                             </Table.Td>
                             <Table.Td>
-                                <Button 
+                            <Button 
                                 size="xs" 
                                 variant="light"
                                 onClick={() => {
-                                    navigator.clipboard.writeText(item.hash);
-                                    // Optional: show success notification
+                                    // // Check if clipboard API is available
+                                    // if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    //     navigator.clipboard.writeText(item.hash)
+                                    //         .then(() => {
+                                    //             // Optional: show success notification
+                                    //             console.log('Copied to clipboard');
+                                    //         })
+                                    //         .catch(err => {
+                                    //             console.error('Failed to copy:', err);
+                                    //         });
+                                    // } else {
+                                        // Fallback for non-HTTPS contexts
+                                        const textArea = document.createElement('textarea');
+                                        textArea.value = item.hash;
+                                        textArea.style.position = 'fixed';
+                                        textArea.style.left = '-999999px';
+                                        document.body.appendChild(textArea);
+                                        textArea.focus();
+                                        textArea.select();
+                                        try {
+                                            document.execCommand('copy');
+                                            console.log('Copied to clipboard (fallback)');
+                                        } catch (err) {
+                                            console.error('Fallback copy failed:', err);
+                                            alert('Copy failed. Please copy manually: ' + item.hash);
+                                        }
+                                        document.body.removeChild(textArea);
+                                    // }
                                 }}
-                                >
+                            >
                                 Copy
-                                </Button>
+                            </Button>
                             </Table.Td>
                             </Table.Tr>
                         ))}

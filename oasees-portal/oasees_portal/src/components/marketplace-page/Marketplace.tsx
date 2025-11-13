@@ -25,7 +25,7 @@ const ipfs_get = async (ipfs_hash:string) => {
 
 const Marketplace = ({json}:MarketplaceProps) => {
     const [algorithms,setAlgorithms] = useState<NftItem[]>([]);
-    const [daos,setDaos] = useState<NftItem[]>([]);
+    const [daos,setDaos] = useState<any[]>([]);
     const [devices,setDevices] = useState<NftItem[]>([]);
 
     const [currentAlgorithm, setCurrentAlgorithm] = useState(0);
@@ -91,24 +91,21 @@ const Marketplace = ({json}:MarketplaceProps) => {
         const populateDaos = async() => {
             try{
                 const daos = [];
-                const available_daos = await marketplaceMonitor.getlistedDaos({from:json.account});
-                
-                for (const item of available_daos) {
-                    const marketplace_id = item[0];
-                    var meta_content;
-                    const meta_hash = item[5];
-                    meta_content = (await ipfs_get(meta_hash)).data;
-                    // }else{
-                    //     id = item[5];
-                    //     meta_content = {"dao_name": "Cluster", "dao_desc": "Oasees SDK."};
-                    // }
+                const available_daos = await marketplaceMonitor.getlistedDaos();
 
+                console.log(available_daos);
+                
+                for (const item of available_daos.slice(21)) {
+                    const marketplace_id = item[0];
+
+                    var members = await marketplaceMonitor.getDaoMembers(marketplace_id);
+                 
                     daos.push({
-                        title: meta_content.dao_name,
+                        title: item[5],
+                        governance: item.governance,
                         id: marketplace_id,
-                        marketplace_id: marketplace_id,
-                        desc: meta_content.dao_desc,
-                        members: await marketplaceMonitor.getDaoMembers(item[4])
+                        desc: `**Decentralized Autonomous Organization** A community-led entity governed by transparent rules encoded as smart contracts on the blockchain. Members vote on proposals and manage shared resources collectively.`,
+                        members: members
                     })
                 
                 }

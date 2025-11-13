@@ -11,8 +11,20 @@ import { NftItem } from "src/types/interfaces";
 interface DaoPageProps{
     json:any;
     changePage:(n:number) => void;
-    currentDao: NftItem;
+    currentDao: any;
     daoHandlers:any;
+}
+
+
+const block_explorer_api = `http://${process.env.REACT_APP_BLOCKCHAIN_HOST}:8082/api/v2/`
+
+
+const get_abi = async (contract_address:string) => {
+    
+    const request = await axios.get(`${block_explorer_api}/smart-contracts/${contract_address}`);
+    const abi = request.data.abi;
+
+    return abi;
 }
 
 
@@ -28,9 +40,12 @@ const DAOPage = ({json,changePage,currentDao,daoHandlers}:DaoPageProps ) => {
     const [showJoinComplete, setShowJoinComplete] = useState(false);
     const [showJoinFailed, setShowJoinFailed] = useState(false);
 
-    const Dao_tags = currentDao.tags?.map((tag,index)=>(
-        <Pill bg="lightblue" key={index}>{tag}</Pill>
-    ))
+    // const Dao_tags = currentDao.tags?.map((tag,index)=>(
+    //     <Pill bg="lightblue" key={index}>{tag}</Pill>
+    // ))
+
+    
+
 
     const truncate_middle = (str:string) => {
         if (str.length > 35) {
@@ -40,33 +55,37 @@ const DAOPage = ({json,changePage,currentDao,daoHandlers}:DaoPageProps ) => {
       }
 
     
-    const join_dao = async (id:string, marketplace_id:string) => {
+    const join_dao = async (currentDao: any) => {
+
+
+        console.log("FKFKFKK");
+        console.log(currentDao.governance);
         setLoading(true);
         try{
-            const dao_content_hash = await json.nft.tokenURI(id);
-            const content = (await ipfs_get(dao_content_hash)).data;
+            // const dao_content_hash = await json.nft.tokenURI(id);
+            // const content = (await ipfs_get(dao_content_hash)).data;
             const signer = await json.provider.getSigner();
 
-            const dao_token_provider_contract = new ethers.Contract(
-                content.token_provider_address, 
-                content.token_provider_abi,
-                await signer)
+            // const dao_token_provider_contract = new ethers.Contract(
+            //     content.token_provider_address, 
+            //     content.token_provider_abi,
+            //     await signer)
             
 
-            const vote_token_contract = new ethers.Contract(
-                content.token_address,
-                content.token_abi,
-                await signer)
+            // const vote_token_contract = new ethers.Contract(
+            //     content.token_address,
+            //     content.token_abi,
+            //     await signer)
 
             const transaction_count = await json.provider.getTransactionCount(json.account);
 
-            const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
-            const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+1});
-            const join_transaction = await json.marketplace.joinDao(marketplace_id,{nonce:transaction_count+2});
+            // const get_tokens_transaction = await dao_token_provider_contract.getTokens({nonce:transaction_count});
+            // const delegate_transaction = await vote_token_contract.delegate(json.account,{nonce:transaction_count+1});
+            const join_transaction = await json.marketplace.joinDao(currentDao.id,{nonce:transaction_count});
 
             setShowJoinComplete(true);
 
-            await Promise.all([get_tokens_transaction.wait(),join_transaction.wait(),delegate_transaction.wait()]);
+            // await Promise.all([get_tokens_transaction.wait(),join_transaction.wait(),delegate_transaction.wait()]);
         } catch(error){
             console.error("Metamask error",error);
             setShowJoinFailed(true);
@@ -136,7 +155,7 @@ const DAOPage = ({json,changePage,currentDao,daoHandlers}:DaoPageProps ) => {
                             <Stack gap="lg" my={20}>
                                 <Group gap="xs"><Text fw={600}>Members:</Text>{currentDao.members?.length.toString()}</Group>
                             </Stack>
-                            <Center mt={20}><Button color="orange" onClick={()=>join_dao(currentDao.id,currentDao.marketplace_id)}>JOIN</Button></Center>
+                            <Center mt={20}><Button color="orange" onClick={()=>join_dao(currentDao)}>JOIN</Button></Center>
                     </Card>
                 </Container>
             </Grid.Col>

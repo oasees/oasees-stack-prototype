@@ -31,8 +31,9 @@ config = {
 
 
 device_name = os.environ.get('NODE_NAME')
-
 env_port = os.environ.get('AGENT_PORT')
+cb_port = os.environ.get('CB_PORT')
+cb_ip = os.environ.get('CB_IP')
 port = int(env_port) if env_port else 5100
 # device_name = "labpc"
 print(device_name)
@@ -42,8 +43,7 @@ status_code = 500
 
 while status_code != (201 or 200):
     try:
-        # response = requests.post("http://cluster-backend.default.svc.cluster.local:4000/register-device", json={'device_id': device_name})
-        response = requests.post("http://10.160.1.227:30021/register-device", json={'device_id': device_name})
+        response = requests.post(f"http://{cb_ip}:{cb_port}/register-device", json={'device_id': device_name})
         status_code = response.status_code
         data = response.json()
 
