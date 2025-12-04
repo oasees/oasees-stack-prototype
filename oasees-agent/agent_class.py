@@ -144,7 +144,7 @@ class Agent:
         similar_exists = self.similar_active(function_signature)
 
         if (similar_exists):
-            # self.proposal_cooldowns.append(msg)
+            self.proposal_cooldowns.append(msg)
             return "Similar Pending / Active proposal already exists."
 
 
