@@ -40,7 +40,7 @@ const getUIServiceUrl = async (serviceName?: string) => {
     const nodesData = await kubectlRequest('get nodes -o json');
     const masterIp = nodesData.items.find((node: any) => 
       node.metadata.labels['node-role.kubernetes.io/master']
-    )?.metadata.annotations['alpha.kubernetes.io/provided-node-ip'];
+    )?.metadata.annotations['alpha.kubernetes.io/provided-node-ip'].split(",")[0];
   
     const cmd = "get services -l oasees-ui=true -o jsonpath='{range .items[*]}{.metadata.name}:{.metadata.labels.oasees-ui-port}{\"\\n\"}{end}'";
     const response = await kubectlRequest(cmd);

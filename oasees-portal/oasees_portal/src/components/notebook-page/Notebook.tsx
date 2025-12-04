@@ -37,7 +37,7 @@ const getNotebookUrl = async () => {
     const nodesData = await kubectlRequest('get nodes -o json');
     const masterIp = nodesData.items.find((node: any) => 
         node.metadata.labels['node-role.kubernetes.io/master']
-    )?.metadata.annotations['alpha.kubernetes.io/provided-node-ip'];
+    )?.metadata.annotations['alpha.kubernetes.io/provided-node-ip'].split(",")[0];
 
     const svcsData = await kubectlRequest('get svc -l component=oasees-notebook -o json');
     const port = svcsData.items[0].spec.ports[0].nodePort;
