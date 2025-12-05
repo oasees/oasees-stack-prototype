@@ -1,10 +1,10 @@
-import { Group, List, UnstyledButton, Text} from "@mantine/core";
+import { Group, List, UnstyledButton, Text } from "@mantine/core";
 import './SideMenu.css'
 
 
-interface SideMenuProps{
+interface SideMenuProps {
     currentPage: number
-    onTabClick(v:number): void;
+    onTabClick(v: number): void;
 }
 
 
@@ -15,12 +15,12 @@ const menu_items = [
     ['Publish', './images/publish.png'],
     ['Notebook', './images/notebook.png'],
     ['Solidity IDE', './images/solidity.png'],
-    ['SDK Manager', './images/sdk_mgr.png']
-  ];
+    ['SSI', './images/chain.png']
+];
 
 
 
-const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
+const SideMenu = ({ currentPage, onTabClick }: SideMenuProps) => {
 
     const handleTabClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
@@ -28,20 +28,20 @@ const SideMenu = ({currentPage, onTabClick}:SideMenuProps) => {
         onTabClick(Number(button.value));
     };
 
-    const styledTab = (text:string, index:number) => {
-        if(currentPage==index)
+    const styledTab = (text: string, index: number) => {
+        if (currentPage == index)
             return <Text fw={500} c="var(--mantine-color-orange-7)">{text}</Text>
         else
             return <Text>{text}</Text>
     }
-    
 
-    const items = menu_items.map((item,index)=> (
+
+    const items = menu_items.map((item, index) => (
         <List.Item key={index}>
-            <UnstyledButton value={index+1} onClick={handleTabClick} w={160}>
+            <UnstyledButton value={index + 1} onClick={handleTabClick} w={160}>
                 <Group gap="xs">
-                    <img src={item[1]} alt={item[0] + "icon"}/>
-                    {styledTab(item[0],index+1)}
+                    <img src={item[1]} alt={item[0] + "icon"} />
+                    {styledTab(item[0], index + 1)}
                 </Group>
             </UnstyledButton>
         </List.Item>
