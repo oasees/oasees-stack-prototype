@@ -1,4 +1,4 @@
-import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader, Group, ActionIcon, NumberInput} from "@mantine/core";
+import { Button, Center, Grid, Modal, Table, Tabs, Image, Flex, Text, CloseButton, ScrollArea, TextInput, Select, Box, Textarea, LoadingOverlay, Stack, Loader, Group, ActionIcon, NumberInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { useEffect, useState } from "react";
@@ -8,15 +8,15 @@ import axios from "axios";
 // import '@mantine/notifications/styles.css';
 
 
-interface DAOModalProps{
+interface DAOModalProps {
     currentDAO: any,
     availableDevices: any[];
     closeModal(): void;
-    updateDevices():void;
-    json:any;
+    updateDevices(): void;
+    json: any;
 }
 
-enum ProposalStatus{
+enum ProposalStatus {
     Pending,
     Active,
     Cancelled,
@@ -31,19 +31,19 @@ enum ProposalStatus{
 
 
 
-const stateToStatus = (state:number) => {
-    if(state==0) return ProposalStatus.Pending;
-    else if(state==1) return ProposalStatus.Active;
-    else if(state==2) return ProposalStatus.Cancelled;
-    else if(state==3) return ProposalStatus.Defeated;
-    else if(state==4) return ProposalStatus.Succeeded;
-    else if(state==5) return ProposalStatus.Queued;
-    else if(state==6) return ProposalStatus.Expired;
+const stateToStatus = (state: number) => {
+    if (state == 0) return ProposalStatus.Pending;
+    else if (state == 1) return ProposalStatus.Active;
+    else if (state == 2) return ProposalStatus.Cancelled;
+    else if (state == 3) return ProposalStatus.Defeated;
+    else if (state == 4) return ProposalStatus.Succeeded;
+    else if (state == 5) return ProposalStatus.Queued;
+    else if (state == 6) return ProposalStatus.Expired;
     else return ProposalStatus.Executed;
 }
 
-const supportToVote = (support:number) => {
-    if(support==0) return 'Against';
+const supportToVote = (support: number) => {
+    if (support == 0) return 'Against';
     else return 'For';
 }
 
@@ -54,7 +54,7 @@ const supportToVote = (support:number) => {
 //     calldatas: any
 // }
 
-interface Proposal{
+interface Proposal {
     description: string,
     state: number,
     proposalId: number,
@@ -64,27 +64,27 @@ interface Proposal{
 }
 
 
-interface ProposalForm{
+interface ProposalForm {
     title: string,
     description: string,
     action: string
 }
 
-interface Vote{
+interface Vote {
     proposal: string,
     support: number,
     reason: string,
 }
 
-interface DaoData{
+interface DaoData {
     info: string,
     hash: string,
     timestamp: string
 }
 
-const truncate_middle = (str:string) => {
+const truncate_middle = (str: string) => {
     if (str.length > 35) {
-      return str.substring(0, 6) + '...' + str.substring(str.length-4, str.length);
+        return str.substring(0, 6) + '...' + str.substring(str.length - 4, str.length);
     }
     return str;
 }
@@ -92,29 +92,30 @@ const truncate_middle = (str:string) => {
 // const backend_port = 30022
 const backend_enpoint = `http://${process.env.REACT_APP_EXPOSED_IP}:30021`;
 
-const actions = [ '0', '1', '2', '3'];
+const actions = ['0', '1', '2', '3'];
 
-const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json}:DAOModalProps) => {
+const DAOModal = ({ currentDAO, availableDevices, closeModal, updateDevices, json }: DAOModalProps) => {
     // console.log(availableDevices)
-    const [daoContract,setDaoContract] = useState<ethers.Contract>();
-    const [tokenContract,setTokenContract] = useState<ethers.Contract>();
-    const [boxContract,setBoxContract] = useState<ethers.Contract>();
-    const [proposalFilter,setProposalFilter] = useState<ethers.EventFilter>();
-    const [voteFilter,setVoteFilter] = useState<ethers.EventFilter>();
-    const [userBalance,setUserBalance] = useState(0);
+    const [daoContract, setDaoContract] = useState<ethers.Contract>();
+    const [tokenContract, setTokenContract] = useState<ethers.Contract>();
+    const [boxContract, setBoxContract] = useState<ethers.Contract>();
+    const [proposalFilter, setProposalFilter] = useState<ethers.EventFilter>();
+    const [voteFilter, setVoteFilter] = useState<ethers.EventFilter>();
+    const [userBalance, setUserBalance] = useState(0);
 
-    const [proposals,setProposals] = useState<Proposal[]>([])
-    const [votes,setVotes] = useState<Vote[]>([]);
+    const [proposals, setProposals] = useState<Proposal[]>([])
+    const [votes, setVotes] = useState<Vote[]>([]);
 
-    const [proposalDescriptions,setProposalDescriptions] = useState<{[key:string]:string}>();
+    const [proposalDescriptions, setProposalDescriptions] = useState<{ [key: string]: string }>();
 
-    const [loading,setLoading] = useState(false);
-    const [opened, {close}] = useDisclosure(true);
+    const [loading, setLoading] = useState(false);
+    const [opened, { close }] = useDisclosure(true);
+    const [membersOpened, { open: openMembers, close: closeMembers }] = useDisclosure(false);
 
 
     const [avDevTemp, setAvDevTemp] = useState<any[]>([]);
     const [tokens, setTokens] = useState<number>(0)
-    const [memberVotingPowers, setMemberVotingPowers] = useState<{[key:string]:number}>({});
+    const [memberVotingPowers, setMemberVotingPowers] = useState<{ [key: string]: number }>({});
 
 
 
@@ -124,67 +125,67 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     useEffect(() => {
         const fetchDaoData = async () => {
             if (!daoContract) return;
-            
+
             try {
                 const data = await daoContract.getAllData();
-                
+
                 const formattedData = data.map((item: any) => ({
-                    info: item.info || item[0], 
+                    info: item.info || item[0],
                     hash: item.hash || item[1],
                     timestamp: item.timestamp || item[2]
                 }));
-                
+
                 setIpfsData(formattedData);
             } catch (error) {
                 console.error("Error fetching DAO data from contract:", error);
             }
         };
-    
+
         var intervalId: NodeJS.Timer;
         if (daoContract) {
             fetchDaoData();
-    
+
             intervalId = setInterval(() => {
                 fetchDaoData();
             }, 3000);
         }
-    
+
         return () => clearInterval(intervalId);
     }, [daoContract]);
 
 
 
-    useEffect(()=>{
-        const avDevs:any[] = [];
-        const loadTempDev = async ()=> {
-            try{
+    useEffect(() => {
+        const avDevs: any[] = [];
+        const loadTempDev = async () => {
+            try {
                 const response = await axios.get(`${backend_enpoint}/devices`);
                 const avDevices = response.data;
                 console.log(avDevices)
 
-                for (const device in avDevices){
+                for (const device in avDevices) {
                     const id = device
                     const account = avDevices[device]
 
-                    avDevs.push({name:device,account:account});
+                    avDevs.push({ name: device, account: account });
                 }
 
                 setAvDevTemp(avDevs);
             }
-            catch(error){
+            catch (error) {
                 console.error("An error occured while fetching available devices: ", error);
             }
         }
 
         loadTempDev();
-    },[])
+    }, [])
 
 
-    useEffect(()=>{
-        const loadContracts = async ()=>{
-            try{
+    useEffect(() => {
+        const loadContracts = async () => {
+            try {
                 const signer = await json.provider.getSigner();
-                
+
                 const dao_contract = new ethers.Contract(
                     currentDAO.governance_address,
                     currentDAO.governance_abi,
@@ -213,57 +214,57 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                 setProposalFilter(proposal_filter);
                 setVoteFilter(vote_filter);
                 setUserBalance(token_balance);
-            } catch(error){
+            } catch (error) {
                 console.error("An error occured while initializing the contracts: ", error);
             }
         }
 
         loadContracts();
-    },[])
+    }, [])
 
-    useEffect(()=>{
+    useEffect(() => {
         const fetchMemberVotingPowers = async () => {
-            if(!tokenContract) return;
+            if (!tokenContract) return;
 
-            try{
-                const votingPowers: {[key:string]:number} = {};
-                for(const member of currentDAO.members){
+            try {
+                const votingPowers: { [key: string]: number } = {};
+                for (const member of currentDAO.members) {
                     const balance = await tokenContract.balanceOf(member);
                     votingPowers[member] = Number(balance);
                 }
                 setMemberVotingPowers(votingPowers);
-            } catch(error){
+            } catch (error) {
                 console.error("Error fetching voting powers: ", error);
             }
         }
 
-        if(tokenContract){
+        if (tokenContract) {
             fetchMemberVotingPowers();
         }
-    },[tokenContract, currentDAO.members]);
+    }, [tokenContract, currentDAO.members]);
 
 
-    useEffect(()=>{
-        const handleProposalEvent = async () =>{
+    useEffect(() => {
+        const handleProposalEvent = async () => {
             try {
-                const daoMonitor:any = daoContract!.connect(json.callProvider);
-                const results:any = await daoMonitor.queryFilter(proposalFilter!);
-                const proposals:Proposal[] = [];
-                const proposal_descriptions: {[key:string]:string}= {}
-                
-                for (const result of results){
+                const daoMonitor: any = daoContract!.connect(json.callProvider);
+                const results: any = await daoMonitor.queryFilter(proposalFilter!);
+                const proposals: Proposal[] = [];
+                const proposal_descriptions: { [key: string]: string } = {}
+
+                for (const result of results) {
                     const args = result.args;
-                    
+
                     const proposalId = args[0];
                     const targets = args[2];
-                    const values = args[3];     
+                    const values = args[3];
                     const calldatas = args[5];
                     const description = args[8];
-    
+
 
 
                     const state = await daoMonitor.state(proposalId);
-    
+
                     proposals.push({
                         description: description,
                         state: state,
@@ -274,25 +275,25 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     });
                     proposal_descriptions[proposalId] = description;
                 }
-    
+
                 setProposals(proposals);
                 setProposalDescriptions(proposal_descriptions);
             } catch (error) {
                 console.error('Error fetching proposals:', error);
             }
         }
-        var intervalId:NodeJS.Timer;
-        if(daoContract){
+        var intervalId: NodeJS.Timer;
+        if (daoContract) {
             handleProposalEvent();
-    
-            intervalId = setInterval(()=>{
+
+            intervalId = setInterval(() => {
                 handleProposalEvent();
-            },3000)
+            }, 3000)
         }
-    
-        
+
+
         return () => clearInterval(intervalId);
-    },[daoContract]);
+    }, [daoContract]);
 
 
     // useEffect(()=>{
@@ -331,74 +332,74 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     //         },3000)
     //     }
 
-        
+
     //     return () => clearInterval(intervalId);
     // },[daoContract]);
 
-    useEffect(()=> {
+    useEffect(() => {
         const handleVoteEvent = async () => {
             try {
-                const daoMonitor:any = daoContract!.connect(json.callProvider);
-                const results:any = await daoMonitor.queryFilter(voteFilter!);
-                const votes:Vote[] = [];
+                const daoMonitor: any = daoContract!.connect(json.callProvider);
+                const results: any = await daoMonitor.queryFilter(voteFilter!);
+                const votes: Vote[] = [];
 
-                for (const result of results){
+                for (const result of results) {
                     const args = result.args;
-                    if(args.weight>0){
+                    if (args.weight > 0) {
                         const proposal = proposalDescriptions![args.proposalId];
                         const support = args.support;
                         const reason = args.reason;
 
 
-                        votes.push({proposal:proposal, support:support, reason:reason})
+                        votes.push({ proposal: proposal, support: support, reason: reason })
                     }
                 }
                 setVotes(votes);
-            } catch(error){
+            } catch (error) {
                 console.error('Error fetching votes: ', error);
             }
         }
 
-            if(proposals.length>0){
-                handleVoteEvent();
-            }
-    },[proposals])
+        if (proposals.length > 0) {
+            handleVoteEvent();
+        }
+    }, [proposals])
 
 
     const form = useForm<ProposalForm>({
         initialValues: {
             title: '',
-            description:'',
+            description: '',
             action: '0',
         },
 
         validate: {
-            title: (value) => ((value)? null: 'Title field cannot be blank.'),
-            description: (value) => ((value)? null: 'Description field cannot be blank.'),
+            title: (value) => ((value) ? null : 'Title field cannot be blank.'),
+            description: (value) => ((value) ? null : 'Description field cannot be blank.'),
         }
     });
 
 
     const handleClose = () => {
-        if(!loading){
+        if (!loading) {
             close();
             closeModal();
         }
     };
 
-    const handleJoining = async (event: React.MouseEvent<HTMLButtonElement>) =>{
+    const handleJoining = async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setLoading(true);
         const button: HTMLButtonElement = event.currentTarget;
         // const device = availableDevices[Number(button.value)];
         const device = avDevTemp[Number(button.value)];
 
-        try{
+        try {
             const signer = await json.provider.getSigner()
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const transfer_eth = await signer.sendTransaction({to: device.account, value: ethers.utils.parseEther("10"), nonce:transaction_count});
-            const transfer_tokens_to_device = await tokenContract!.transfer(device.account,tokens,{nonce:transaction_count+1});
-            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device.account,currentDAO.dao_id,{nonce:transaction_count+2});
+            const transfer_eth = await signer.sendTransaction({ to: device.account, value: ethers.utils.parseEther("10"), nonce: transaction_count });
+            const transfer_tokens_to_device = await tokenContract!.transfer(device.account, tokens, { nonce: transaction_count + 1 });
+            const register_device_to_dao = await json.marketplace.registerDeviceToDao(device.account, currentDAO.dao_id, { nonce: transaction_count + 2 });
 
             await Promise.all([
                 transfer_tokens_to_device.wait(),
@@ -408,43 +409,43 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
             const new_user_balance = await tokenContract!.balanceOf(json.account);
             setUserBalance(new_user_balance);
             updateDevices();
-        } catch(error){
-            console.error("Metamask error: ",error);
+        } catch (error) {
+            console.error("Metamask error: ", error);
         }
         setLoading(false);
     };
 
-    const handleVote = async (proposalId:number, support:boolean) => {
+    const handleVote = async (proposalId: number, support: boolean) => {
         setLoading(true);
-        var vote=2;
-        if(support)
-            vote=1;
-        else 
-            vote=0;
+        var vote = 2;
+        if (support)
+            vote = 1;
+        else
+            vote = 0;
 
-        try{
+        try {
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const vote_transaction = await daoContract!.castVoteWithReason(proposalId,vote,"reason",{nonce:transaction_count});
+            const vote_transaction = await daoContract!.castVoteWithReason(proposalId, vote, "reason", { nonce: transaction_count });
             await vote_transaction.wait();
-            
-        } catch(error){
+
+        } catch (error) {
             console.error(error);
         }
 
         setLoading(false);
-        
+
     }
 
-    const handleProposalSubmit = async (values:ProposalForm) => {
+    const handleProposalSubmit = async (values: ProposalForm) => {
         setLoading(true);
-        try{
+        try {
             const transaction_count = await json.provider.getTransactionCount(json.account);
-            const function_signature = boxContract?.interface.encodeFunctionData('store',[Number(values.action)]);
-            const propose_transaction = await daoContract!.propose([boxContract?.address],[0],[function_signature],values.title,{nonce:transaction_count});
+            const function_signature = boxContract?.interface.encodeFunctionData('store', [Number(values.action)]);
+            const propose_transaction = await daoContract!.propose([boxContract?.address], [0], [function_signature], values.title, { nonce: transaction_count });
             await propose_transaction.wait();
-            const delegate_transaction = await tokenContract?.delegate(json.account,{nonce:transaction_count+1});
+            const delegate_transaction = await tokenContract?.delegate(json.account, { nonce: transaction_count + 1 });
             await delegate_transaction.wait();
-        }catch(error){
+        } catch (error) {
             console.error(error);
         }
         setLoading(false);
@@ -459,7 +460,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     //     </Table.Tr>
     // ));
 
-    const manageDevices = avDevTemp.map((device,index) => (
+    const manageDevices = avDevTemp.map((device, index) => (
         <Table.Tr key={index}>
             <Table.Td>{device.name}</Table.Td>
             {/* <Table.Td>{device.account}</Table.Td> */}
@@ -469,25 +470,27 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     // label = "Tokens"
                     // description = "Amount of Tokens to give."
                     // placeholder = {0}
-                    min = {0}
-                    max = {100}
-                    value = {tokens}
+                    min={0}
+                    max={100}
+                    value={tokens}
                     onChange={(value) => setTokens(typeof value === 'number' ? value : 0)}
-                    w = {70}
-                    />
+                    w={70}
+                />
             </Table.Td>
             <Table.Td><Button color='orange' onClick={handleJoining} value={index}>{currentDAO.members.includes(device.account) ? 'Re-join' : 'Join'}</Button></Table.Td>
         </Table.Tr>
     ));
 
     // console.log(currentDAO.members)
-    const overviewMembers = currentDAO.members.map((address: string, index: number) => {
-        const isUserAddress = address.toLowerCase() === json.account.toLowerCase();
-        const matchedDevice = avDevTemp.find((device:any)=> device.account.toLowerCase() === address.toLowerCase());
-        const votingPower = memberVotingPowers[address] || 0;
+    const overviewMembers = [...currentDAO.members]
+        .sort((a: string, b: string) => (memberVotingPowers[b] || 0) - (memberVotingPowers[a] || 0))
+        .map((address: string, index: number) => {
+            const isUserAddress = address.toLowerCase() === json.account.toLowerCase();
+            const matchedDevice = avDevTemp.find((device: any) => device.account.toLowerCase() === address.toLowerCase());
+            const votingPower = memberVotingPowers[address] || 0;
 
-        return (
-            <Table.Tr key={index}>
+            return (
+                <Table.Tr key={index}>
                     {/* <Table.Td>{device.name}</Table.Td> */}
                     <Table.Td>
                         {isUserAddress && <Text fw={500}>You</Text>}
@@ -496,9 +499,9 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
                     <Table.Td>{(address)}</Table.Td>
                     <Table.Td>{votingPower}</Table.Td>
                     {/* <Table.Td>{device.ip_address}</Table.Td> */}
-            </Table.Tr>
-        );
-    })
+                </Table.Tr>
+            );
+        })
     // const overviewDevices = joinedDevices.map((device,index) => (
     //     <Table.Tr key={index}>
     //         <Table.Td>{device.name}</Table.Td>
@@ -507,29 +510,29 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     //     </Table.Tr>
     // ));
 
-    const styledStatus= (proposal:Proposal) => {
+    const styledStatus = (proposal: Proposal) => {
         const status = stateToStatus(proposal.state);
-        switch(status){
+        switch (status) {
             case ProposalStatus.Defeated:
-                return (<Table.Td colSpan={2} style={{color:'red'}}>Defeated</Table.Td>);
+                return (<Table.Td colSpan={2} style={{ color: 'red' }}>Defeated</Table.Td>);
             case ProposalStatus.Active:
                 return (<>
                     <Table.Td>
                         <Group gap={10} justify="center">
-                            <ActionIcon color="green" size="sm" onClick={()=>handleVote(proposal.proposalId,true)}><img src="./images/thumb_up.png" alt="thumb-up" height={17} width={17}/></ActionIcon>
-                            <ActionIcon color="red" size="sm" onClick={()=>handleVote(proposal.proposalId,false)}><img src="./images/thumb_down.png" alt="thumb-down" height={17} width={17}/></ActionIcon>
+                            <ActionIcon color="green" size="sm" onClick={() => handleVote(proposal.proposalId, true)}><img src="./images/thumb_up.png" alt="thumb-up" height={17} width={17} /></ActionIcon>
+                            <ActionIcon color="red" size="sm" onClick={() => handleVote(proposal.proposalId, false)}><img src="./images/thumb_down.png" alt="thumb-down" height={17} width={17} /></ActionIcon>
                         </Group>
                     </Table.Td>
-                    <Table.Td style={{color:'green'}}>Active</Table.Td>
+                    <Table.Td style={{ color: 'green' }}>Active</Table.Td>
                 </>
                 );
             case ProposalStatus.Succeeded:
                 return (<>
-                    <Table.Td><Button size="xs" bg="green" onClick={()=> execute_proposal(String(proposal.proposalId))}>Execute</Button></Table.Td>
-                    <Table.Td colSpan={2} style={{color:'blue'}}>Succeeded</Table.Td>
-                    </>
-                    );
-                
+                    <Table.Td><Button size="xs" bg="green" onClick={() => execute_proposal(String(proposal.proposalId))}>Execute</Button></Table.Td>
+                    <Table.Td colSpan={2} style={{ color: 'blue' }}>Succeeded</Table.Td>
+                </>
+                );
+
             case ProposalStatus.Expired:
                 return (<Table.Td colSpan={2}>Expired</Table.Td>);
 
@@ -547,7 +550,7 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
         }
     }
 
-    const mapped_proposals = proposals.slice(-10).reverse().map((proposal,index)=> (
+    const mapped_proposals = proposals.slice(-10).reverse().map((proposal, index) => (
         <Table.Tr key={index}>
             <Table.Td>{proposal.description}</Table.Td>
             {styledStatus(proposal)}
@@ -557,29 +560,29 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     const execute_proposal = async (proposalId: string) => {
         // Find the specific proposal by ID
         const proposal = proposals.find(p => String(p.proposalId) === proposalId);
-        
+
         if (!proposal) {
             console.error("Proposal not found!");
             return;
         }
-        
+
         const descriptionHash = ethers.utils.id(proposal.description);
         const transaction_count = await json.provider.getTransactionCount(json.account);
-        
+
         await daoContract!.queue(
-            proposal.targets,      
-            proposal.values,       
+            proposal.targets,
+            proposal.values,
             proposal.calldatas,
             descriptionHash,
-            {nonce: transaction_count}
+            { nonce: transaction_count }
         );
-    
+
         await daoContract!.execute(
-            proposal.targets,      
-            proposal.values,       
+            proposal.targets,
+            proposal.values,
             proposal.calldatas,
             descriptionHash,
-            {nonce: transaction_count + 1}
+            { nonce: transaction_count + 1 }
         );
     }
 
@@ -597,247 +600,262 @@ const DAOModal = ({currentDAO, availableDevices, closeModal, updateDevices, json
     //     );
     // }
 
-    const mapped_votes = votes.slice(-15).reverse().map((vote,index)=> (
+    const mapped_votes = votes.slice(-15).reverse().map((vote, index) => (
         <Table.Tr key={index}>
             <Table.Td>{vote.proposal}</Table.Td>
             <Table.Td>{supportToVote(vote.support)}</Table.Td>
             <Table.Td>{vote.reason}</Table.Td>
         </Table.Tr>
     ));
-    
-
-  return (
-    <>
-        <Modal opened={opened} onClose={handleClose} size="100%" withCloseButton={false}>
-        <LoadingOverlay visible={loading} zIndex={1000} pos="fixed" overlayProps={{ radius: "lg", blur: 2 }}
-        loaderProps={{
-            children:<Stack align='center'>
-                        <Loader color='blue'/>
-                        <Text>Just a moment...</Text>
-                        <Text>Your transaction is being processed on the blockchain.</Text>
-                    </Stack>
-            }}/>
-
-        <Group justify='space-between'>
-            <Text td="underline" fw={700}>My balance: {String(userBalance)}</Text>
-            <CloseButton onClick={handleClose}/>
-          </Group>
-            <Center>
-                <Image src='./images/dao_icon.png' w={100} h={100}></Image>
-                <h4>{currentDAO.dao_name}</h4>
-            </Center>
-            
-            <Tabs defaultValue="overview">
-                <Tabs.List hiddenFrom="sm" justify="center">
-                    <Tabs.Tab value="overview">
-                        Overview
-                    </Tabs.Tab>
-
-                    <Tabs.Tab value="manage">
-                        Manage
-                    </Tabs.Tab>
-                    <Tabs.Tab value="data">
-                        Data
-                    </Tabs.Tab>
 
 
-                </Tabs.List>
-
-                <Tabs.List visibleFrom="sm">
-                    <Tabs.Tab value="overview">
-                        Overview
-                    </Tabs.Tab>
-
-                    <Tabs.Tab value="manage">
-                        Manage
-                    </Tabs.Tab>
-
-                    <Tabs.Tab value="data">
-                        Data
-                    </Tabs.Tab>
-
-
-                </Tabs.List>
-
-                <Tabs.Panel value="overview" h={585}>
-                    <Grid gutter='md'>
-
-                        <Grid.Col className={styles.grid_col} span={{base:12, md:6}}>
-                        <Center pb={10} style={{fontSize:14}}><u><b>Members</b></u></Center>
-
-                        <ScrollArea h={156}>
-                        <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top">
-                          
-                                <Table.Tbody>
-                                    {overviewMembers}
-                                </Table.Tbody>
+    return (
+        <>
+            <Modal opened={opened} onClose={handleClose} size="100%" withCloseButton={false}>
+                <LoadingOverlay visible={loading} zIndex={1000} pos="fixed" overlayProps={{ radius: "lg", blur: 2 }}
+                    loaderProps={{
+                        children: <Stack align='center'>
+                            <Loader color='blue' />
+                            <Text>Just a moment...</Text>
+                            <Text>Your transaction is being processed on the blockchain.</Text>
+                        </Stack>
+                    }} />
+                <Modal opened={membersOpened} onClose={closeMembers} title="All Members" centered size="80%">
+                    <ScrollArea h={600}>
+                        <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>Name</Table.Th>
+                                    <Table.Th>Address</Table.Th>
+                                    <Table.Th>Voting Power</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {overviewMembers}
+                            </Table.Tbody>
                         </Table>
-                        </ScrollArea>
-                        </Grid.Col>
-
-                        <Grid.Col className={styles.grid_col} span={{base:12, md:6}}>
-                            <Center pb={10} style={{fontSize:14}}><b><u>Proposals</u></b></Center>
-                            <ScrollArea h={156}>
-                        <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top" >
-                                <Table.Tbody>
-                                    {mapped_proposals}
-                                </Table.Tbody>
-                            
-                        </Table>
-
-                        </ScrollArea>
-                        </Grid.Col>
-
-                        <Grid.Col span={12} className={styles.grid_col}>
-
-                        <Center pb={10} style={{fontSize:14}}><u><b>Votes</b></u></Center>
-                        <ScrollArea h={260}>
-                        <Table striped={true} stripedColor="var(--mantine-color-gray-1)" captionSide="top" withColumnBorders withTableBorder stickyHeader>
-                            
-                                <Table.Thead>
-                                    <Table.Tr>
-                                        <Table.Th>Proposal</Table.Th>
-                                        <Table.Th>Vote</Table.Th>
-                                        <Table.Th>Reason</Table.Th>
-                                    </Table.Tr>
-                                </Table.Thead>
-                                
-                                <Table.Tbody>
-                                    {mapped_votes}
-                                </Table.Tbody>
-                        </Table>
-                        </ScrollArea>
-                        </Grid.Col>
-
-                    </Grid>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="manage" h={585}>
-                    <Grid>
-
-                        <Grid.Col span={{base:12,md:6}} className={styles.grid_col}>
-                        <Center pb={10} style={{fontSize:14}}><u><b>Available devices</b></u></Center>
-                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>Device Name</Table.Th>
-                                {/* <Table.Th>IP</Table.Th> */}
-                                <Table.Th>Account</Table.Th>
-                                <Table.Th>Tokens</Table.Th>
-                                <Table.Th/>
-                            </Table.Tr>
-                        </Table.Thead>
-
-                        <Table.Tbody>
-                            {manageDevices}
-                        </Table.Tbody>
-                    </Table>
-                    </Grid.Col>
-
-                    <Grid.Col span={{base:12,md:6}} className={styles.grid_col}>
-                    <Center pb={10} style={{fontSize:14}}><u><b>Create Proposal</b></u></Center>
-                    <Box bg='var(--mantine-color-gray-1)' p={10}>
-                    <form className={styles.form} onSubmit={form.onSubmit((values)=>handleProposalSubmit(values))}>
-
-                        <TextInput label="Title" placeholder="Insert a title here." withAsterisk {...form.getInputProps('title')} pb={10}/>
-
-                        <Textarea minRows={3} maxRows={3} autosize label="Description" placeholder="Insert a description here." withAsterisk {...form.getInputProps('description')} pb={10}/>
-
-                        <Select label="Action" placeholder="Pick an action." data={actions} withAsterisk allowDeselect={false} {...form.getInputProps('action')} pb={20}/>
-
-                        <Center><Button type='submit' color='green' w={200}>Create</Button></Center>
-                    </form>
-                    </Box>
-                    
-                    </Grid.Col>
-                    </Grid>
-
-                </Tabs.Panel>
-
-                <Tabs.Panel value="data" h={585}>
-                <Center pb={20} style={{fontSize: 18}}>
-                    <u><b>DAO Data</b></u>
-                </Center>
-                
+                    </ScrollArea>
+                </Modal>
+                <Group justify='space-between'>
+                    <Text td="underline" fw={700}>My balance: {String(userBalance)}</Text>
+                    <CloseButton onClick={handleClose} />
+                </Group>
                 <Center>
-                    <Box style={{width: '90%', maxWidth: 900}}>
-                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
-                        <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Data Info</Table.Th>
-                            <Table.Th>IPFS Hash</Table.Th>
-                            <Table.Th>Timestamp</Table.Th>
-                            <Table.Th/>
-                        </Table.Tr>
-                        </Table.Thead>
-                        
-                        <Table.Tbody>
-                        {ipfsData.map((item, index) => (
-                            <Table.Tr key={index}>
-                            <Table.Td>{item.info}</Table.Td>
-                            <Table.Td>
-                            <Table.Td>{item.hash}</Table.Td>
-                            </Table.Td>
-                            <Table.Td>
-                                {item.timestamp}
-                            </Table.Td>
-                            <Table.Td>
-                            <Button 
-                                size="xs" 
-                                variant="light"
-                                onClick={() => {
-                                    // // Check if clipboard API is available
-                                    // if (navigator.clipboard && navigator.clipboard.writeText) {
-                                    //     navigator.clipboard.writeText(item.hash)
-                                    //         .then(() => {
-                                    //             // Optional: show success notification
-                                    //             console.log('Copied to clipboard');
-                                    //         })
-                                    //         .catch(err => {
-                                    //             console.error('Failed to copy:', err);
-                                    //         });
-                                    // } else {
-                                        // Fallback for non-HTTPS contexts
-                                        const textArea = document.createElement('textarea');
-                                        textArea.value = item.hash;
-                                        textArea.style.position = 'fixed';
-                                        textArea.style.left = '-999999px';
-                                        document.body.appendChild(textArea);
-                                        textArea.focus();
-                                        textArea.select();
-                                        try {
-                                            document.execCommand('copy');
-                                            console.log('Copied to clipboard (fallback)');
-                                        } catch (err) {
-                                            console.error('Fallback copy failed:', err);
-                                            alert('Copy failed. Please copy manually: ' + item.hash);
-                                        }
-                                        document.body.removeChild(textArea);
-                                    // }
-                                }}
-                            >
-                                Copy
-                            </Button>
-                            </Table.Td>
-                            </Table.Tr>
-                        ))}
-                        </Table.Tbody>
-                    </Table>
-                    
-                    {ipfsData.length === 0 && (
-                        <Center p={40}>
-                        <Text c="dimmed">No IPFS data available</Text>
-                        </Center>
-                    )}
-                    </Box>
+                    <Image src='./images/dao_icon.png' w={100} h={100}></Image>
+                    <h4>{currentDAO.dao_name}</h4>
                 </Center>
-                </Tabs.Panel>
+
+                <Tabs defaultValue="overview">
+                    <Tabs.List hiddenFrom="sm" justify="center">
+                        <Tabs.Tab value="overview">
+                            Overview
+                        </Tabs.Tab>
+
+                        <Tabs.Tab value="manage">
+                            Manage
+                        </Tabs.Tab>
+                        <Tabs.Tab value="data">
+                            Data
+                        </Tabs.Tab>
 
 
-            </Tabs>
-        </Modal>
-    </>
-  );
+                    </Tabs.List>
+
+                    <Tabs.List visibleFrom="sm">
+                        <Tabs.Tab value="overview">
+                            Overview
+                        </Tabs.Tab>
+
+                        <Tabs.Tab value="manage">
+                            Manage
+                        </Tabs.Tab>
+
+                        <Tabs.Tab value="data">
+                            Data
+                        </Tabs.Tab>
+
+
+                    </Tabs.List>
+
+                    <Tabs.Panel value="overview" h={585}>
+                        <Grid gutter='md'>
+
+                            <Grid.Col className={styles.grid_col} span={{ base: 12, md: 6 }}>
+                                <Center pb={10} style={{ fontSize: 14, cursor: 'pointer' }} onClick={openMembers}><u><b>Members</b></u></Center>
+
+                                <ScrollArea h={156}>
+                                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top">
+
+                                        <Table.Tbody>
+                                            {overviewMembers}
+                                        </Table.Tbody>
+                                    </Table>
+                                </ScrollArea>
+                            </Grid.Col>
+
+                            <Grid.Col className={styles.grid_col} span={{ base: 12, md: 6 }}>
+                                <Center pb={10} style={{ fontSize: 14 }}><b><u>Proposals</u></b></Center>
+                                <ScrollArea h={156}>
+                                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)" withColumnBorders captionSide="top" >
+                                        <Table.Tbody>
+                                            {mapped_proposals}
+                                        </Table.Tbody>
+
+                                    </Table>
+
+                                </ScrollArea>
+                            </Grid.Col>
+
+                            <Grid.Col span={12} className={styles.grid_col}>
+
+                                <Center pb={10} style={{ fontSize: 14 }}><u><b>Votes</b></u></Center>
+                                <ScrollArea h={260}>
+                                    <Table striped={true} stripedColor="var(--mantine-color-gray-1)" captionSide="top" withColumnBorders withTableBorder stickyHeader>
+
+                                        <Table.Thead>
+                                            <Table.Tr>
+                                                <Table.Th>Proposal</Table.Th>
+                                                <Table.Th>Vote</Table.Th>
+                                                <Table.Th>Reason</Table.Th>
+                                            </Table.Tr>
+                                        </Table.Thead>
+
+                                        <Table.Tbody>
+                                            {mapped_votes}
+                                        </Table.Tbody>
+                                    </Table>
+                                </ScrollArea>
+                            </Grid.Col>
+
+                        </Grid>
+                    </Tabs.Panel>
+
+                    <Tabs.Panel value="manage" h={585}>
+                        <Grid>
+
+                            <Grid.Col span={{ base: 12, md: 6 }} className={styles.grid_col}>
+                                <Center pb={10} style={{ fontSize: 14 }}><u><b>Available devices</b></u></Center>
+                                <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th>Device Name</Table.Th>
+                                            {/* <Table.Th>IP</Table.Th> */}
+                                            <Table.Th>Account</Table.Th>
+                                            <Table.Th>Tokens</Table.Th>
+                                            <Table.Th />
+                                        </Table.Tr>
+                                    </Table.Thead>
+
+                                    <Table.Tbody>
+                                        {manageDevices}
+                                    </Table.Tbody>
+                                </Table>
+                            </Grid.Col>
+
+                            <Grid.Col span={{ base: 12, md: 6 }} className={styles.grid_col}>
+                                <Center pb={10} style={{ fontSize: 14 }}><u><b>Create Proposal</b></u></Center>
+                                <Box bg='var(--mantine-color-gray-1)' p={10}>
+                                    <form className={styles.form} onSubmit={form.onSubmit((values) => handleProposalSubmit(values))}>
+
+                                        <TextInput label="Title" placeholder="Insert a title here." withAsterisk {...form.getInputProps('title')} pb={10} />
+
+                                        <Textarea minRows={3} maxRows={3} autosize label="Description" placeholder="Insert a description here." withAsterisk {...form.getInputProps('description')} pb={10} />
+
+                                        <Select label="Action" placeholder="Pick an action." data={actions} withAsterisk allowDeselect={false} {...form.getInputProps('action')} pb={20} />
+
+                                        <Center><Button type='submit' color='green' w={200}>Create</Button></Center>
+                                    </form>
+                                </Box>
+
+                            </Grid.Col>
+                        </Grid>
+
+                    </Tabs.Panel>
+
+                    <Tabs.Panel value="data" h={585}>
+                        <Center pb={20} style={{ fontSize: 18 }}>
+                            <u><b>DAO Data</b></u>
+                        </Center>
+
+                        <Center>
+                            <Box style={{ width: '90%', maxWidth: 900 }}>
+                                <Table striped={true} stripedColor="var(--mantine-color-gray-1)">
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th>Data Info</Table.Th>
+                                            <Table.Th>IPFS Hash</Table.Th>
+                                            <Table.Th>Timestamp</Table.Th>
+                                            <Table.Th />
+                                        </Table.Tr>
+                                    </Table.Thead>
+
+                                    <Table.Tbody>
+                                        {ipfsData.map((item, index) => (
+                                            <Table.Tr key={index}>
+                                                <Table.Td>{item.info}</Table.Td>
+                                                <Table.Td>
+                                                    <Table.Td>{item.hash}</Table.Td>
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    {item.timestamp}
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Button
+                                                        size="xs"
+                                                        variant="light"
+                                                        onClick={() => {
+                                                            // // Check if clipboard API is available
+                                                            // if (navigator.clipboard && navigator.clipboard.writeText) {
+                                                            //     navigator.clipboard.writeText(item.hash)
+                                                            //         .then(() => {
+                                                            //             // Optional: show success notification
+                                                            //             console.log('Copied to clipboard');
+                                                            //         })
+                                                            //         .catch(err => {
+                                                            //             console.error('Failed to copy:', err);
+                                                            //         });
+                                                            // } else {
+                                                            // Fallback for non-HTTPS contexts
+                                                            const textArea = document.createElement('textarea');
+                                                            textArea.value = item.hash;
+                                                            textArea.style.position = 'fixed';
+                                                            textArea.style.left = '-999999px';
+                                                            document.body.appendChild(textArea);
+                                                            textArea.focus();
+                                                            textArea.select();
+                                                            try {
+                                                                document.execCommand('copy');
+                                                                console.log('Copied to clipboard (fallback)');
+                                                            } catch (err) {
+                                                                console.error('Fallback copy failed:', err);
+                                                                alert('Copy failed. Please copy manually: ' + item.hash);
+                                                            }
+                                                            document.body.removeChild(textArea);
+                                                            // }
+                                                        }}
+                                                    >
+                                                        Copy
+                                                    </Button>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Tbody>
+                                </Table>
+
+                                {ipfsData.length === 0 && (
+                                    <Center p={40}>
+                                        <Text c="dimmed">No IPFS data available</Text>
+                                    </Center>
+                                )}
+                            </Box>
+                        </Center>
+                    </Tabs.Panel>
+
+
+                </Tabs>
+            </Modal>
+        </>
+    );
 }
 
 
