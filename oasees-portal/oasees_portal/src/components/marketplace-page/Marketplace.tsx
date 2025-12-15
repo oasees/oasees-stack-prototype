@@ -11,11 +11,42 @@ import DatasetPage from "./DatasetPage";
 import DAOPage from "./DAOPage";
 import DevicePage from "./DevicePage";
 import { NftItem } from "src/types/interfaces";
+import OSModelPage from "./OSModelPage";
 
 interface MarketplaceProps {
     json: any;
 }
 
+interface OSResult {
+    "info": any;
+    "algorithm": string;
+    "dimension": number;
+    "id": string;
+    "name": string;
+    "state": string;
+    "version": string;
+}
+
+
+const os_backend_api = `http://${process.env.REACT_APP_EXPOSED_IP}:32400/results`;
+
+
+const fetchModels = async () => {
+    try {
+        const response = await fetch(os_backend_api, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Request failed:', error);
+        throw error;
+    }
+};
 
 
 const ipfs_get = async (ipfs_hash: string) => {
@@ -27,6 +58,7 @@ const ipfs_get = async (ipfs_hash: string) => {
 const Marketplace = ({ json }: MarketplaceProps) => {
     const [algorithms, setAlgorithms] = useState<NftItem[]>([]);
     const [datasets, setDatasets] = useState<NftItem[]>([]);
+    const [osList, setOSList] = useState<OSResult[]>([]);
     const [daos, setDaos] = useState<any[]>([]);
     const [devices, setDevices] = useState<NftItem[]>([]);
 
@@ -34,6 +66,7 @@ const Marketplace = ({ json }: MarketplaceProps) => {
     const [currentDataset, setCurrentDataset] = useState(0);
     const [currentDAO, setCurrentDAO] = useState(0);
     const [currentDevice, setCurrentDevice] = useState(0);
+    const [currentOS, setCurrentOS] = useState(0);
 
     const [currentTab, setCurrentTab] = useState('assets');
 
@@ -105,6 +138,31 @@ const Marketplace = ({ json }: MarketplaceProps) => {
         populateItems();
 
     }, [algCounter]);
+
+    useEffect(() => {
+        const populateOSList = async () => {
+            try {
+                const osList = [];
+                const available_os_models = await fetchModels();
+
+                for (const res of available_os_models.results) {
+                    osList.push({
+                        info: res.all_info,
+                        algorithm: res.algorithm,
+                        dimension: res.dimension,
+                        id: res.id,
+                        name: res.name,
+                        state: res.state,
+                        version: res.version,
+                    })
+                }
+                setOSList(osList);
+            } catch (error) {
+                console.error('Error loading contracts: ', error);
+            }
+        }
+        populateOSList();
+    }, []);
 
     useEffect(() => {
         const populateDaos = async () => {
@@ -208,6 +266,12 @@ const Marketplace = ({ json }: MarketplaceProps) => {
         changePage(4);
     }
 
+    const openOSPage = (index: number) => {
+        setCurrentOS(index);
+        setCurrentTab('assets');
+        changePage(5);
+    }
+
     const changePage = (n: number) => {
         setActivePage(n);
     }
@@ -239,6 +303,33 @@ const Marketplace = ({ json }: MarketplaceProps) => {
     const card_algorithms = algorithms.map((item, index) => renderAssetCard(item, index, 'ALGORITHM', () => openAlgorithmPage(index)));
 
     const card_datasets = datasets.map((item, index) => renderAssetCard(item, index, 'DATASET', () => openDatasetPage(index)));
+
+    const card_os_models = osList.map((item, index) => (
+        <Card key={index} radius={0} withBorder className="newCard" padding={30} py={25} onClick={() => openOSPage(index)}>
+            <Group gap={8} align="center">
+                <Image src="./images/asset.png" w={15} h={15} />
+                <Text fz={10} mt={0}>ASSET | Model</Text>
+            </Group>
+            <Text fw={600} mt={13} c="#00304e" truncate="end">{item.name}</Text>
+            {/* <Text fz={13} mt={5}>{truncate_middle(item.seller!)}</Text> */}
+            <Flex w="100%" h={110} p={0} direction="column" justify="space-between" mt={15}>
+                <Stack gap={5}>
+                    <Text fz={13}><Text fw={600} inherit span>ID:</Text> {item.id}</Text>
+                    <Text fz={13}><Text fw={600} inherit span>Algorithm type:</Text> {item.algorithm}</Text>
+                    <Text fz={13}><Text fw={600} inherit span>Model type:</Text> {item.dimension}</Text>
+                    <Text fz={13}><Text fw={600} inherit span>Version:</Text> {item.version}</Text>
+                </Stack>
+
+                <Group className="cardFooter" justify="space-between" mt={20}>
+                    <Text fz={13}><Text fw={600} inherit span c="green">{item.state}</Text></Text>
+                    <Group gap={8}>
+                        <Image src="./images/opensearch_logo.png" w={20} h={20} />
+                        <Text fz={12}>OpenSearch Database</Text>
+                    </Group>
+                </Group>
+            </Flex>
+        </Card>
+    ));
 
     const card_daos = daos.map((dao, index) => (
         <Center key={index}>
@@ -320,65 +411,77 @@ const Marketplace = ({ json }: MarketplaceProps) => {
                         activePage == 4 ?
                             <DatasetPage json={json} changePage={changePage} currentDataset={datasets[currentDataset]} datasetHandlers={algHandlers} isPurchased={false} />
                             :
-                            <Tabs defaultValue={currentTab} pt={30}>
-                                <Tabs.List grow>
-                                    <Tabs.Tab className={styles.marketplace_tab} value="assets">
-                                        Assets
-                                    </Tabs.Tab>
+                            activePage == 5 ?
+                                <OSModelPage json={json} changePage={changePage} currentOSModel={osList[currentOS]} />
+                                :
+                                <Tabs defaultValue={currentTab} pt={30}>
+                                    <Tabs.List grow>
+                                        <Tabs.Tab className={styles.marketplace_tab} value="assets">
+                                            Assets
+                                        </Tabs.Tab>
 
-                                    <Tabs.Tab className={styles.marketplace_tab} value="daos">
-                                        DAOs
-                                    </Tabs.Tab>
+                                        <Tabs.Tab className={styles.marketplace_tab} value="daos">
+                                            DAOs
+                                        </Tabs.Tab>
 
-                                    {/* <Tabs.Tab className={styles.marketplace_tab} value="devices">
+                                        {/* <Tabs.Tab className={styles.marketplace_tab} value="devices">
                             Devices
                         </Tabs.Tab> */}
-                                </Tabs.List>
+                                    </Tabs.List>
 
 
-                                <Tabs.Panel value="assets" pt={20} >
-                                    <Tabs defaultValue="algorithms" variant="pills" color="orange">
-                                        <Tabs.List pl={30} pt={10} >
-                                            <Tabs.Tab className={styles.marketplace_sub_tab} value="algorithms">
-                                                Algorithms
-                                            </Tabs.Tab>
+                                    <Tabs.Panel value="assets" pt={20} >
+                                        <Tabs defaultValue="algorithms" variant="pills" color="orange">
+                                            <Tabs.List pl={30} pt={10} >
+                                                <Tabs.Tab className={styles.marketplace_sub_tab} value="algorithms">
+                                                    Algorithms
+                                                </Tabs.Tab>
 
-                                            <Tabs.Tab className={styles.marketplace_sub_tab} value="datasets">
-                                                Datasets
-                                            </Tabs.Tab>
+                                                <Tabs.Tab className={styles.marketplace_sub_tab} value="datasets">
+                                                    Datasets
+                                                </Tabs.Tab>
 
-                                        </Tabs.List>
-                                        <Tabs.Panel value="algorithms" p={30} pt={20}>
-                                            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={30}>
-                                                {card_algorithms}
-                                            </SimpleGrid>
-                                        </Tabs.Panel>
-                                        <Tabs.Panel value="datasets" p={30} pt={20}>
-                                            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={30}>
-                                                {card_datasets}
-                                            </SimpleGrid>
-                                        </Tabs.Panel>
-                                    </Tabs>
-                                </Tabs.Panel>
+                                                <Tabs.Tab className={styles.marketplace_sub_tab} value="opensearch">
+                                                    OpenSearch Listings
+                                                </Tabs.Tab>
 
-                                <Tabs.Panel value="daos" p={30} pt={20}>
-                                    <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} >
-                                        {card_daos}
-                                    </SimpleGrid>
-                                    {/* <div className={classNames(styles.root)}>
+                                            </Tabs.List>
+                                            <Tabs.Panel value="algorithms" p={30} pt={20}>
+                                                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 6 }} spacing={30}>
+                                                    {card_algorithms}
+                                                </SimpleGrid>
+                                            </Tabs.Panel>
+                                            <Tabs.Panel value="datasets" p={30} pt={20}>
+                                                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 6 }} spacing={30}>
+                                                    {card_datasets}
+                                                </SimpleGrid>
+                                            </Tabs.Panel>
+                                            <Tabs.Panel value="opensearch" p={30} pt={20}>
+                                                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 6 }} spacing={30}>
+                                                    {card_os_models}
+                                                </SimpleGrid>
+                                            </Tabs.Panel>
+                                        </Tabs>
+                                    </Tabs.Panel>
+
+                                    <Tabs.Panel value="daos" p={30} pt={20}>
+                                        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} >
+                                            {card_daos}
+                                        </SimpleGrid>
+                                        {/* <div className={classNames(styles.root)}>
                             <div className={styles.subdiv}>
                                 {card_daos}
                             </div>
                         </div> */}
-                                </Tabs.Panel>
+                                    </Tabs.Panel>
 
-                                {/* <Tabs.Panel value="devices" pt={20}>
+                                    {/* <Tabs.Panel value="devices" pt={20}>
                         <SimpleGrid cols={{base:1, sm:2, lg:3, xl:4}} spacing={30}>
                             {card_devices}
                         </SimpleGrid>
                     </Tabs.Panel> */}
 
-                            </Tabs>
+                                </Tabs>
             }
         </>
     );
