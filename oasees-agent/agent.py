@@ -1,4 +1,5 @@
 import threading
+import hmac
 from flask import Flask, request, jsonify
 import time
 import requests
@@ -35,15 +36,20 @@ env_port = os.environ.get('AGENT_PORT')
 cb_port = os.environ.get('CB_PORT')
 cb_ip = os.environ.get('CB_IP')
 port = int(env_port) if env_port else 5100
+cb_token = os.environ.get('CB_REGISTRATION_TOKEN')
+config_token = os.environ.get('AGENT_CONFIG_TOKEN')
+if not config_token:
+    print("WARNING: AGENT_CONFIG_TOKEN is not set - /configure accepts unauthenticated requests.")
 # device_name = "labpc"
 print(device_name)
 
 
 status_code = 500
 
-while status_code != (201 or 200):
+while status_code not in (200, 201):
     try:
-        response = requests.post(f"http://{cb_ip}:{cb_port}/register-device", json={'device_id': device_name})
+        headers = {'Authorization': f'Bearer {cb_token}'} if cb_token else {}
+        response = requests.post(f"http://{cb_ip}:{cb_port}/register-device", json={'device_id': device_name}, headers=headers)
         status_code = response.status_code
         data = response.json()
 
@@ -56,7 +62,7 @@ while status_code != (201 or 200):
         continue
 
 
-print(f"Account retrieved: {account,private_key}")
+print(f"Account retrieved: {account}")
 
 
 # BLOCKCHAIN_URL = "http://10.160.3.172:8545"
@@ -99,6 +105,11 @@ def status():
 
 @app.route('/configure', methods=['POST'])
 def configure():
+    if config_token:
+        supplied = request.headers.get('Authorization', '').removeprefix('Bearer ')
+        if not hmac.compare_digest(supplied, config_token):
+            return jsonify({'message': 'Unauthorized'}), 401
+
     if not agent_info['dao_info']['governance']:
         return jsonify({'message': 'Agent is not member of a DAO yet. Please register first.'}), 400
     else:

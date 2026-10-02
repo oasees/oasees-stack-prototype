@@ -13,8 +13,14 @@ contract DaoMembers {
 
     address [] public members;
     mapping (address => uint256) public indexes;
+    address public immutable marketplace;
+
+    constructor() {
+      marketplace = msg.sender;
+    }
 
     function addMember(address _member) public {
+      require(msg.sender == marketplace, "Only the marketplace can add members");
       if(indexes[_member] == 0){
         members.push(_member);
         indexes[_member] = members.length;
@@ -122,11 +128,13 @@ contract OaseesMarketplace is ReentrancyGuard {
 
  function buyDevice(address _nftContract, uint256 _tokenId) public payable nonReentrant {
     DEVICE storage device = _idToDevice[_tokenId];
+    require(device.listed, "Device is not listed");
+    require(_nftContract == device.nftContract, "NFT contract mismatch");
     require(msg.value >= device.price, "Not enough ether to cover asking price");
 
     address payable buyer = payable(msg.sender);
     payable(device.seller).transfer(msg.value);
-    IERC721(_nftContract).transferFrom(address(this), buyer, device.tokenId);
+    IERC721(device.nftContract).transferFrom(address(this), buyer, device.tokenId);
     device.owner = buyer;
     device.listed = false;
 
@@ -228,6 +236,7 @@ contract OaseesMarketplace is ReentrancyGuard {
 
 
   function joinDao(uint256 _marketplaceId) public payable nonReentrant {
+    require(_marketplaceId > 0 && _marketplaceId <= _daoCount.current(), "DAO does not exist");
 
     _idToDao[_marketplaceId].members.addMember(msg.sender);
     
@@ -247,6 +256,7 @@ contract OaseesMarketplace is ReentrancyGuard {
   // }
 
   function registerDeviceToDao(address deviceAddress,uint _marketplaceId) public {
+    require(_idToDao[_marketplaceId].members.isMember(msg.sender), "Only DAO members can register devices");
     _idToDao[_marketplaceId].members.addMember(deviceAddress);
     emit DaoJoined(deviceAddress, _idToDao[_marketplaceId].marketPlaceId);
   }
@@ -345,11 +355,13 @@ contract OaseesMarketplace is ReentrancyGuard {
   // Buy an NFT
   function buyNft(address _nftContract, uint256 _tokenId) public payable nonReentrant {
     NFT storage nft = _idToNFT[_tokenId];
+    require(nft.listed, "NFT is not listed");
+    require(_nftContract == nft.nftContract, "NFT contract mismatch");
     require(msg.value >= nft.price, "Not enough ether to cover asking price");
 
     address payable buyer = payable(msg.sender);
     payable(nft.seller).transfer(msg.value);
-    IERC721(_nftContract).transferFrom(address(this), buyer, nft.tokenId);
+    IERC721(nft.nftContract).transferFrom(address(this), buyer, nft.tokenId);
     nft.owner = buyer;
     nft.listed = false;
 

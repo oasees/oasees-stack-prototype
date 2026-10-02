@@ -9,6 +9,11 @@ import re
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 
+CONTRACT_NAME_RE = re.compile(r'^[A-Za-z][A-Za-z0-9_]{0,63}$')
+# Only these values are read by ignition/modules/DAO.ts; anything else (e.g. NODE_OPTIONS)
+# must never reach the environment of the npx subprocess.
+DEPLOY_PARAMS = {'minDelay', 'quorumPercentage', 'votingPeriod', 'votingDelay', 'daoName', 'daoDesc', 'account'}
+
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -32,10 +37,13 @@ def deploy_contracts():
         print("Deploying contracts...")
 
         data = request.json
+        deploy_env = os.environ.copy()
         for name, value in data.get('params').items():
-            os.environ[name] = str(value)
+            if name not in DEPLOY_PARAMS:
+                raise ValueError(f"Unexpected deployment parameter: {name}")
+            deploy_env[name] = str(value)
 
-        result = subprocess.run(["npx", "hardhat", "ignition", "deploy", "./ignition/modules/DAO.ts", "--network", "oasees-blockchain","--deployment-id","dao","--reset"], text=True)
+        result = subprocess.run(["npx", "hardhat", "ignition", "deploy", "./ignition/modules/DAO.ts", "--network", "oasees-blockchain","--deployment-id","dao","--reset"], text=True, env=deploy_env)
         if result.returncode != 0:
             raise RuntimeError(result.stderr)
         
@@ -78,6 +86,8 @@ def compile_contract():
         data = request.json
         source_code = data.get('source')
         name = data.get('contractName')
+        if not isinstance(name, str) or not CONTRACT_NAME_RE.match(name):
+            raise ValueError("Invalid contract name")
         
         # Replace @openzeppelin imports with Brownie package imports
         # source_code = source_code.replace(
@@ -181,4 +191,4 @@ def extract_contract_info(text):
     return results
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=3001)
+    app.run(host='0.0.0.0', debug=os.getenv('FLASK_DEBUG') == '1', port=3001)

@@ -53,6 +53,14 @@ w3 = connect_to_blockchain()
 
 CONTAINER_PREFIX="oasees-notebook"
 
+ETH_ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
+IPFS_CID_RE = re.compile(r"^[A-Za-z0-9]{1,128}$")
+
+
+def is_eth_address(value):
+    return isinstance(value, str) and bool(ETH_ADDRESS_RE.match(value))
+
+
 docker_client = docker.from_env()
 
 @app.route('/user_exists',methods=["POST"])
@@ -61,6 +69,8 @@ def user_exists():
     
     data = request.json
     user = data["user"]
+    if not is_eth_address(user):
+        return {"error": "invalid user address"}, 400
     _exists = exists(user)
     if(_exists):
         return {
@@ -84,6 +94,8 @@ def new_user():
 
     data = request.json
     user = data["user"]
+    if not is_eth_address(user):
+        return {"error": "invalid user address"}, 400
     # account_token_address = data["account_token_address"]
     # dao_storage_address = data["daoStorage_address"]
 
@@ -99,7 +111,7 @@ def new_user():
             "CHOWN_HOME": "yes",
             "NB_USER": "wasinw",
             "JUPYTER_ENABLE_LAB": "yes",
-            "JUPYTER_ALLOW_ORIGIN": "*",
+            "JUPYTER_ALLOW_ORIGIN": "http://{}:{}".format(PORTAL_URL, PORTAL_PORT),
             "ACCOUNT_ADDRESS": user,
             "DAO_STORAGE_ADDRESS": "",
             "IPFS_HOST": IPFS_HOST,
@@ -238,9 +250,10 @@ def ipfs_upload_device():
 
 @app.route('/ipfs_check',methods=['GET'])
 def ipfs_check():
-    ipfs_hash = request.args.get("ipfs_hash")
-    print(ipfs_hash)
-    resp = requests.post(f"http://{IPFS_HOST}:5001/api/v0/ls?arg={ipfs_hash}")
+    ipfs_hash = request.args.get("ipfs_hash", "")
+    if not IPFS_CID_RE.match(ipfs_hash):
+        return {"asset":0}
+    resp = requests.post(f"http://{IPFS_HOST}:5001/api/v0/ls", params={"arg": ipfs_hash})
     content = resp.json()
     print(content)
     if ('Objects' not in content):
@@ -294,21 +307,9 @@ def get_marketplace_ipfs_hash():
 
 
 
-@app.route('/transfer_tokens',methods=["POST"])
-def tranfer_tokens():
-
-
-    data = request.json
-    account = data["user"]
-    dao_token_address = data["token_address"]
-    dao_token_abi = data["token_abi"]
-
-    transer_dao_tokens(w3,account,dao_token_address,dao_token_abi)
-
-
-    return {"tokens_transfered":"ok"}
-
-
+# NOTE: the former /transfer_tokens endpoint was removed. It signed ERC20 transfers with the
+# deployer key for any caller-supplied contract address/ABI, without authentication.
+# The portal transfers DAO tokens from the user's own wallet instead.
 
 
 def sigterm_handler(signal, frame):
@@ -386,4 +387,4 @@ def oasees_genesis():
 
 if __name__ == '__main__':
     oasees_genesis()
-    app.run(host='0.0.0.0', port=6001,debug=True)
+    app.run(host='0.0.0.0', port=6001,debug=os.getenv('FLASK_DEBUG') == '1')

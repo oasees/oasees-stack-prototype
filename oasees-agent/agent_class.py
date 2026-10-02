@@ -240,11 +240,52 @@ class Agent:
         
         return {"device_name":self.device_name,"voted_for_proposal": result}
 
-    def decide_vote(self,proposal_desc):
+    @staticmethod
+    def _normalize_hex(data):
+        '''Normalize bytes / hex strings to lowercase hex without 0x prefix.'''
+        if isinstance(data, (bytes, bytearray)):
+            data = bytes(data).hex()
+        data = str(data).lower()
+        return data[2:] if data.startswith('0x') else data
+
+    def payload_matches(self, proposal_args, action_value):
+        '''Check that a proposal's on-chain payload is exactly what this agent's config would propose.
+
+        Matching on the description alone lets anyone craft a proposal whose description contains a
+        configured message but whose targets/calldata do something else (e.g. drain the timelock).'''
+        targets = list(proposal_args['targets'])
+        values = list(proposal_args['values'])
+        calldatas = [self._normalize_hex(c) for c in proposal_args['calldatas']]
+        if len(targets) != 1 or len(values) != 1 or len(calldatas) != 1:
+            return False
+
+        box = self.dao_info['box']
+        try:
+            expected_calldata = self._normalize_hex(box.encode_abi(fn_name='store', args=(action_value,)))
+        except Exception:
+            expected_calldata = None
+        if (targets[0].lower() == box.address.lower() and values[0] == 0
+                and calldatas[0] == expected_calldata):
+            return True
+
+        # Treasury transfer proposals created by create_fund_proposal()
+        try:
+            expected_wei = self.w3.to_wei(action_value, 'ether')
+        except Exception:
+            return False
+        recipient = self.w3.to_checksum_address(targets[0])
+        return (calldatas[0] == '' and values[0] == expected_wei
+                and proposal_args['description'].startswith(f"Transfer {action_value} ETH to {recipient} / "))
+
+    def decide_vote(self,proposal_args):
         '''Function that decides what vote to cast for a given proposal.'''
+        proposal_desc = proposal_args['description']
         
         for q in self.sequence:
             if q['proposal']['msg'] in proposal_desc:
+                if not self.payload_matches(proposal_args, q['proposal']['action_value']):
+                    print(f"  ! ABSTAIN: proposal payload does not match configured action for '{q['proposal']['msg']}'")
+                    return None
 
                 vq = q['vote_query'].replace("replace",device_name)
 
@@ -413,20 +454,21 @@ class Agent:
                 state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
 
                 if(state == 'Pending'):
-                    self.pending_proposals.append(proposal_id)
+                    self.pending_proposals.append((proposal_id, r['args']))
                 
                 if(state == 'Active'):
-                    decided_vote = self.decide_vote(r['args']['description']) # TODO
+                    decided_vote = self.decide_vote(r['args'])
                     print("DEE",decided_vote)
                     desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 0-Against
 
-            for proposal_id in self.pending_proposals:
+            for pending in list(self.pending_proposals):
+                proposal_id, proposal_args = pending
                 state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
                 if(state == 'Active'):
-                    decided_vote = self.decide_vote(r['args']['description']) # TODO
+                    decided_vote = self.decide_vote(proposal_args)
                     print("DEE",decided_vote)
                     desc = self.vote(proposal_id,decided_vote,"Automated vote")   # 1-For, 0-Against
-                    self.pending_proposals.remove(proposal_id)
+                    self.pending_proposals.remove(pending)
 
             
             print(desc)
@@ -524,7 +566,7 @@ class Agent:
             proposal_id = int(r['args']['proposalId'])
             state = proposal_states[self.dao_info['governance'].functions.state(proposal_id).call()]
             if (state in states_to_check):
-                calldatas = "0x" + r['args']['calldatas'][0].hex()
-                if function_signature == calldatas:
+                calldatas = self._normalize_hex(r['args']['calldatas'][0])
+                if self._normalize_hex(function_signature) == calldatas:
                     return True
         return False

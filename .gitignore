@@ -6,3 +6,7 @@ oasees-solidity-ide/app/node_modules/
 oasees-solidity-ide/app/artifacts/
 __pycache__/
 
+
+# Local state / build output
+*.db
+*.pyc

@@ -28,7 +28,7 @@ def insert(_id,ipfs_hash):
 
 	try:
 
-		conn.execute("INSERT INTO ACCOUNTS (ID,IPFS_HASH) VALUES ({}, {})".format("\""+_id+"\"","\""+ipfs_hash+"\""));
+		conn.execute("INSERT INTO ACCOUNTS (ID,IPFS_HASH) VALUES (?, ?)", (_id, ipfs_hash))
 
 		conn.commit()
 		conn.close()
@@ -48,7 +48,7 @@ def get_hash_fromDb(_id):
 
 	conn = sqlite3.connect('accounts.db')
 
-	cursor = conn.execute("SELECT IPFS_HASH FROM ACCOUNTS WHERE ID = {}".format("\""+_id+"\""))
+	cursor = conn.execute("SELECT IPFS_HASH FROM ACCOUNTS WHERE ID = ?", (_id,))
 
 	ipfs_hash=""
 	
@@ -65,7 +65,7 @@ def get_hash_fromDb(_id):
 def exists(_id):
 	conn = sqlite3.connect('accounts.db')
 
-	cursor = conn.execute("SELECT CASE WHEN EXISTS (SELECT 1 FROM ACCOUNTS WHERE ID = {}) THEN 1 ELSE 0 END;".format("\""+_id+"\""))
+	cursor = conn.execute("SELECT CASE WHEN EXISTS (SELECT 1 FROM ACCOUNTS WHERE ID = ?) THEN 1 ELSE 0 END;", (_id,))
 	
 	ans = ""
 	for row in cursor:
@@ -73,7 +73,7 @@ def exists(_id):
 
 
 
-	conn.close
+	conn.close()
 	return ans
 
 

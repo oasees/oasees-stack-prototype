@@ -11,6 +11,7 @@ from web3.middleware import geth_poa_middleware
 import os
 from dao_event_watcher import event_watcher
 from sqlite_utils import *
+from werkzeug.utils import secure_filename
 
 
 create_agentDB()
@@ -75,7 +76,9 @@ def deploy_algorithm():
 	_,_,device_name,_, IPFS_HOST,_= oasees_agent_info_get()
 	data = request.json
 	algorithm_ipfs_hash = data["algorithm_hash"]
-	algorithm_name = data["algorithm_name"]
+	algorithm_name = secure_filename(data["algorithm_name"])
+	if not algorithm_name:
+		return {"error": "invalid algorithm name"}, 400
 
 
 	f = open("{}".format(algorithm_name), "wb")
@@ -91,7 +94,10 @@ def deploy_algorithm():
 def deploy_file():
 	_,_,device_name,_,_,_= oasees_agent_info_get()
 	file = request.files['file']
-	file.save(file.filename)
+	filename = secure_filename(file.filename)
+	if not filename:
+		return {"error": "invalid file name"}, 400
+	file.save(filename)
 	return (device_name + ": File deployed successfully.")
 	
 
